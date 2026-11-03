@@ -22,8 +22,8 @@ schedule = { git = "https://github.com/shuyra-arche/schedule.git", rev = "a80663
 ipc = { git = "https://github.com/shuyra-arche/ipc.git", rev = "29ad97dc08d9dfc4ea6578b1b77874261229b3b5" }
 hub-api = { git = "https://github.com/shuyra-arche/hub.git", rev = "cccef3f325198c8390007ae88b064bae0f21f93e" }
 system-api = { git = "https://github.com/shuyra-arche/system.git", rev = "9e5d63ca536a176583cf1b0054b4ecf7ddd88257" }
-system-client = { path = "../client" }
-system-support = { path = "../support" }
+system-client = { git = "https://github.com/shuyra-arche/system.git", rev = "5a792ff2d39901a970925b1a6d63206adf6c16d8" }
+system-support = { git = "https://github.com/shuyra-arche/system.git", rev = "5a792ff2d39901a970925b1a6d63206adf6c16d8" }
 kernel-test-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "3aa0a155f825fbf377fc8d04009472ca67cbbf8c", optional = true }
 iommu-api = { git = "https://github.com/shuyra-arche/iommu.git", rev = "5d2038033efcbd55de77534b35e611729d4bd9bd", optional = true }
 erra = { version = "0.2.0", default-features = false }
