@@ -51,3 +51,19 @@ Clean public checkout at `5577e87d09fef2b4fd90093738dd97656b616d4b`:
 were added after the first clean checkout correctly rejected missing locks.
 The existing device-ruin request Mark is exported for the Source device-control
 adapter without changing its protocol value; release RISC-V check raw 0.
+
+The 8-Hart accept integration exposed an existing client retry admission race:
+after an explicit UNKNOWN, a retry could reach Session::call with exhausted
+budget and replace the semantic missing result with Unjudged. The private
+call-boundary guard now skips that expired retry. Actual transport failures,
+first-POLL behavior without UNKNOWN, Denied, wire values and deadlines remain
+unchanged. Six deterministic cases use the public IPC exchange/state fixture;
+operator-client now passes 15 host tests, locked/offline raw 0. RISC-V release
+with test-support passes raw 0. This admission edge outcome changes explicitly;
+full Source integration revalidation remains required after publication.
+
+Independent review found and rejected an intermediate guard that sampled the
+clock twice. The final private helper samples once per attempt and passes that
+same budget to Session::call. A controlled-clock regression checks both the
+sample count and the value passed to the real exchange fixture. All 29 directly
+discovered host suites now pass 332 tests, locked/offline raw 0.

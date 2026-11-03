@@ -145,12 +145,17 @@ impl Face {
         retry_missing: bool,
     ) -> Result<system_api::operator::Entry, Fail> {
         let until = deadline(wait);
-        super::lookup::until(
+        super::lookup::until_after_unknown(
+            retry_missing,
             || {
+                let remaining = remain(until);
+                (remaining, remaining == Wait::POLL)
+            },
+            |remaining| {
                 use super::lookup::Failure;
                 let said = self
                     .session
-                    .call::<Call>(ask.clone(), remain(until))
+                    .call::<Call>(ask.clone(), remaining)
                     .map_err(|_| Failure::Stop(Fail::Unjudged))?;
                 if said.failure_status() == Some(ocall::UNKNOWN) {
                     return if retry_missing {

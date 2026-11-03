@@ -463,16 +463,16 @@
       "source": "programs/src/system/client/src/operator/face.rs",
       "destination": "client/src/operator/face.rs",
       "source_sha256": "2c4505597774719c770edc26f18392d5efd1f8b7bba6d5b2ce601c60d3d38d37",
-      "provider_sha256": "2c4505597774719c770edc26f18392d5efd1f8b7bba6d5b2ce601c60d3d38d37",
-      "byte_identical": true,
+      "provider_sha256": "67ef23fe568e2807f592194bd647306f0b622f44c796f6c3fea745890d69a996",
+      "byte_identical": false,
       "mapping": "snapshot-map.json"
     },
     {
       "source": "programs/src/system/client/src/operator/lookup.rs",
       "destination": "client/src/operator/lookup.rs",
       "source_sha256": "08a56a65dbe87aeca988a807b4086b10a767c7140089428510eca8a6fda8d0aa",
-      "provider_sha256": "08a56a65dbe87aeca988a807b4086b10a767c7140089428510eca8a6fda8d0aa",
-      "byte_identical": true,
+      "provider_sha256": "488079f97007984d80cfcce618d89fd6241db7c9ebe6f64f85aed493bf5371ac",
+      "byte_identical": false,
       "mapping": "snapshot-map.json"
     },
     {
@@ -2903,7 +2903,7 @@
       "source": "programs/tests/operator-client/lookup_regression.rs",
       "destination": "tests/operator-client/lookup_regression.rs",
       "source_sha256": "de12ae47d01f2920796f4b7402d9413794014ee23a111401adb1bf63d8d5c994",
-      "provider_sha256": "f8a7a202ae081c5286eedbb2edae07e3d40b11f214b6e13050d2f68aa22ba6df",
+      "provider_sha256": "c0a111ba14caa54785d9815203c96afaa703cbac1a7fdcb1412d2f17ed89840d",
       "byte_identical": false,
       "mapping": "pure-test-snapshot-map.json"
     },

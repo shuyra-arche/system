@@ -36,7 +36,7 @@ cargo test -p system-server --lib --features test-support --target x86_64-unknow
 
 缓存就绪后，同一组命令加 `--offline` 复验。实际测试为 shape 3 个、identity 9
 个、loader 6 个，共 18 个；server 原有内联宿主测试另有 23 个。上述测试不需要 QEMU。
-另有 27 个迁入/拆分工作区共 311 项宿主测试。`RELEASE-CHECKPOINT.md` 区分这些结果
+另有 27 个迁入/拆分工作区共 317 项宿主测试。`RELEASE-CHECKPOINT.md` 区分这些结果
 与尚待消费端运行的整机、故障和最终回收验收。
 
 server/client 固定使用旧发布 `9e5d63ca536a176583cf1b0054b4ecf7ddd88257`
