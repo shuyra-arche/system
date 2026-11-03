@@ -13,7 +13,7 @@ struct Caller {
     ready: Arc<AtomicBool>,
 }
 
-pub(crate) const REQUEST: env::Mark = env::Mark::of("device-ruin/request");
+pub const REQUEST: env::Mark = env::Mark::of("device-ruin/request");
 
 pub fn run(
     boot: Boot,

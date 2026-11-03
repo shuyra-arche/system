@@ -45,3 +45,9 @@ Consumer review remains a separate gate.
 This is provider publication preparation. Source full-SHA cutover, clean public
 checkout and current whole-system/QEMU acceptance remain separate gates; these
 host results do not prove physical reclamation or Stage 3/4 completion.
+
+Clean public checkout at `5577e87d09fef2b4fd90093738dd97656b616d4b`:
+29 direct host suites, 326 tests, locked/offline raw 0. Four host-suite lockfiles
+were added after the first clean checkout correctly rejected missing locks.
+The existing device-ruin request Mark is exported for the Source device-control
+adapter without changing its protocol value; release RISC-V check raw 0.
