@@ -1,0 +1,3643 @@
+{
+  "source_repository": "https://github.com/anreonyr/sqware.git",
+  "source_commit": "a29707fb83191647c63cc9ccfef1e8721bbe8dad",
+  "provider_parent": "9e5d63ca536a176583cf1b0054b4ecf7ddd88257",
+  "files": [
+    {
+      "source": "programs/src/boot/accounts.rs",
+      "destination": "support/src/boot/accounts.rs",
+      "source_sha256": "db6eefb062043a71364cbfdbc8ad63b0e40861ae1fe925f59c0c563c4b168093",
+      "provider_sha256": "4f8f9168df330b7cc6a785c90f64c52093a968dd90ae6fc7e57a288cfb7128c8",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/boot/catalog.rs",
+      "destination": "support/src/boot/catalog.rs",
+      "source_sha256": "31d7e7d3eedf593739233b25409b22a223e82e8b950c428c4417df00fc674df8",
+      "provider_sha256": "31d7e7d3eedf593739233b25409b22a223e82e8b950c428c4417df00fc674df8",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/boot/mod.rs",
+      "destination": "support/src/boot/mod.rs",
+      "source_sha256": "13b18fb88f93d2c28a2f9b2d5bc4ce0984b3df6d4376369e2c8ff1b1b2bcd39b",
+      "provider_sha256": "13b18fb88f93d2c28a2f9b2d5bc4ce0984b3df6d4376369e2c8ff1b1b2bcd39b",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/debug.rs",
+      "destination": "support/src/debug.rs",
+      "source_sha256": "b7b3e43db643cfe4eed345223fdb5b7ca2d74fe7a9dd1b639d701a865754003b",
+      "provider_sha256": "b7b3e43db643cfe4eed345223fdb5b7ca2d74fe7a9dd1b639d701a865754003b",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/support/face/mod.rs",
+      "destination": "support/src/support/face/mod.rs",
+      "source_sha256": "fc0209e34875a4e7d8017600693bdec87284b1b06a6f1c437e7ba929bf5b2cf8",
+      "provider_sha256": "fc0209e34875a4e7d8017600693bdec87284b1b06a6f1c437e7ba929bf5b2cf8",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/support/face/mount.rs",
+      "destination": "support/src/support/face/mount.rs",
+      "source_sha256": "a4aaab4292955b93bf9faf488f9fc37fe38c3bbc373c8f6f5c3ae9c34c9da9fb",
+      "provider_sha256": "a4aaab4292955b93bf9faf488f9fc37fe38c3bbc373c8f6f5c3ae9c34c9da9fb",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/support/machine.rs",
+      "destination": "support/src/support/machine.rs",
+      "source_sha256": "01e24d79045c3cd346cf1b8fd7aba39cde037d6b140240bc7765152dc7a94aec",
+      "provider_sha256": "82570e6fff9ff1df3c8e3e602697b7a7bad599b4d5fc3a09e5491f99ea2a3f80",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/support/mod.rs",
+      "destination": "support/src/support/mod.rs",
+      "source_sha256": "0605299031d59bc427f851672713f565a5fec003cf3fc9c061f6cb2eb97176b1",
+      "provider_sha256": "4059952105920c58d5fa71f5c3cc6784f9e73e622df15f974bdd2c6ea846281e",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/support/timing.rs",
+      "destination": "support/src/support/timing.rs",
+      "source_sha256": "e2b6916826d388a17c27d057340fa6a0336cd18127e4f78450014bd130ddc3fb",
+      "provider_sha256": "e2b6916826d388a17c27d057340fa6a0336cd18127e4f78450014bd130ddc3fb",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/activity.rs",
+      "destination": "server/src/system/app/activity.rs",
+      "source_sha256": "9fb0c3dbd80d71fc8eae2cd1cee37119183bfda49341469bee047ec8a1b7b1eb",
+      "provider_sha256": "9fb0c3dbd80d71fc8eae2cd1cee37119183bfda49341469bee047ec8a1b7b1eb",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/boot.rs",
+      "destination": "server/src/system/app/boot.rs",
+      "source_sha256": "f95971fb3b305853fc759dcccbecb12abe12783277813768be0325dc6b741e53",
+      "provider_sha256": "77a8a412680d62815d7e1afd60e5158f1d8633cf6a792b4e475771a584206f7a",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/bootstrap.rs",
+      "destination": "server/src/system/app/bootstrap.rs",
+      "source_sha256": "ce21706479a85ecf396ac423b7b66062dc98d3c8c9c06bf7c4efe4f1405f1c7a",
+      "provider_sha256": "4f97fe9af3d0482bf75ac28c2f3eea96face5491ceec7a8fe0e01e1ae147d662",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/config.rs",
+      "destination": "server/src/system/app/config.rs",
+      "source_sha256": "a715e13ed5575f83a3c3dbf5594dc4d172b67e7c7fd4fe60ad008bf329fbf26d",
+      "provider_sha256": "a715e13ed5575f83a3c3dbf5594dc4d172b67e7c7fd4fe60ad008bf329fbf26d",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/declarations.rs",
+      "destination": "server/src/system/app/declarations.rs",
+      "source_sha256": "71ae0b1e603e488c8ec39e09846796c2b04085869889d0f4eab15d9bf864d2be",
+      "provider_sha256": "71ae0b1e603e488c8ec39e09846796c2b04085869889d0f4eab15d9bf864d2be",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/execute.rs",
+      "destination": "server/src/system/app/execute.rs",
+      "source_sha256": "6ce64d3a01f678da043364afc4f024d7ef26790c7797c987f9af2aca57564910",
+      "provider_sha256": "3f5fefef7083a659e5bd7ca9e5e11d52251cbb50f200397edcc4955b93e88df7",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/guard.rs",
+      "destination": "server/src/system/app/guard.rs",
+      "source_sha256": "d5f03caed1cbec8f753810b484b3170a9058ac6c8d96a75ccec0541f1393a77e",
+      "provider_sha256": "d5f03caed1cbec8f753810b484b3170a9058ac6c8d96a75ccec0541f1393a77e",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/install.rs",
+      "destination": "server/src/system/app/install.rs",
+      "source_sha256": "7c236d4989756dd21273ba86412026cddbdcd87f5055e7a3b9c97801ff7fa2cd",
+      "provider_sha256": "8c01dad80d3d98cea3d1ae6625177106e52b8c1c86a35a6cc06a17f01df98e37",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/life.rs",
+      "destination": "server/src/system/app/life.rs",
+      "source_sha256": "0175ed1b403f9bbd2b5f25bedafa283912a5d7fa54ef859997b1fb4f3c0bbf37",
+      "provider_sha256": "319b4a3c742c3b969724fac9e55085353938c6abc2b0606b512a14bbc53fca21",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/mod.rs",
+      "destination": "server/src/system/app/mod.rs",
+      "source_sha256": "ef9e02bff67ef80d8ac047b038f8a422048e4a58a86ec6165ece00cc4564480a",
+      "provider_sha256": "e350d6836aceee12a7fc6d9fceae211cdc59dab956b063c98155d71621751f08",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/namespace.rs",
+      "destination": "server/src/system/app/namespace.rs",
+      "source_sha256": "ff1c1b807d72306b76e7b69e5f09619435f3c81b25f058af4d0de1c48697b0a2",
+      "provider_sha256": "ff1c1b807d72306b76e7b69e5f09619435f3c81b25f058af4d0de1c48697b0a2",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/namespace/installed.rs",
+      "destination": "server/src/system/app/namespace/installed.rs",
+      "source_sha256": "6557a9355b0f0fd114271b5c1bda32ff9237b7ce371d566e31b584767a2fcb97",
+      "provider_sha256": "6557a9355b0f0fd114271b5c1bda32ff9237b7ce371d566e31b584767a2fcb97",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/namespace/retire.rs",
+      "destination": "server/src/system/app/namespace/retire.rs",
+      "source_sha256": "b518eba940163cbad3c90ab942a552b1b386d7125b4da3c39c8ce3fa041a7d85",
+      "provider_sha256": "b518eba940163cbad3c90ab942a552b1b386d7125b4da3c39c8ce3fa041a7d85",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/operator.rs",
+      "destination": "server/src/system/app/operator.rs",
+      "source_sha256": "1bf7cb2985918c513d3beacbd2b2f528c3e56cebabb9f6e6a2a41577b48d29c6",
+      "provider_sha256": "1bf7cb2985918c513d3beacbd2b2f528c3e56cebabb9f6e6a2a41577b48d29c6",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/policy.rs",
+      "destination": "server/src/system/app/policy.rs",
+      "source_sha256": "d6e3c433503ff7514d347bc70dd5936ed595fb077c470a3dc74f6a2d27d7619d",
+      "provider_sha256": "bacfd18013150fae621c6338f176923624456447f26f063761c50366be938382",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/scene.rs",
+      "destination": "server/src/system/app/scene.rs",
+      "source_sha256": "beeca71fb3926673ba73eb81dbc656fb14d30b4adc3d76ba7add42227163979d",
+      "provider_sha256": "b2069ca54240ba48609707523abe0f9f5df04127070aad93418da0cfe307a8fa",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/schedule.rs",
+      "destination": "server/src/system/app/schedule.rs",
+      "source_sha256": "34f1278e966ceb61d5a6de08944fdf75b1f9067f7298d7daf837886a86fa368c",
+      "provider_sha256": "34f1278e966ceb61d5a6de08944fdf75b1f9067f7298d7daf837886a86fa368c",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/supplies.rs",
+      "destination": "server/src/system/app/supplies.rs",
+      "source_sha256": "c523bd909aaccb9e04cb0721217ae2eddb9b18237fa76376e7b735f296d4fdf4",
+      "provider_sha256": "c523bd909aaccb9e04cb0721217ae2eddb9b18237fa76376e7b735f296d4fdf4",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/wait.rs",
+      "destination": "server/src/system/app/wait.rs",
+      "source_sha256": "c748348920fc0c46511f8eee6608c35e0f310f53b3b7a3736d6ffc5ebcb4bc2e",
+      "provider_sha256": "c748348920fc0c46511f8eee6608c35e0f310f53b3b7a3736d6ffc5ebcb4bc2e",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/app/waiting.rs",
+      "destination": "server/src/system/app/waiting.rs",
+      "source_sha256": "9a4f54c18a8a2aea55426e982286c0588c67d38fe13b78d00421f2a8930d49e4",
+      "provider_sha256": "9a4f54c18a8a2aea55426e982286c0588c67d38fe13b78d00421f2a8930d49e4",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/assembly.rs",
+      "destination": "server/src/system/assembly.rs",
+      "source_sha256": "c0bf3f9699e89cca6ec7a61d49b033d7063bc8c1b3b7954f058eadd5ce9a500e",
+      "provider_sha256": "c0bf3f9699e89cca6ec7a61d49b033d7063bc8c1b3b7954f058eadd5ce9a500e",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/assembly/bootstrap.rs",
+      "destination": "server/src/system/assembly/bootstrap.rs",
+      "source_sha256": "aba85e045ac653edad0b8b8d95f9ba79e7b8797ad9a3f9b5eaf17c158e65b6e0",
+      "provider_sha256": "aba85e045ac653edad0b8b8d95f9ba79e7b8797ad9a3f9b5eaf17c158e65b6e0",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/assembly/hooks.rs",
+      "destination": "server/src/system/assembly/hooks.rs",
+      "source_sha256": "8460b46764ec87c44b08c06ea206330f4ac3bef487247302b40256948d8005da",
+      "provider_sha256": "8460b46764ec87c44b08c06ea206330f4ac3bef487247302b40256948d8005da",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/assembly/input.rs",
+      "destination": "server/src/system/assembly/input.rs",
+      "source_sha256": "3959655c70ffbf0e93036deeb0881fcd5ffe6f4338568a5d17b5bad9adfa5e36",
+      "provider_sha256": "3959655c70ffbf0e93036deeb0881fcd5ffe6f4338568a5d17b5bad9adfa5e36",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/assembly/namespace.rs",
+      "destination": "server/src/system/assembly/namespace.rs",
+      "source_sha256": "61cdd57ed2b0587ae6d75a74a1dc1746964b21a2d909a4ef09eeb413b57cab3e",
+      "provider_sha256": "61cdd57ed2b0587ae6d75a74a1dc1746964b21a2d909a4ef09eeb413b57cab3e",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/assembly/retirement.rs",
+      "destination": "server/src/system/assembly/retirement.rs",
+      "source_sha256": "fb487e6082194275f10ee10555c08c9c2463443291a749dc0bba5301095d0e83",
+      "provider_sha256": "fb487e6082194275f10ee10555c08c9c2463443291a749dc0bba5301095d0e83",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/assembly/static.rs",
+      "destination": "server/src/system/assembly/static.rs",
+      "source_sha256": "6fc7c08e36f18212dd68678c55b700714b742572c1a5b3c43e28bff152bed2f0",
+      "provider_sha256": "6fc7c08e36f18212dd68678c55b700714b742572c1a5b3c43e28bff152bed2f0",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/assembly/supply.rs",
+      "destination": "server/src/system/assembly/supply.rs",
+      "source_sha256": "cba46e69183828ee24236b4219411ec3808a2d5698428de0a81da1474edb961c",
+      "provider_sha256": "cba46e69183828ee24236b4219411ec3808a2d5698428de0a81da1474edb961c",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/assembly/work.rs",
+      "destination": "server/src/system/assembly/work.rs",
+      "source_sha256": "eabf3640ccb2fe2923b1fc6121bcb8c53234b84e22bd0cf0e517cac454578528",
+      "provider_sha256": "eabf3640ccb2fe2923b1fc6121bcb8c53234b84e22bd0cf0e517cac454578528",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/Cargo.toml",
+      "destination": "client/Cargo.toml",
+      "source_sha256": "ef80c94476bd52423d4edf9d7a1bf521e0930b7a46d6c0b3f55a683837f29d66",
+      "provider_sha256": "57b607b107584b26de6193d782e75a1707ac0abdceb00b9583d40c0165857b21",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/bootstrap.rs",
+      "destination": "client/src/bootstrap.rs",
+      "source_sha256": "fa7a92003adfa833773fdef9704ae9b1ea9a14deb55b44ce59026e6b817806b0",
+      "provider_sha256": "fa7a92003adfa833773fdef9704ae9b1ea9a14deb55b44ce59026e6b817806b0",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/control/client.rs",
+      "destination": "client/src/control/client.rs",
+      "source_sha256": "160ad2eb42c0b7d0888cc3ebb12b9acfcf1e8437b87ed8e1ac212c9490a7fdbc",
+      "provider_sha256": "160ad2eb42c0b7d0888cc3ebb12b9acfcf1e8437b87ed8e1ac212c9490a7fdbc",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/control/mod.rs",
+      "destination": "client/src/control/mod.rs",
+      "source_sha256": "dba79db185a8945dee0baa25512e62e2a2a8fb97ab73be9612e1cfed07c7f1db",
+      "provider_sha256": "dba79db185a8945dee0baa25512e62e2a2a8fb97ab73be9612e1cfed07c7f1db",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/control/observe.rs",
+      "destination": "client/src/control/observe.rs",
+      "source_sha256": "3667bb140662145dbba45264ee589c93b4922ccd20e75be2269fe732d2c2335d",
+      "provider_sha256": "3667bb140662145dbba45264ee589c93b4922ccd20e75be2269fe732d2c2335d",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/debug.rs",
+      "destination": "client/src/debug.rs",
+      "source_sha256": "9f3ebaa9debf352fe03a1db8d8a0da516849d53a7557d0f0b86f23b698032736",
+      "provider_sha256": "9f3ebaa9debf352fe03a1db8d8a0da516849d53a7557d0f0b86f23b698032736",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/identity/client/export.rs",
+      "destination": "client/src/identity/client/export.rs",
+      "source_sha256": "d84cde61939ace627f2ba0bafe884f13d2d4c172bf9a5262c13b75a4f32ddc91",
+      "provider_sha256": "d84cde61939ace627f2ba0bafe884f13d2d4c172bf9a5262c13b75a4f32ddc91",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/identity/client/face.rs",
+      "destination": "client/src/identity/client/face.rs",
+      "source_sha256": "74ef810219a911724c6f8f95ad113f13af0cccd357208ef3f12c3b180d8f3406",
+      "provider_sha256": "74ef810219a911724c6f8f95ad113f13af0cccd357208ef3f12c3b180d8f3406",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/identity/client/installer.rs",
+      "destination": "client/src/identity/client/installer.rs",
+      "source_sha256": "2021d6e7c361d4bb124f27d4c244363673ac08c80ce73db2d1ae7799117872b0",
+      "provider_sha256": "2021d6e7c361d4bb124f27d4c244363673ac08c80ce73db2d1ae7799117872b0",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/identity/client/mod.rs",
+      "destination": "client/src/identity/client/mod.rs",
+      "source_sha256": "6339655ec5e48b033c9b4753198e2dc16c12f267058b9a9a1be888dc0950952a",
+      "provider_sha256": "6339655ec5e48b033c9b4753198e2dc16c12f267058b9a9a1be888dc0950952a",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/identity/client/organization.rs",
+      "destination": "client/src/identity/client/organization.rs",
+      "source_sha256": "204de250cc15b24bac73ccfc57ce19b27fac8aa24ee78138806426f25ac0c8c6",
+      "provider_sha256": "204de250cc15b24bac73ccfc57ce19b27fac8aa24ee78138806426f25ac0c8c6",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/identity/client/query.rs",
+      "destination": "client/src/identity/client/query.rs",
+      "source_sha256": "9a103b100e686a7a642000bf2952a0c95bd4a49e5f1dcd5889ac92319a4b857f",
+      "provider_sha256": "9a103b100e686a7a642000bf2952a0c95bd4a49e5f1dcd5889ac92319a4b857f",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/identity/client/self_ops.rs",
+      "destination": "client/src/identity/client/self_ops.rs",
+      "source_sha256": "fadbec1d8ef0bade52a424cb0dfd9005b584e0d0bbc2edc2d885d6cb7e0df12a",
+      "provider_sha256": "fadbec1d8ef0bade52a424cb0dfd9005b584e0d0bbc2edc2d885d6cb7e0df12a",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/identity/discovery.rs",
+      "destination": "client/src/identity/discovery.rs",
+      "source_sha256": "6a105552833d4e0ca4abdef494025499750b9e3416d921a9308fad28af08732b",
+      "provider_sha256": "6a105552833d4e0ca4abdef494025499750b9e3416d921a9308fad28af08732b",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/identity/mod.rs",
+      "destination": "client/src/identity/mod.rs",
+      "source_sha256": "33723f9ea0276b13bb13af906f1f30b3041096382baee336cd47a61cdcaf2002",
+      "provider_sha256": "33723f9ea0276b13bb13af906f1f30b3041096382baee336cd47a61cdcaf2002",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/lib.rs",
+      "destination": "client/src/lib.rs",
+      "source_sha256": "0e5b779b4a68dcef92c048615a8f335856d4be875058e7eaf8946c05fd2d454f",
+      "provider_sha256": "0e5b779b4a68dcef92c048615a8f335856d4be875058e7eaf8946c05fd2d454f",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/loader/client.rs",
+      "destination": "client/src/loader/client.rs",
+      "source_sha256": "6c04ce5c71ce8823b94b08312a8e1290e946386c0e926c7eae06bef9ed649a65",
+      "provider_sha256": "6c04ce5c71ce8823b94b08312a8e1290e946386c0e926c7eae06bef9ed649a65",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/loader/mod.rs",
+      "destination": "client/src/loader/mod.rs",
+      "source_sha256": "cfbc8dc3c9377e8a85e67a7b8118731a2739054f84ad8e8061462492c8b8ea29",
+      "provider_sha256": "cfbc8dc3c9377e8a85e67a7b8118731a2739054f84ad8e8061462492c8b8ea29",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/operator/capability.rs",
+      "destination": "client/src/operator/capability.rs",
+      "source_sha256": "95588e0b3deb36fad8fe05adff86d21640bf9fe399cb34af8dcaf94d50fe17bb",
+      "provider_sha256": "95588e0b3deb36fad8fe05adff86d21640bf9fe399cb34af8dcaf94d50fe17bb",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/operator/face.rs",
+      "destination": "client/src/operator/face.rs",
+      "source_sha256": "2c4505597774719c770edc26f18392d5efd1f8b7bba6d5b2ce601c60d3d38d37",
+      "provider_sha256": "2c4505597774719c770edc26f18392d5efd1f8b7bba6d5b2ce601c60d3d38d37",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/operator/lookup.rs",
+      "destination": "client/src/operator/lookup.rs",
+      "source_sha256": "08a56a65dbe87aeca988a807b4086b10a767c7140089428510eca8a6fda8d0aa",
+      "provider_sha256": "08a56a65dbe87aeca988a807b4086b10a767c7140089428510eca8a6fda8d0aa",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/operator/mod.rs",
+      "destination": "client/src/operator/mod.rs",
+      "source_sha256": "7e5847bf04e50f2b4b560318dcbafb5dc4970e4d5dfd33f6b0d9146bda650b65",
+      "provider_sha256": "7e5847bf04e50f2b4b560318dcbafb5dc4970e4d5dfd33f6b0d9146bda650b65",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/operator/pane.rs",
+      "destination": "client/src/operator/pane.rs",
+      "source_sha256": "fcf699a73fe89a9e5b4a9503f5d79fd30845c56f597c9f76f9cb7e3ca6791c50",
+      "provider_sha256": "fcf699a73fe89a9e5b4a9503f5d79fd30845c56f597c9f76f9cb7e3ca6791c50",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/operator/tile.rs",
+      "destination": "client/src/operator/tile.rs",
+      "source_sha256": "84c2db9ae34b2290b34ce9f9c26a30ed62dab33edfa4cfb47fbf5093ef25409c",
+      "provider_sha256": "84c2db9ae34b2290b34ce9f9c26a30ed62dab33edfa4cfb47fbf5093ef25409c",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/operator/watch.rs",
+      "destination": "client/src/operator/watch.rs",
+      "source_sha256": "2c2e304a7056a99d6bba65024d14be88bdf6ee1ac0571d7bfd2380b3f1a87f3c",
+      "provider_sha256": "2c2e304a7056a99d6bba65024d14be88bdf6ee1ac0571d7bfd2380b3f1a87f3c",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/retirement.rs",
+      "destination": "client/src/retirement.rs",
+      "source_sha256": "ad5fd2cf9e1d1394a20a8b52bf99e57536b44440824aa29b699e2a8b69863cac",
+      "provider_sha256": "ad5fd2cf9e1d1394a20a8b52bf99e57536b44440824aa29b699e2a8b69863cac",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/supply/face.rs",
+      "destination": "client/src/supply/face.rs",
+      "source_sha256": "46a6811a717aa58e31b34813be16ba653322061833b31f4e29146efdb8beb2f8",
+      "provider_sha256": "46a6811a717aa58e31b34813be16ba653322061833b31f4e29146efdb8beb2f8",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/client/src/supply/mod.rs",
+      "destination": "client/src/supply/mod.rs",
+      "source_sha256": "2a498cd725e85dc87625dd8f169026102fd4e6a9a73c55292ae260590e03456f",
+      "provider_sha256": "2a498cd725e85dc87625dd8f169026102fd4e6a9a73c55292ae260590e03456f",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/endpoint/command_reply.rs",
+      "destination": "server/src/system/control/endpoint/command_reply.rs",
+      "source_sha256": "6b28d1dc250e0f00b85dddcd1f40f46a4880fe13c1bdca526e7c9dacc63df0cf",
+      "provider_sha256": "6b28d1dc250e0f00b85dddcd1f40f46a4880fe13c1bdca526e7c9dacc63df0cf",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/endpoint/construction.rs",
+      "destination": "server/src/system/control/endpoint/construction.rs",
+      "source_sha256": "09ef53702481bc419670b5072a2b94b819f24d14f6f33b40ab00fde82f98dad4",
+      "provider_sha256": "09ef53702481bc419670b5072a2b94b819f24d14f6f33b40ab00fde82f98dad4",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/endpoint/instance.rs",
+      "destination": "server/src/system/control/endpoint/instance.rs",
+      "source_sha256": "7db5c871fddc902aa59e3c545334fae915caf94c46b7b687789135a3080d0df3",
+      "provider_sha256": "7db5c871fddc902aa59e3c545334fae915caf94c46b7b687789135a3080d0df3",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/endpoint/mod.rs",
+      "destination": "server/src/system/control/endpoint/mod.rs",
+      "source_sha256": "a97a0fcf435546d9e263bca70c2e0f51944cd540697d6e08e97ba83f19363794",
+      "provider_sha256": "a97a0fcf435546d9e263bca70c2e0f51944cd540697d6e08e97ba83f19363794",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/endpoint/request.rs",
+      "destination": "server/src/system/control/endpoint/request.rs",
+      "source_sha256": "51a9ac1137e32aaabd7c17130bc77f0238a1a81c8a6720be36721540ee0bbaa0",
+      "provider_sha256": "51a9ac1137e32aaabd7c17130bc77f0238a1a81c8a6720be36721540ee0bbaa0",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/endpoint/supervision.rs",
+      "destination": "server/src/system/control/endpoint/supervision.rs",
+      "source_sha256": "3ad42f5a805f815036e8303123342d335ae0853f5709dbc3036c80ee2a56487c",
+      "provider_sha256": "3ad42f5a805f815036e8303123342d335ae0853f5709dbc3036c80ee2a56487c",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/identity.rs",
+      "destination": "server/src/system/control/identity.rs",
+      "source_sha256": "1a03ed35963f3fc277c2c8b325333f93f0419931642130f1b1bf4c2b732fb0c7",
+      "provider_sha256": "1a03ed35963f3fc277c2c8b325333f93f0419931642130f1b1bf4c2b732fb0c7",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/install.rs",
+      "destination": "server/src/system/control/install.rs",
+      "source_sha256": "75be73b5e2e8478929003113da023db26ec89ffe15b7cdc0edd281711d0524ba",
+      "provider_sha256": "75be73b5e2e8478929003113da023db26ec89ffe15b7cdc0edd281711d0524ba",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/instance/activation.rs",
+      "destination": "server/src/system/control/instance/activation.rs",
+      "source_sha256": "267a0cbad03ebc609f724f661c7c00c51a0162f430d31b9613c4f0cffc7e392c",
+      "provider_sha256": "267a0cbad03ebc609f724f661c7c00c51a0162f430d31b9613c4f0cffc7e392c",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/instance/command.rs",
+      "destination": "server/src/system/control/instance/command.rs",
+      "source_sha256": "cfb37e3f5d9304d47d772bd17849b934789e68fd7e4a77101f6b063cd7da2059",
+      "provider_sha256": "cfb37e3f5d9304d47d772bd17849b934789e68fd7e4a77101f6b063cd7da2059",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/instance/create.rs",
+      "destination": "server/src/system/control/instance/create.rs",
+      "source_sha256": "50209b1bfb7b6ced1ca7652fe9b334b6f174789f6832443d0c7bcb03cc5bb310",
+      "provider_sha256": "50209b1bfb7b6ced1ca7652fe9b334b6f174789f6832443d0c7bcb03cc5bb310",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/instance/hook.rs",
+      "destination": "server/src/system/control/instance/hook.rs",
+      "source_sha256": "905b0d4a3f47032ced9ed42f6d3d58b03e53759423a7338b4291821e58fff0f7",
+      "provider_sha256": "79120ddfc6299688a853b6589bd66f37452deec1fda1284131b7ca77a916e3c7",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/instance/mod.rs",
+      "destination": "server/src/system/control/instance/mod.rs",
+      "source_sha256": "0c51a3fd406767c2c1d1076a5540c72d5f8cbc2148db322e354aa08834a6c9a3",
+      "provider_sha256": "0c51a3fd406767c2c1d1076a5540c72d5f8cbc2148db322e354aa08834a6c9a3",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/instance/receipt.rs",
+      "destination": "server/src/system/control/instance/receipt.rs",
+      "source_sha256": "dda52d60fa1e057c3df492f9c92f54769594975fd7dff1038865b887d3a4e318",
+      "provider_sha256": "dda52d60fa1e057c3df492f9c92f54769594975fd7dff1038865b887d3a4e318",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/instance/release.rs",
+      "destination": "server/src/system/control/instance/release.rs",
+      "source_sha256": "f447baf5dc06596830c2ac0cbb8da9d8d28e8129b335c715b1eec600e1565181",
+      "provider_sha256": "f447baf5dc06596830c2ac0cbb8da9d8d28e8129b335c715b1eec600e1565181",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/instance/schedule.rs",
+      "destination": "server/src/system/control/instance/schedule.rs",
+      "source_sha256": "c7d1fdb0ecf6be45295b1dba1e5430c8fd061a6da9abe14ac3b26c9012b6a556",
+      "provider_sha256": "c7d1fdb0ecf6be45295b1dba1e5430c8fd061a6da9abe14ac3b26c9012b6a556",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/instance/state.rs",
+      "destination": "server/src/system/control/instance/state.rs",
+      "source_sha256": "b43683c5ea5e675c4874d464ceacb425c3ab91370193e79386b05e7165520cf4",
+      "provider_sha256": "b43683c5ea5e675c4874d464ceacb425c3ab91370193e79386b05e7165520cf4",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/authority.rs",
+      "destination": "server/src/system/control/lifecycle/authority.rs",
+      "source_sha256": "46f749c0edde2485096976a029f8c4e30d70f4dbde9d1670aa486e7ecb282589",
+      "provider_sha256": "46f749c0edde2485096976a029f8c4e30d70f4dbde9d1670aa486e7ecb282589",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/authority_verify.rs",
+      "destination": "server/src/system/control/lifecycle/authority_verify.rs",
+      "source_sha256": "95cd287a78b14d6fc18512da04338ce2fec9dc049a3c5005376f8b6bf4421aed",
+      "provider_sha256": "95cd287a78b14d6fc18512da04338ce2fec9dc049a3c5005376f8b6bf4421aed",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/debark.rs",
+      "destination": "server/src/system/control/lifecycle/debark.rs",
+      "source_sha256": "ee596e8f31b4229a970bfa2c799e7c84c4972852f3966da7a27ec1ca3f7236ef",
+      "provider_sha256": "ee596e8f31b4229a970bfa2c799e7c84c4972852f3966da7a27ec1ca3f7236ef",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/directive.rs",
+      "destination": "server/src/system/control/lifecycle/directive.rs",
+      "source_sha256": "bbb852e20c399edbe50ce6fcd59524a791dfc3a48161505dca48855346c23328",
+      "provider_sha256": "bbb852e20c399edbe50ce6fcd59524a791dfc3a48161505dca48855346c23328",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/dispatch.rs",
+      "destination": "server/src/system/control/lifecycle/dispatch.rs",
+      "source_sha256": "91aad289014ca64b717dacb9d4674b08aaa5697a1e68fde96027cf864f09a827",
+      "provider_sha256": "91aad289014ca64b717dacb9d4674b08aaa5697a1e68fde96027cf864f09a827",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/embark.rs",
+      "destination": "server/src/system/control/lifecycle/embark.rs",
+      "source_sha256": "29370a43909b43c40902ec365b1c41aeef653e05c984a03c6a695f1dbb17d203",
+      "provider_sha256": "29370a43909b43c40902ec365b1c41aeef653e05c984a03c6a695f1dbb17d203",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/finish.rs",
+      "destination": "server/src/system/control/lifecycle/finish.rs",
+      "source_sha256": "41695ce5ed637c1fc4b54ecef399e6a6d5d4978885614b2d018d643b6997d879",
+      "provider_sha256": "cbfbbd379d0bc751924b0a0059551e56ff6b5c877d81e5c80d3a555b84391508",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/intent.rs",
+      "destination": "server/src/system/control/lifecycle/intent.rs",
+      "source_sha256": "980ca7c8e4aae3eeffd05fdf69aab343471a0cb2ac2585588efdce9d6f45a437",
+      "provider_sha256": "980ca7c8e4aae3eeffd05fdf69aab343471a0cb2ac2585588efdce9d6f45a437",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/mint.rs",
+      "destination": "server/src/system/control/lifecycle/mint.rs",
+      "source_sha256": "7790429b8e52c60ff91f5315379323d2c0215b4c444feda6c9cdd1857733be97",
+      "provider_sha256": "7790429b8e52c60ff91f5315379323d2c0215b4c444feda6c9cdd1857733be97",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/mod.rs",
+      "destination": "server/src/system/control/lifecycle/mod.rs",
+      "source_sha256": "3171a2ef4ccee76bef3703c45cc5b347749a6ae69d1f97c0ac5e8f07cebf4031",
+      "provider_sha256": "3171a2ef4ccee76bef3703c45cc5b347749a6ae69d1f97c0ac5e8f07cebf4031",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/origin.rs",
+      "destination": "server/src/system/control/lifecycle/origin.rs",
+      "source_sha256": "70dd28f28eae0d11b4b99b07ef7645f7c3d89a5bfdf8d476b7774f04bf2a0586",
+      "provider_sha256": "70dd28f28eae0d11b4b99b07ef7645f7c3d89a5bfdf8d476b7774f04bf2a0586",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/ruin.rs",
+      "destination": "server/src/system/control/lifecycle/ruin.rs",
+      "source_sha256": "53ff2c4d8389dd233474a2cfa1f2a285350cebec7c44df3a45405a589debdb9a",
+      "provider_sha256": "53ff2c4d8389dd233474a2cfa1f2a285350cebec7c44df3a45405a589debdb9a",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/schedule.rs",
+      "destination": "server/src/system/control/lifecycle/schedule.rs",
+      "source_sha256": "6edffec78717e5dce7a2747cfee19a9b4d2ddcd4378dc703220645c5cf157839",
+      "provider_sha256": "6edffec78717e5dce7a2747cfee19a9b4d2ddcd4378dc703220645c5cf157839",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/startup.rs",
+      "destination": "server/src/system/control/lifecycle/startup.rs",
+      "source_sha256": "e0e32c3bd3ce33ededff5cb19abc76812e090d9059792d95a5fb3154762139a2",
+      "provider_sha256": "e0e32c3bd3ce33ededff5cb19abc76812e090d9059792d95a5fb3154762139a2",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/takeover.rs",
+      "destination": "server/src/system/control/lifecycle/takeover.rs",
+      "source_sha256": "dbdfad2d069382e2e98fc8b5bc62a7fc9b9539ce7fe9080db3115976df2080d0",
+      "provider_sha256": "dbdfad2d069382e2e98fc8b5bc62a7fc9b9539ce7fe9080db3115976df2080d0",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/lifecycle/transition.rs",
+      "destination": "server/src/system/control/lifecycle/transition.rs",
+      "source_sha256": "4f90750fad40e7afcc9aa3d4a699e6cc2a65bf7f8ccf55c04f57b4e0c21105ab",
+      "provider_sha256": "4f90750fad40e7afcc9aa3d4a699e6cc2a65bf7f8ccf55c04f57b4e0c21105ab",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/mod.rs",
+      "destination": "server/src/system/control/mod.rs",
+      "source_sha256": "046a89243863cd7d3b6ecfed96f9341eeb2799c0178dadc00b786972e45db15d",
+      "provider_sha256": "046a89243863cd7d3b6ecfed96f9341eeb2799c0178dadc00b786972e45db15d",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/namespace.rs",
+      "destination": "server/src/system/control/namespace.rs",
+      "source_sha256": "8fc79ef85c903e8e75d3e00945148b5e437452e85a72ddfa098456335447f665",
+      "provider_sha256": "8fc79ef85c903e8e75d3e00945148b5e437452e85a72ddfa098456335447f665",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/plan.rs",
+      "destination": "server/src/system/control/plan.rs",
+      "source_sha256": "8abab744dce3c6449657fb55b9164f0f43c8448a987f58c152eb780099dc04c5",
+      "provider_sha256": "8abab744dce3c6449657fb55b9164f0f43c8448a987f58c152eb780099dc04c5",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/supervision.rs",
+      "destination": "server/src/system/control/supervision.rs",
+      "source_sha256": "1c2fe01b6358545e0101e065abc637cb5db2d5389471b1d2d21c3a1cd8fd56cf",
+      "provider_sha256": "1c2fe01b6358545e0101e065abc637cb5db2d5389471b1d2d21c3a1cd8fd56cf",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/fixture.rs",
+      "destination": "server/src/system/control/unit/fixture.rs",
+      "source_sha256": "fb7e3e66ddfba9b95fe7bde535f71090b8351de2521c7265cd25681df853e7e1",
+      "provider_sha256": "fb7e3e66ddfba9b95fe7bde535f71090b8351de2521c7265cd25681df853e7e1",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/guard.rs",
+      "destination": "server/src/system/control/unit/guard.rs",
+      "source_sha256": "c635027a0c6d15e674b745d9d526011cdb9231271dbd4cbed8db5294cc7bb8b9",
+      "provider_sha256": "c635027a0c6d15e674b745d9d526011cdb9231271dbd4cbed8db5294cc7bb8b9",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/intent.rs",
+      "destination": "server/src/system/control/unit/intent.rs",
+      "source_sha256": "d750106f519f106d9f19446d182c925507eafbaf603a754e11978dedf1f44d7f",
+      "provider_sha256": "d750106f519f106d9f19446d182c925507eafbaf603a754e11978dedf1f44d7f",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/mod.rs",
+      "destination": "server/src/system/control/unit/mod.rs",
+      "source_sha256": "f32f5b08afe916a37159cae0c47de57cd836583a2113f3c17d1043f1a540fcaf",
+      "provider_sha256": "f32f5b08afe916a37159cae0c47de57cd836583a2113f3c17d1043f1a540fcaf",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/observe.rs",
+      "destination": "server/src/system/control/unit/observe.rs",
+      "source_sha256": "6a5d1847e808493257a1fc1eb38847c1d89032ba047e9c2e60f2939e86c55e93",
+      "provider_sha256": "6a5d1847e808493257a1fc1eb38847c1d89032ba047e9c2e60f2939e86c55e93",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/publisher.rs",
+      "destination": "server/src/system/control/unit/publisher.rs",
+      "source_sha256": "338ec58f2936fbda1533563e3cfcea4c8f056565e146ec24f6efd3ebecbc3843",
+      "provider_sha256": "338ec58f2936fbda1533563e3cfcea4c8f056565e146ec24f6efd3ebecbc3843",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/reap.rs",
+      "destination": "server/src/system/control/unit/reap.rs",
+      "source_sha256": "6553600b5413875a8a094515735522b65bed28fb92521b23c07dc8ff9399ecd3",
+      "provider_sha256": "6553600b5413875a8a094515735522b65bed28fb92521b23c07dc8ff9399ecd3",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/reclamation.rs",
+      "destination": "server/src/system/control/unit/reclamation.rs",
+      "source_sha256": "4ab01d37e0bceb25b4a49aaf05187402ac6288d29176c02c31baffc5712e674e",
+      "provider_sha256": "4ab01d37e0bceb25b4a49aaf05187402ac6288d29176c02c31baffc5712e674e",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/service.rs",
+      "destination": "server/src/system/control/unit/service.rs",
+      "source_sha256": "6b84c05cd63f0fb09761a105e8b6e75143252214aafe97e701ff1e69dc1e46ac",
+      "provider_sha256": "6b84c05cd63f0fb09761a105e8b6e75143252214aafe97e701ff1e69dc1e46ac",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/start.rs",
+      "destination": "server/src/system/control/unit/start.rs",
+      "source_sha256": "c5798b88471a784baf8ba470484cce93944f229222d1c513e604dce3445339bc",
+      "provider_sha256": "c5798b88471a784baf8ba470484cce93944f229222d1c513e604dce3445339bc",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/table.rs",
+      "destination": "server/src/system/control/unit/table.rs",
+      "source_sha256": "9ba8232bc24c31cf392f7b1c9f31b9df94cf4e32bbced2ad42f0512570a7fb2e",
+      "provider_sha256": "9ba8232bc24c31cf392f7b1c9f31b9df94cf4e32bbced2ad42f0512570a7fb2e",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/task.rs",
+      "destination": "server/src/system/control/unit/task.rs",
+      "source_sha256": "cfe89717ed578ca7253842539354969e8edcc9fc28f22d5036a7a0e25a1082d6",
+      "provider_sha256": "e079b1aff00ac0b2a35a01602affcf7e8d73d16d5ff1dfdf9892cc9fd0454ff8",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/verdict.rs",
+      "destination": "server/src/system/control/unit/verdict.rs",
+      "source_sha256": "8a7da4507d7f10ed0a9a1c85326550acd59588252f0d3bfae3e378caf48d962f",
+      "provider_sha256": "8a7da4507d7f10ed0a9a1c85326550acd59588252f0d3bfae3e378caf48d962f",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/control/unit/wait.rs",
+      "destination": "server/src/system/control/unit/wait.rs",
+      "source_sha256": "95164f1ceb4c5d4135930d316501ec6a6f790c0ae60e0d94343faf580b007ff1",
+      "provider_sha256": "95164f1ceb4c5d4135930d316501ec6a6f790c0ae60e0d94343faf580b007ff1",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/coalition.rs",
+      "destination": "server/src/system/identity/book/coalition.rs",
+      "source_sha256": "89a7c4fd1f1cd6403bb328a79c62b58c47a53e0db46c80760eeaddea556be7dd",
+      "provider_sha256": "89a7c4fd1f1cd6403bb328a79c62b58c47a53e0db46c80760eeaddea556be7dd",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/coalition_node.rs",
+      "destination": "server/src/system/identity/book/coalition_node.rs",
+      "source_sha256": "ff3cec7680f636e85820cea6d0dea8c83ae74f27a46e3f8af88d5a1901a685ff",
+      "provider_sha256": "ff3cec7680f636e85820cea6d0dea8c83ae74f27a46e3f8af88d5a1901a685ff",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/limits.rs",
+      "destination": "server/src/system/identity/book/limits.rs",
+      "source_sha256": "029647177465a2b4bd2bfd0b49b4ef5a00889a204988e50a1249f55ff592b0b3",
+      "provider_sha256": "029647177465a2b4bd2bfd0b49b4ef5a00889a204988e50a1249f55ff592b0b3",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/membership.rs",
+      "destination": "server/src/system/identity/book/membership.rs",
+      "source_sha256": "efe28083bce483beaa74726744b28b886f59143dceb79f66e11f15633eeb830f",
+      "provider_sha256": "efe28083bce483beaa74726744b28b886f59143dceb79f66e11f15633eeb830f",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/mod.rs",
+      "destination": "server/src/system/identity/book/mod.rs",
+      "source_sha256": "95ae876c41f81db5d86464adcaa3a4dc38116c789baef9ea3f9af20ae81a5a28",
+      "provider_sha256": "95ae876c41f81db5d86464adcaa3a4dc38116c789baef9ea3f9af20ae81a5a28",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/principal.rs",
+      "destination": "server/src/system/identity/book/principal.rs",
+      "source_sha256": "5f0a3e25b358fc1fe9594d644d7bc8191a38c20639ea9c9ae9ac853551d8da22",
+      "provider_sha256": "5f0a3e25b358fc1fe9594d644d7bc8191a38c20639ea9c9ae9ac853551d8da22",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/reference.rs",
+      "destination": "server/src/system/identity/book/reference.rs",
+      "source_sha256": "7223374aec857d1635c8f01d99f0f2c0380fe079e9d66108614a823cef798f6d",
+      "provider_sha256": "7223374aec857d1635c8f01d99f0f2c0380fe079e9d66108614a823cef798f6d",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/roster.rs",
+      "destination": "server/src/system/identity/book/roster.rs",
+      "source_sha256": "b754ea3d40418a2e0b18aa1a16aae5a03b50e18a8a6395c9d0fdcb9f610a47d3",
+      "provider_sha256": "b754ea3d40418a2e0b18aa1a16aae5a03b50e18a8a6395c9d0fdcb9f610a47d3",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/test-host.sh",
+      "destination": "server/src/system/identity/book/test-host.sh",
+      "source_sha256": "26824e5d09bde71eb1e4975a24e6965c7060d912a1f028037db697a04f3038d1",
+      "provider_sha256": "26824e5d09bde71eb1e4975a24e6965c7060d912a1f028037db697a04f3038d1",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/book/tests.rs",
+      "destination": "server/src/system/identity/book/tests.rs",
+      "source_sha256": "19449ccb362ebdadf707cc34321cbfd93a18d531eb97fe0c99b4e3c1922760a7",
+      "provider_sha256": "19449ccb362ebdadf707cc34321cbfd93a18d531eb97fe0c99b4e3c1922760a7",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/export.rs",
+      "destination": "server/src/system/identity/export.rs",
+      "source_sha256": "ccb3f71e11ea7371795a9d57a6ffdd4e4e440f22e42324bfdcce0d08d7ddf9c1",
+      "provider_sha256": "ccb3f71e11ea7371795a9d57a6ffdd4e4e440f22e42324bfdcce0d08d7ddf9c1",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/export_admission.rs",
+      "destination": "server/src/system/identity/export_admission.rs",
+      "source_sha256": "38dffc9b78d8139df6823e1b5ad8fefa83ad195962d1683a832a26517a486ac7",
+      "provider_sha256": "38dffc9b78d8139df6823e1b5ad8fefa83ad195962d1683a832a26517a486ac7",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/mod.rs",
+      "destination": "server/src/system/identity/mod.rs",
+      "source_sha256": "29dc269e7652dadfb96e0b1e759b8ff896c66b56cfb7eee2d885ede9aa7c07f2",
+      "provider_sha256": "29dc269e7652dadfb96e0b1e759b8ff896c66b56cfb7eee2d885ede9aa7c07f2",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/namespace.rs",
+      "destination": "server/src/system/identity/namespace.rs",
+      "source_sha256": "7e77d42860f5d97611066ac0777ad7c3d4303729019294de4072b95378f75a17",
+      "provider_sha256": "7e77d42860f5d97611066ac0777ad7c3d4303729019294de4072b95378f75a17",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/revision.rs",
+      "destination": "server/src/system/identity/revision.rs",
+      "source_sha256": "e81fccf96a2c1d19b920536c8554206dae082aa879954504deef0d75fc36327b",
+      "provider_sha256": "e81fccf96a2c1d19b920536c8554206dae082aa879954504deef0d75fc36327b",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/service/answer.rs",
+      "destination": "server/src/system/identity/service/answer.rs",
+      "source_sha256": "f83d0c26befa886ed16c7152f2fbbb09c96bb7d3831eb6338483d7c11f928b1b",
+      "provider_sha256": "f83d0c26befa886ed16c7152f2fbbb09c96bb7d3831eb6338483d7c11f928b1b",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/service/book.rs",
+      "destination": "server/src/system/identity/service/book.rs",
+      "source_sha256": "69f96a778ff31b4e04ed6a64a671a60485d854badea8152c1f9753bb1733883b",
+      "provider_sha256": "69f96a778ff31b4e04ed6a64a671a60485d854badea8152c1f9753bb1733883b",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/service/face.rs",
+      "destination": "server/src/system/identity/service/face.rs",
+      "source_sha256": "0d5d8d06f41126b9983158d58f60006cb6f06a48806ba8069965cac511057f9b",
+      "provider_sha256": "0d5d8d06f41126b9983158d58f60006cb6f06a48806ba8069965cac511057f9b",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/service/frame.rs",
+      "destination": "server/src/system/identity/service/frame.rs",
+      "source_sha256": "c47c46e660355c122cb21ea06eb10ff8bd2c52c074bf1a9d7fef192f2e2abfdd",
+      "provider_sha256": "c47c46e660355c122cb21ea06eb10ff8bd2c52c074bf1a9d7fef192f2e2abfdd",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/service/mod.rs",
+      "destination": "server/src/system/identity/service/mod.rs",
+      "source_sha256": "4d0290cacc4b9cafd5bb3644edd2e3993ab4fc89db7b3d2b674b2ab87405bacf",
+      "provider_sha256": "4d0290cacc4b9cafd5bb3644edd2e3993ab4fc89db7b3d2b674b2ab87405bacf",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/service/revision.rs",
+      "destination": "server/src/system/identity/service/revision.rs",
+      "source_sha256": "c73f0d62a7c8349e8e15d0e07a85757a98117de8211579e8b5fea22392dd175d",
+      "provider_sha256": "c73f0d62a7c8349e8e15d0e07a85757a98117de8211579e8b5fea22392dd175d",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/service/run.rs",
+      "destination": "server/src/system/identity/service/run.rs",
+      "source_sha256": "7ec5a4833ca0eac3276fc9c23ddad7ed621b47c643cafb101b4ff2dc66af493f",
+      "provider_sha256": "30b37a788e31dfb034e8e5abc733163efb210e0ffa9b291955ada62ffbbb597a",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/identity/service/schedule.rs",
+      "destination": "server/src/system/identity/service/schedule.rs",
+      "source_sha256": "a7dd2fc9c1678d172596ec6f8e1cc6b35171730e67ce9da286309d51df936018",
+      "provider_sha256": "a7dd2fc9c1678d172596ec6f8e1cc6b35171730e67ce9da286309d51df936018",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/launch/mod.rs",
+      "destination": "server/src/system/launch/mod.rs",
+      "source_sha256": "7fcd2e8c6abfa5c53d3731c8aac5b82c5e729753432160e55df602942556fac5",
+      "provider_sha256": "7fcd2e8c6abfa5c53d3731c8aac5b82c5e729753432160e55df602942556fac5",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/build.rs",
+      "destination": "server/src/system/loader/build.rs",
+      "source_sha256": "6efdf2903fc37f08db796d42471852703a8ec599af9be6243bc5ab87d92083a5",
+      "provider_sha256": "6efdf2903fc37f08db796d42471852703a8ec599af9be6243bc5ab87d92083a5",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/cache.rs",
+      "destination": "server/src/system/loader/cache.rs",
+      "source_sha256": "a72908702a41eb94dc51cf4c46cd8aed8067219e089e346346fa87d310b93349",
+      "provider_sha256": "a72908702a41eb94dc51cf4c46cd8aed8067219e089e346346fa87d310b93349",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/cached.rs",
+      "destination": "server/src/system/loader/cached.rs",
+      "source_sha256": "ef9b787e9fcd520d9c6193b9c3ae1a2f245943ef0e1aba1e24668852532b7c4a",
+      "provider_sha256": "ef9b787e9fcd520d9c6193b9c3ae1a2f245943ef0e1aba1e24668852532b7c4a",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/image.rs",
+      "destination": "server/src/system/loader/image.rs",
+      "source_sha256": "7b9102be68467b9990b0ae6eb17591ba14ac2ffd3a4abef77af2df2903d8c27f",
+      "provider_sha256": "7b9102be68467b9990b0ae6eb17591ba14ac2ffd3a4abef77af2df2903d8c27f",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/image/elf.rs",
+      "destination": "server/src/system/loader/image/elf.rs",
+      "source_sha256": "0a9ada279926967324bb25dd852dd2ebcb7c5db8468cb963a0042a88a3b8d9bf",
+      "provider_sha256": "0a9ada279926967324bb25dd852dd2ebcb7c5db8468cb963a0042a88a3b8d9bf",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/mapping.rs",
+      "destination": "server/src/system/loader/mapping.rs",
+      "source_sha256": "f5d72d6ac9612fb2b28b1f30fdc32116b4e128cb7a38108d7d4fcb47fa796ddb",
+      "provider_sha256": "f5d72d6ac9612fb2b28b1f30fdc32116b4e128cb7a38108d7d4fcb47fa796ddb",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/mod.rs",
+      "destination": "server/src/system/loader/mod.rs",
+      "source_sha256": "84e65ae36013b28379689617f57badf1f6e0e40a9c575ab68cd8a45b04b047e7",
+      "provider_sha256": "84e65ae36013b28379689617f57badf1f6e0e40a9c575ab68cd8a45b04b047e7",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/service/answer.rs",
+      "destination": "server/src/system/loader/service/answer.rs",
+      "source_sha256": "01ca2dab2ded6fc373caa767dc86477f8fd1cc121324965d69c09c51adac220b",
+      "provider_sha256": "01ca2dab2ded6fc373caa767dc86477f8fd1cc121324965d69c09c51adac220b",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/service/claims.rs",
+      "destination": "server/src/system/loader/service/claims.rs",
+      "source_sha256": "31144a0ef38493af03a274da8939a550a978cde68376d3ad8e0ba8dc443ac36f",
+      "provider_sha256": "31144a0ef38493af03a274da8939a550a978cde68376d3ad8e0ba8dc443ac36f",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/service/execution.rs",
+      "destination": "server/src/system/loader/service/execution.rs",
+      "source_sha256": "3c01ff5738ae603528709f8ffac1daa15550cf3a285efdacdeed847b4aed46bd",
+      "provider_sha256": "3c01ff5738ae603528709f8ffac1daa15550cf3a285efdacdeed847b4aed46bd",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/service/mod.rs",
+      "destination": "server/src/system/loader/service/mod.rs",
+      "source_sha256": "2c03a86dcfd9ee79c4dd836c67b081f8e66c0b9ec7d0381d486f938bbb371eee",
+      "provider_sha256": "2c03a86dcfd9ee79c4dd836c67b081f8e66c0b9ec7d0381d486f938bbb371eee",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/service/namespace.rs",
+      "destination": "server/src/system/loader/service/namespace.rs",
+      "source_sha256": "ba88eb50568a1b7562b7383b805e99c1f2ebd1c48384a20f81536037f9b54977",
+      "provider_sha256": "ba88eb50568a1b7562b7383b805e99c1f2ebd1c48384a20f81536037f9b54977",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/service/plan.rs",
+      "destination": "server/src/system/loader/service/plan.rs",
+      "source_sha256": "fcb0ae86dceb05d9237419637c5be0e79ecf8e188760573348cffb43a63018ad",
+      "provider_sha256": "fcb0ae86dceb05d9237419637c5be0e79ecf8e188760573348cffb43a63018ad",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/service/resources.rs",
+      "destination": "server/src/system/loader/service/resources.rs",
+      "source_sha256": "5ad051d46d2fc2cd54f79da683de9c6fe9b6d69aeb7b0c9bcef25d05eb1716b7",
+      "provider_sha256": "5ad051d46d2fc2cd54f79da683de9c6fe9b6d69aeb7b0c9bcef25d05eb1716b7",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/service/watch.rs",
+      "destination": "server/src/system/loader/service/watch.rs",
+      "source_sha256": "11b11cf5c150035472a05453b3de07148c1946033979d6b03cd3214205fa047d",
+      "provider_sha256": "11b11cf5c150035472a05453b3de07148c1946033979d6b03cd3214205fa047d",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/source.rs",
+      "destination": "server/src/system/loader/source.rs",
+      "source_sha256": "a4c2abf714a8a3de9db80d590314c3e06a51a829ab209ec1ad3e7215c9d65701",
+      "provider_sha256": "a4c2abf714a8a3de9db80d590314c3e06a51a829ab209ec1ad3e7215c9d65701",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/spawn.rs",
+      "destination": "server/src/system/loader/spawn.rs",
+      "source_sha256": "daa82b2df842fd5f69b827337f1bc2832297dde4bf3903a652f61f6d4f0cca2a",
+      "provider_sha256": "daa82b2df842fd5f69b827337f1bc2832297dde4bf3903a652f61f6d4f0cca2a",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/loader/task.rs",
+      "destination": "server/src/system/loader/task.rs",
+      "source_sha256": "5cf8659f1f16a6df0ded30a01acca5bd304bcbb1468abfa8713ed1b58a8033fd",
+      "provider_sha256": "5cf8659f1f16a6df0ded30a01acca5bd304bcbb1468abfa8713ed1b58a8033fd",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/mod.rs",
+      "destination": "server/src/system/mod.rs",
+      "source_sha256": "2a1ad62484db3adfbff7b04802bc295f0834a036758ebdb45e990c766b1520e1",
+      "provider_sha256": "2a1ad62484db3adfbff7b04802bc295f0834a036758ebdb45e990c766b1520e1",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/authority.rs",
+      "destination": "server/src/system/operator/authority.rs",
+      "source_sha256": "0e4c1258e360c455106a5ef7b8e2f90b724c34edd1d4d0c52edc9c2e1f833fcd",
+      "provider_sha256": "0e4c1258e360c455106a5ef7b8e2f90b724c34edd1d4d0c52edc9c2e1f833fcd",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/connection.rs",
+      "destination": "server/src/system/operator/connection.rs",
+      "source_sha256": "dc1bb04291a6b6403887a6513fad58a7aec141d3f45b4cd28ebebd49e7891b86",
+      "provider_sha256": "dc1bb04291a6b6403887a6513fad58a7aec141d3f45b4cd28ebebd49e7891b86",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/management.rs",
+      "destination": "server/src/system/operator/management.rs",
+      "source_sha256": "a9054eb9a899c808e75ad69f83f902a705f871afaac3013b82dfb6b59f8c4d95",
+      "provider_sha256": "a9054eb9a899c808e75ad69f83f902a705f871afaac3013b82dfb6b59f8c4d95",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/mod.rs",
+      "destination": "server/src/system/operator/mod.rs",
+      "source_sha256": "59a237bd9ebb714b8caaed1f8e498ff114f7f659a9b3baa2a008729268443f59",
+      "provider_sha256": "59a237bd9ebb714b8caaed1f8e498ff114f7f659a9b3baa2a008729268443f59",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/answer.rs",
+      "destination": "server/src/system/operator/runtime/answer.rs",
+      "source_sha256": "a8242b76314a0fbeaf9215935e5f1fbbbcc556725cc788ab831fea553339499d",
+      "provider_sha256": "a8242b76314a0fbeaf9215935e5f1fbbbcc556725cc788ab831fea553339499d",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/authority.rs",
+      "destination": "server/src/system/operator/runtime/authority.rs",
+      "source_sha256": "6e43ad3a97f25c4e227102b266e298d05a6465e619b10f875cb5c12bfc550f16",
+      "provider_sha256": "6e43ad3a97f25c4e227102b266e298d05a6465e619b10f875cb5c12bfc550f16",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/door.rs",
+      "destination": "server/src/system/operator/runtime/door.rs",
+      "source_sha256": "0e3e02b28e8830f1f2f9419e9ca8765bb85982bd330a29c932cea3a04a77128f",
+      "provider_sha256": "0e3e02b28e8830f1f2f9419e9ca8765bb85982bd330a29c932cea3a04a77128f",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/events.rs",
+      "destination": "server/src/system/operator/runtime/events.rs",
+      "source_sha256": "eed604af3e40a76088f9a94bb81b3624708a415d78eca1d40c4415dd2fd051ec",
+      "provider_sha256": "eed604af3e40a76088f9a94bb81b3624708a415d78eca1d40c4415dd2fd051ec",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/exchange.rs",
+      "destination": "server/src/system/operator/runtime/exchange.rs",
+      "source_sha256": "387c4f4eff46f03b91c5cc5ac5476ee7acf18595034d6849b1125ad2d7cabcd5",
+      "provider_sha256": "387c4f4eff46f03b91c5cc5ac5476ee7acf18595034d6849b1125ad2d7cabcd5",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/frame.rs",
+      "destination": "server/src/system/operator/runtime/frame.rs",
+      "source_sha256": "2293747c76d55cbd6a895375219c387be7816dcd8f1a9c3e652c353eb32f7524",
+      "provider_sha256": "2293747c76d55cbd6a895375219c387be7816dcd8f1a9c3e652c353eb32f7524",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/import.rs",
+      "destination": "server/src/system/operator/runtime/import.rs",
+      "source_sha256": "e8e7124363b66a350d2a0b9014118158bc7eb7b6ddb6135ed8121799ec6761c6",
+      "provider_sha256": "e8e7124363b66a350d2a0b9014118158bc7eb7b6ddb6135ed8121799ec6761c6",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/management.rs",
+      "destination": "server/src/system/operator/runtime/management.rs",
+      "source_sha256": "4d63270bd51ac0fc1b5a9cbaefbba36933b154e1629e38b40e2eeb71f9db2598",
+      "provider_sha256": "cfc218f77373065f59f77e1d835a32fd6ed8108fa8e54c5d4fe0d27ff7147a55",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/mod.rs",
+      "destination": "server/src/system/operator/runtime/mod.rs",
+      "source_sha256": "9f7af524f8c5cd6d4707585bee96926aaa65fbc5d5491d95370e43accc8ccf51",
+      "provider_sha256": "9f7af524f8c5cd6d4707585bee96926aaa65fbc5d5491d95370e43accc8ccf51",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/runtime/schedule.rs",
+      "destination": "server/src/system/operator/runtime/schedule.rs",
+      "source_sha256": "09b5946573e0a01793e895828800d8a5c17881d8d345949e628835fdfb689b9c",
+      "provider_sha256": "09b5946573e0a01793e895828800d8a5c17881d8d345949e628835fdfb689b9c",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/session.rs",
+      "destination": "server/src/system/operator/session.rs",
+      "source_sha256": "d66355b95d1dbbea6a1f942b04dbe0f05569f094b35614ba732c1abeb4397914",
+      "provider_sha256": "d66355b95d1dbbea6a1f942b04dbe0f05569f094b35614ba732c1abeb4397914",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/tree/gate.rs",
+      "destination": "server/src/system/operator/tree/gate.rs",
+      "source_sha256": "6b22cd59eb80a028437dc095b5ded2bdc643c82c971191279a4b8bf27d3eb45d",
+      "provider_sha256": "6b22cd59eb80a028437dc095b5ded2bdc643c82c971191279a4b8bf27d3eb45d",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/tree/judge.rs",
+      "destination": "server/src/system/operator/tree/judge.rs",
+      "source_sha256": "7dc48da9904712f3e96b65597071a1cd960fb4a486d016dde7f063540fca67f8",
+      "provider_sha256": "7dc48da9904712f3e96b65597071a1cd960fb4a486d016dde7f063540fca67f8",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/tree/mod.rs",
+      "destination": "server/src/system/operator/tree/mod.rs",
+      "source_sha256": "a226be583e3d70f010b75421a888465aa128ef897c04e5cdbf48147250c85f50",
+      "provider_sha256": "a226be583e3d70f010b75421a888465aa128ef897c04e5cdbf48147250c85f50",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/operator/watch.rs",
+      "destination": "server/src/system/operator/watch.rs",
+      "source_sha256": "f3203c6dbe506212bf112b5cb7a1364140d41195aa0ec0cbab5884f0436fe8e6",
+      "provider_sha256": "2c9d8f9058d7f2ad6fe821c01f9b8ffc4be72f9218964f0c8f5e708bcad03567",
+      "byte_identical": false,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/supply/collection.rs",
+      "destination": "server/src/system/supply/collection.rs",
+      "source_sha256": "fd1ff7d34f4115da942000d875563213557f7f6bdfcaaeda6115b8962505d291",
+      "provider_sha256": "fd1ff7d34f4115da942000d875563213557f7f6bdfcaaeda6115b8962505d291",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/supply/derivation.rs",
+      "destination": "server/src/system/supply/derivation.rs",
+      "source_sha256": "c7d07be54365f679c15f01c53dc8e24829476cc0e106287de8eb55b78ea4c899",
+      "provider_sha256": "c7d07be54365f679c15f01c53dc8e24829476cc0e106287de8eb55b78ea4c899",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/supply/lease.rs",
+      "destination": "server/src/system/supply/lease.rs",
+      "source_sha256": "727f22d94e9c0d1e433f73d2aeb78966e90a09db341d7002c7745241822b957d",
+      "provider_sha256": "727f22d94e9c0d1e433f73d2aeb78966e90a09db341d7002c7745241822b957d",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/supply/mod.rs",
+      "destination": "server/src/system/supply/mod.rs",
+      "source_sha256": "06f3472864fa453f89e181f88706610942c6f0ac17644f373c64f878d571ddce",
+      "provider_sha256": "06f3472864fa453f89e181f88706610942c6f0ac17644f373c64f878d571ddce",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/system/supply/pole.rs",
+      "destination": "server/src/system/supply/pole.rs",
+      "source_sha256": "9131c0501f09a2e2a2330825e0676fb9ab0fdb9b80dbeecc9940b697dc90a32c",
+      "provider_sha256": "9131c0501f09a2e2a2330825e0676fb9ab0fdb9b80dbeecc9940b697dc90a32c",
+      "byte_identical": true,
+      "mapping": "snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/bench/rig.rs",
+      "destination": "server/src/test_support/bench/rig.rs",
+      "source_sha256": "c50a591c8141c2651bad63b70010b3302f8b69a2c542926581470282bb8a53c0",
+      "provider_sha256": "4a4ba48466a0b652d689ee77cf6e54238681e677acf907388aa4ef0890da13cc",
+      "byte_identical": false,
+      "mapping": "bench-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/bench/again.rs",
+      "destination": "server/src/test_support/bench/again.rs",
+      "source_sha256": "c17e40637c048b3731bd56276587c31200cdf0ffdd8e40b7bbf85f1f5cb0b24f",
+      "provider_sha256": "92a59b4cb524a0935b4d21aa07e33037bfdcaa09746c4833ea887dfdeb4bc34c",
+      "byte_identical": false,
+      "mapping": "bench-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/bench/load.rs",
+      "destination": "server/src/test_support/bench/load.rs",
+      "source_sha256": "614557960ff82ecd9ec5d117b4365b1ea11253be70e69b32d071a6157352bb19",
+      "provider_sha256": "4bce9e57c997a0b762ee6a06beedd226af2bb1269f049e017fdfdf6018690143",
+      "byte_identical": false,
+      "mapping": "bench-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/bench/group.rs",
+      "destination": "server/src/test_support/bench/group.rs",
+      "source_sha256": "3c4b752c5d1f40cd921b73a65e743395fa10dd8718616f5d2e3eab595631509f",
+      "provider_sha256": "e762222dada3f8582110b378b216479377a72fcc4f6472085e62a53c7466886e",
+      "byte_identical": false,
+      "mapping": "bench-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/tick.rs",
+      "destination": "support/src/support/tick.rs",
+      "source_sha256": "3f64b1f57ff6fd1246c0fa841db8b6aa2b7437d9fe2ba207c607168868be812a",
+      "provider_sha256": "3f64b1f57ff6fd1246c0fa841db8b6aa2b7437d9fe2ba207c607168868be812a",
+      "byte_identical": true,
+      "mapping": "bench-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/copy.rs",
+      "destination": "server/src/test_support/copy_scenario.rs",
+      "source_sha256": "fa64f40cde0d0792638885a1e48cb28f6368521af933085fe7d57883d1829ca8",
+      "provider_sha256": "16de0f01d7b0d73513a9b22972153e4b19563f756e4c13a643f19c337c76fbb4",
+      "byte_identical": false,
+      "mapping": "loader-scenario-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/loader.rs",
+      "destination": "server/src/test_support/loader_scenario.rs",
+      "source_sha256": "62bc51a89894adf5acdb635246e5f56829c084f88f6b8247958d29f69cc00006",
+      "provider_sha256": "418c12709a4e044111dcba865f570950786c3538efa0639e3306368415f865fa",
+      "byte_identical": false,
+      "mapping": "loader-scenario-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/hierarchy.rs",
+      "destination": "server/src/test_support/hierarchy_scenario.rs",
+      "source_sha256": "be83543133da4483b5e7ef5ad5da3112cddc5d1eabd16874e1306c26043cc0b8",
+      "provider_sha256": "0596359e54edb3786d672bd18a29c63b4ad94ec4cfd8566c95e1f13a3ccb2290",
+      "byte_identical": false,
+      "mapping": "identity-scenario-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/identity.rs",
+      "destination": "server/src/test_support/identity_scenario.rs",
+      "source_sha256": "31d0d46d04bfbc8a1d0749d80c6164f5bddf04fc83d5995433dbec2f54824648",
+      "provider_sha256": "06fc897dfb6040534bcc27c5498e708023dabdd49c0f9169fbac30cf06da1428",
+      "byte_identical": false,
+      "mapping": "identity-scenario-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/device_guard.rs",
+      "destination": "server/src/test_support/device_guard_scenario.rs",
+      "source_sha256": "7629376a2f25e12af56f4bbb2388ae6ed5c7bce0ca09c130472ddf29cfa7e908",
+      "provider_sha256": "d54b991fa7b33ce9ce8a64a07b86f9bb8a000a651911c67093d5c0150d1a69df",
+      "byte_identical": false,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/device_guard/guard.rs",
+      "destination": "server/src/test_support/device_guard_scenario/guard.rs",
+      "source_sha256": "25f9abc8ce04527a61a6f6aa68a30444a68d14c4b60652cfc13a8a117fb759ee",
+      "provider_sha256": "9089a5ee98ccd0f8e6f1f9b345fe84220ea648e760fdd1b860ef53ec0f7ea03a",
+      "byte_identical": false,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/device_confirmation.rs",
+      "destination": "server/src/test_support/device_confirmation_scenario.rs",
+      "source_sha256": "ba11435e0d9e93f91068cc257dc2dcaffaaa93181008807518944eac070b90b1",
+      "provider_sha256": "f58db09c9d958a25b1206451c390968a25f732958eed3f503b9dc30d959e9cfb",
+      "byte_identical": false,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/device_confirmation/state.rs",
+      "destination": "server/src/test_support/device_confirmation_scenario/state.rs",
+      "source_sha256": "e9dcaf86c6240b05dfddf3f3cf5a0d624616995c282e62d5b8738f75ce8d95c6",
+      "provider_sha256": "e9dcaf86c6240b05dfddf3f3cf5a0d624616995c282e62d5b8738f75ce8d95c6",
+      "byte_identical": true,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/daemon_root.rs",
+      "destination": "server/src/test_support/daemon_scenario/mod.rs",
+      "source_sha256": "784caebc1916c637a085039917c0d7fb7b4c885997951a34f4db5848d746b159",
+      "provider_sha256": "b0dca3bd29893b75070bf7695ec68a427a8fd4efd521ac6c9f7594529389a8e5",
+      "byte_identical": false,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/daemon_root/mode.rs",
+      "destination": "server/src/test_support/daemon_scenario/mode.rs",
+      "source_sha256": "8eca3de0279bd327e2f8875c9de3858312271ad5e0b0549c7be7745b78c76e44",
+      "provider_sha256": "089522dddeaa57a1e841c1924975850d3ec176755b9cafaf36135b0f4a18b88f",
+      "byte_identical": false,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/daemon_root/request.rs",
+      "destination": "server/src/test_support/daemon_scenario/request.rs",
+      "source_sha256": "f2d36f151893b11351c63b2e289141fd5826859ba5f1f4602dcebe4ab67b9fe6",
+      "provider_sha256": "f2d36f151893b11351c63b2e289141fd5826859ba5f1f4602dcebe4ab67b9fe6",
+      "byte_identical": true,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/daemon_root/root.rs",
+      "destination": "server/src/test_support/daemon_scenario/root.rs",
+      "source_sha256": "8a7225a2c4e181993d4b335a3ef269ae5bb1fa6515819bdae62d50dd78e7aaa9",
+      "provider_sha256": "8a7225a2c4e181993d4b335a3ef269ae5bb1fa6515819bdae62d50dd78e7aaa9",
+      "byte_identical": true,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/daemon_root/scene.rs",
+      "destination": "server/src/test_support/daemon_scenario/scene.rs",
+      "source_sha256": "2ca567aa5413d6991965b9a17cf69ed143066246431eee68f3bbb262e56e8a25",
+      "provider_sha256": "f76562ca9f2dbb790e5a6de39d15ee12598b15c1a585d04e691d1557f5330fc3",
+      "byte_identical": false,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/daemon_root/stop.rs",
+      "destination": "server/src/test_support/daemon_scenario/stop.rs",
+      "source_sha256": "1221d3f25f09f27b8c97b39e84867e730c922926e9210f5fba0e1fd00dbd485c",
+      "provider_sha256": "1221d3f25f09f27b8c97b39e84867e730c922926e9210f5fba0e1fd00dbd485c",
+      "byte_identical": true,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/src/harness/probe/daemon_root/stop_state.rs",
+      "destination": "server/src/test_support/daemon_scenario/stop_state.rs",
+      "source_sha256": "435aac58fffb7366e7161396e29a4939592315321c771eb5f307ba26880f2927",
+      "provider_sha256": "435aac58fffb7366e7161396e29a4939592315321c771eb5f307ba26880f2927",
+      "byte_identical": true,
+      "mapping": "device-daemon-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/Cargo.lock",
+      "destination": "tests/bootstrap-carrier/Cargo.lock",
+      "source_sha256": "106203581ff22b4466073c4019825d005958d4fbc99451d25d8f1842e5bf801c",
+      "provider_sha256": "106203581ff22b4466073c4019825d005958d4fbc99451d25d8f1842e5bf801c",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/Cargo.toml",
+      "destination": "tests/bootstrap-carrier/Cargo.toml",
+      "source_sha256": "0e983317dcbd8335d6189683fcee08ba46751d79bc06cf6bd6c5f5af51d369a7",
+      "provider_sha256": "0e983317dcbd8335d6189683fcee08ba46751d79bc06cf6bd6c5f5af51d369a7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/README.md",
+      "destination": "tests/bootstrap-carrier/README.md",
+      "source_sha256": "0e8cde909df1ab5560e615204fc3a190bc8da21431d5548c7fbaa751e5aa90e1",
+      "provider_sha256": "0e8cde909df1ab5560e615204fc3a190bc8da21431d5548c7fbaa751e5aa90e1",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/effects.rs",
+      "destination": "tests/bootstrap-carrier/effects.rs",
+      "source_sha256": "cbe341d692083784873c91cbee35ba57f7dffb4e3663578ff9835f8536b35cc1",
+      "provider_sha256": "cbe341d692083784873c91cbee35ba57f7dffb4e3663578ff9835f8536b35cc1",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/hole.rs",
+      "destination": "tests/bootstrap-carrier/hole.rs",
+      "source_sha256": "c7615de68d8c140f72f22cc2535590ab767e20d28dbe2e0687e1e40f4378456b",
+      "provider_sha256": "c7615de68d8c140f72f22cc2535590ab767e20d28dbe2e0687e1e40f4378456b",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/lib.rs",
+      "destination": "tests/bootstrap-carrier/lib.rs",
+      "source_sha256": "484b6424490935231764a83ec9b4531416e95cf392029f670f894414d7e3a629",
+      "provider_sha256": "2618f67cd70c38e07240acbea127c9613bbfb372cd6de22bd20d8448ca14352b",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/pie.rs",
+      "destination": "tests/bootstrap-carrier/pie.rs",
+      "source_sha256": "791cf3bf4dc5f82f7551798e6e3940412acbbd239ffd966270ebdc2945427831",
+      "provider_sha256": "791cf3bf4dc5f82f7551798e6e3940412acbbd239ffd966270ebdc2945427831",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/pie_info.rs",
+      "destination": "tests/bootstrap-carrier/pie_info.rs",
+      "source_sha256": "c018c205f6c2406d23b88152ea6156962f3f973c3ba049b5ae9d2e66c35222e5",
+      "provider_sha256": "c018c205f6c2406d23b88152ea6156962f3f973c3ba049b5ae9d2e66c35222e5",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/port.rs",
+      "destination": "tests/bootstrap-carrier/port.rs",
+      "source_sha256": "530e0003e060cb841f8a576db8328f03969d8715f59bf155d1df78002753263a",
+      "provider_sha256": "530e0003e060cb841f8a576db8328f03969d8715f59bf155d1df78002753263a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/port_access.rs",
+      "destination": "tests/bootstrap-carrier/port_access.rs",
+      "source_sha256": "45dc5b79e76fbd0ebb4175cdb42a99c0af4ea506b4c4f404a123fc77dcd15e12",
+      "provider_sha256": "45dc5b79e76fbd0ebb4175cdb42a99c0af4ea506b4c4f404a123fc77dcd15e12",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/port_policy.rs",
+      "destination": "tests/bootstrap-carrier/port_policy.rs",
+      "source_sha256": "bdd8c14cc364c2feba556e30f399607991292f72074a78ff5100e0518e66dc99",
+      "provider_sha256": "bdd8c14cc364c2feba556e30f399607991292f72074a78ff5100e0518e66dc99",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/port_to.rs",
+      "destination": "tests/bootstrap-carrier/port_to.rs",
+      "source_sha256": "620bc851727481388b9ecc20b7b2d8b62b0ae26492c67c691d94a9c05edc86fb",
+      "provider_sha256": "620bc851727481388b9ecc20b7b2d8b62b0ae26492c67c691d94a9c05edc86fb",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/raw.rs",
+      "destination": "tests/bootstrap-carrier/raw.rs",
+      "source_sha256": "082e24e366769fbae2a6c36ac08177a84f60240190f97dd3ce7ecab03ad616bc",
+      "provider_sha256": "082e24e366769fbae2a6c36ac08177a84f60240190f97dd3ce7ecab03ad616bc",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/system/assembly/delivery.rs",
+      "destination": "tests/bootstrap-carrier/system/assembly/delivery.rs",
+      "source_sha256": "1491bf632e69a762f11d59b1b71c9c82e05a4c23654924648e219aba15085c03",
+      "provider_sha256": "1491bf632e69a762f11d59b1b71c9c82e05a4c23654924648e219aba15085c03",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/system/assembly/install.rs",
+      "destination": "tests/bootstrap-carrier/system/assembly/install.rs",
+      "source_sha256": "5aa44cbcfaa3c72e366605f5c91db5f18e901ed559d710870e3e9325bf38de98",
+      "provider_sha256": "5aa44cbcfaa3c72e366605f5c91db5f18e901ed559d710870e3e9325bf38de98",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/system/assembly/jobs.rs",
+      "destination": "tests/bootstrap-carrier/system/assembly/jobs.rs",
+      "source_sha256": "27322b91a85baede7f8e822260df97243fd5d9511243a7ef3708f404dd5f4547",
+      "provider_sha256": "27322b91a85baede7f8e822260df97243fd5d9511243a7ef3708f404dd5f4547",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/system/assembly/launch.rs",
+      "destination": "tests/bootstrap-carrier/system/assembly/launch.rs",
+      "source_sha256": "9de5298c1133cc293cf42334888e0108ca8a585f1a6af30183d41a93b4eae767",
+      "provider_sha256": "9de5298c1133cc293cf42334888e0108ca8a585f1a6af30183d41a93b4eae767",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/system/assembly/launched.rs",
+      "destination": "tests/bootstrap-carrier/system/assembly/launched.rs",
+      "source_sha256": "d58075b9bf7d72bfe37fc6c865ce5cd7cf988d70e6d9dca2c353c798f5c91aa1",
+      "provider_sha256": "d58075b9bf7d72bfe37fc6c865ce5cd7cf988d70e6d9dca2c353c798f5c91aa1",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/system/assembly/mod.rs",
+      "destination": "tests/bootstrap-carrier/system/assembly/mod.rs",
+      "source_sha256": "9daac435171540f658dfc2b2ff0ca132fdc5295568191ba3b3ff49a8c62b15d7",
+      "provider_sha256": "396b6bddc652946c0eacbe309b2e707919ccadf8fbcac2b1a734d4d4c19b348a",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/system/assembly/reference.rs",
+      "destination": "tests/bootstrap-carrier/system/assembly/reference.rs",
+      "source_sha256": "3f8d56278ec518be04cc981b358dcdda4389a2278fdb56350267262e12c400cf",
+      "provider_sha256": "3f8d56278ec518be04cc981b358dcdda4389a2278fdb56350267262e12c400cf",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/system/mod.rs",
+      "destination": "tests/bootstrap-carrier/system/mod.rs",
+      "source_sha256": "4b2dd47b67f68ea62f430f8d0162d526cdd6912c51e310d9e521f73dae462329",
+      "provider_sha256": "4b2dd47b67f68ea62f430f8d0162d526cdd6912c51e310d9e521f73dae462329",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/tests.rs",
+      "destination": "tests/bootstrap-carrier/tests.rs",
+      "source_sha256": "4fbf6943974e38237b8a02b4a3ab2d2f006020db2f631bc4af72110ec85f347d",
+      "provider_sha256": "4fbf6943974e38237b8a02b4a3ab2d2f006020db2f631bc4af72110ec85f347d",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/bootstrap-carrier/unit.rs",
+      "destination": "tests/bootstrap-carrier/unit.rs",
+      "source_sha256": "844e19d04eb52235db6df0bebd7df252f9898106cb0027acb2f2d2b2991cb736",
+      "provider_sha256": "844e19d04eb52235db6df0bebd7df252f9898106cb0027acb2f2d2b2991cb736",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-instance/Cargo.lock",
+      "destination": "tests/control-instance/Cargo.lock",
+      "source_sha256": "9aaa08ebb017862018df121d2e810287d1ee45f5584f8836cd062df65b9520ec",
+      "provider_sha256": "9aaa08ebb017862018df121d2e810287d1ee45f5584f8836cd062df65b9520ec",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-instance/Cargo.toml",
+      "destination": "tests/control-instance/Cargo.toml",
+      "source_sha256": "93847db931ff4f4ac0fc9e6de29e67ffc946d1350fb5456d97c8aa3cb7c34be9",
+      "provider_sha256": "93847db931ff4f4ac0fc9e6de29e67ffc946d1350fb5456d97c8aa3cb7c34be9",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-instance/lib.rs",
+      "destination": "tests/control-instance/lib.rs",
+      "source_sha256": "1d81904ba09e80fabe6fa826854a45322ee66ed493d29096451c51ddafb0f66d",
+      "provider_sha256": "00420d9ce3af2afca0b8c07078387f7ad8a48075ca646bf6310d9e62494ffab9",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-lifetime/Cargo.lock",
+      "destination": "tests/control-lifetime/Cargo.lock",
+      "source_sha256": "23827dafc9aec439feb6788912bfda4122e19e1e3789348c25a9c09debeb2c47",
+      "provider_sha256": "23827dafc9aec439feb6788912bfda4122e19e1e3789348c25a9c09debeb2c47",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-lifetime/Cargo.toml",
+      "destination": "tests/control-lifetime/Cargo.toml",
+      "source_sha256": "a4d6ea7194fbce903b17b80643310c94d7f62d46a41d84f532848841f7dca19f",
+      "provider_sha256": "a4d6ea7194fbce903b17b80643310c94d7f62d46a41d84f532848841f7dca19f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-lifetime/lib.rs",
+      "destination": "tests/control-lifetime/lib.rs",
+      "source_sha256": "45c6dabca31de89ae6ebf2d604957d7492ec4a047763467e38bb9629b66c7c60",
+      "provider_sha256": "049fccf6e156c60705f521fa680f80ec997e2e509073d4df7e4b8e45f97cbeaf",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/Cargo.lock",
+      "destination": "tests/control-publisher/Cargo.lock",
+      "source_sha256": "50556d8e58c98e4380dec7aa3b0a78f9cd1e0fd1342f1d3d35332e5917eadf3a",
+      "provider_sha256": "50556d8e58c98e4380dec7aa3b0a78f9cd1e0fd1342f1d3d35332e5917eadf3a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/Cargo.toml",
+      "destination": "tests/control-publisher/Cargo.toml",
+      "source_sha256": "96a4938a1439a129a10de351f3b9020ae821ffc6a20485e3723a4daea2b65299",
+      "provider_sha256": "96a4938a1439a129a10de351f3b9020ae821ffc6a20485e3723a4daea2b65299",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/fixtures/control.rs",
+      "destination": "tests/control-publisher/fixtures/control.rs",
+      "source_sha256": "b04fdf1fed964997e611ec942833863e707a810a0b6b622b0e083bc2d0b90600",
+      "provider_sha256": "b04fdf1fed964997e611ec942833863e707a810a0b6b622b0e083bc2d0b90600",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/fixtures/ending.rs",
+      "destination": "tests/control-publisher/fixtures/ending.rs",
+      "source_sha256": "b56d7f50a24c75df22285d62a2fd669e7af03f1045e7d03a257a0de6dc6a1efe",
+      "provider_sha256": "b56d7f50a24c75df22285d62a2fd669e7af03f1045e7d03a257a0de6dc6a1efe",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/fixtures/input.rs",
+      "destination": "tests/control-publisher/fixtures/input.rs",
+      "source_sha256": "db3eb2da9ce25af9be12b8f297afa9bfdb7c7e68e6dd9669e2eb57e728217f95",
+      "provider_sha256": "db3eb2da9ce25af9be12b8f297afa9bfdb7c7e68e6dd9669e2eb57e728217f95",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/fixtures/mod.rs",
+      "destination": "tests/control-publisher/fixtures/mod.rs",
+      "source_sha256": "32904eebaf0210b3f5edcac9cf776291c3a95d509c95d98df350502d3b4fd781",
+      "provider_sha256": "32904eebaf0210b3f5edcac9cf776291c3a95d509c95d98df350502d3b4fd781",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/fixtures/operator_config.rs",
+      "destination": "tests/control-publisher/fixtures/operator_config.rs",
+      "source_sha256": "2ff27c12aae1d67ee388d38cb86e41e30ec2f472e8be66f64879a195b775dd97",
+      "provider_sha256": "2ff27c12aae1d67ee388d38cb86e41e30ec2f472e8be66f64879a195b775dd97",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/fixtures/unit_file.rs",
+      "destination": "tests/control-publisher/fixtures/unit_file.rs",
+      "source_sha256": "5017912d8f15e0e3cce66b06a291819779c15518b35a4a4dfe2216c657dc468f",
+      "provider_sha256": "5017912d8f15e0e3cce66b06a291819779c15518b35a4a4dfe2216c657dc468f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/lib.rs",
+      "destination": "tests/control-publisher/lib.rs",
+      "source_sha256": "1f3506b425c9c37aaecd61cad99a05e8e642a9769ba46c7fb68cf4df1d7c916c",
+      "provider_sha256": "1f3506b425c9c37aaecd61cad99a05e8e642a9769ba46c7fb68cf4df1d7c916c",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/tests.rs",
+      "destination": "tests/control-publisher/tests.rs",
+      "source_sha256": "738840250e1db9d3dc94c0e67661ffcc249bc6ad30395be260b7d4919f1663a1",
+      "provider_sha256": "738840250e1db9d3dc94c0e67661ffcc249bc6ad30395be260b7d4919f1663a1",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-publisher/unit.rs",
+      "destination": "tests/control-publisher/unit.rs",
+      "source_sha256": "b5d7a6b44d72fab8ba56554c69553e63a9725fee62b3d43eda3aab2cff797005",
+      "provider_sha256": "f2fd5338e8ff0242f5c70ba0db2b74b29a93d85dc89f34276325ae6d6b16874c",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-query/Cargo.lock",
+      "destination": "tests/control-query/Cargo.lock",
+      "source_sha256": "69a23e7f835613e8160d5a4a40987c34dbd42da4f50d499cc7877a09ba7a6eaa",
+      "provider_sha256": "69a23e7f835613e8160d5a4a40987c34dbd42da4f50d499cc7877a09ba7a6eaa",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-query/Cargo.toml",
+      "destination": "tests/control-query/Cargo.toml",
+      "source_sha256": "29d9b8d98c20d7986da44e616cfa64485cfb0d7409145c9622c67a6596010d87",
+      "provider_sha256": "29d9b8d98c20d7986da44e616cfa64485cfb0d7409145c9622c67a6596010d87",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-query/lib.rs",
+      "destination": "tests/control-query/lib.rs",
+      "source_sha256": "98adac6bb5f88661d0687d774740ad37e5156d96661b1b44fcd6627adaa03c76",
+      "provider_sha256": "06d368bd841d16834bda4ff565e519ed2c80bf3e4640e3b3bd6e322a9981c014",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/.gitignore",
+      "destination": "tests/daemon-control/.gitignore",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "provider_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/Cargo.lock",
+      "destination": "tests/daemon-control/Cargo.lock",
+      "source_sha256": "50a61d03e0c10aa558db3a46452e07b581ee4cb650ae470050c672c5c1dbc20f",
+      "provider_sha256": "50a61d03e0c10aa558db3a46452e07b581ee4cb650ae470050c672c5c1dbc20f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/Cargo.toml",
+      "destination": "tests/daemon-control/Cargo.toml",
+      "source_sha256": "2e8469ddad076c9d9c23b33e488a83358129a0571a733fb24ede0b952ffcd201",
+      "provider_sha256": "2e8469ddad076c9d9c23b33e488a83358129a0571a733fb24ede0b952ffcd201",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/closing_stops_the_daemon_before_the_supervised_provider.rs",
+      "destination": "tests/daemon-control/cases/closing_stops_the_daemon_before_the_supervised_provider.rs",
+      "source_sha256": "25dd4573e2aee7b4512230146be6834c3fd796acc55bafbe6e071a9219366f6d",
+      "provider_sha256": "25dd4573e2aee7b4512230146be6834c3fd796acc55bafbe6e071a9219366f6d",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/duplicate_ruin_merges_and_nonrecovery_conflicts_keep_the_request.rs",
+      "destination": "tests/daemon-control/cases/duplicate_ruin_merges_and_nonrecovery_conflicts_keep_the_request.rs",
+      "source_sha256": "a1f161876c70608740116c8731def3bf689a7ea6151dca803679b3d4563da1dd",
+      "provider_sha256": "a1f161876c70608740116c8731def3bf689a7ea6151dca803679b3d4563da1dd",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/effect_recheck_accepts_the_minted_target_but_repeats_authority.rs",
+      "destination": "tests/daemon-control/cases/effect_recheck_accepts_the_minted_target_but_repeats_authority.rs",
+      "source_sha256": "f11e27c9baf26e004dff2f7be2648a2e3be350ab7a6663fc5bd2c42e99145e66",
+      "provider_sha256": "f11e27c9baf26e004dff2f7be2648a2e3be350ab7a6663fc5bd2c42e99145e66",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/explicit_ruin_takes_over_recovery_before_and_after_mint_without_dropping_the_team.rs",
+      "destination": "tests/daemon-control/cases/explicit_ruin_takes_over_recovery_before_and_after_mint_without_dropping_the_team.rs",
+      "source_sha256": "e04cf6496c2895bca3480cf8327f0c19f1d9e41f27a15d99bcb46e0bbdcc15f1",
+      "provider_sha256": "e04cf6496c2895bca3480cf8327f0c19f1d9e41f27a15d99bcb46e0bbdcc15f1",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/intent_policy_keeps_cleanup_and_recovery_out_of_stop_semantics.rs",
+      "destination": "tests/daemon-control/cases/intent_policy_keeps_cleanup_and_recovery_out_of_stop_semantics.rs",
+      "source_sha256": "41680a5822d8dac3401146885b827902ced44b1bdd6029f51c48e04c16734429",
+      "provider_sha256": "41680a5822d8dac3401146885b827902ced44b1bdd6029f51c48e04c16734429",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/merged_ruin_commits_stop_and_denies_recovery.rs",
+      "destination": "tests/daemon-control/cases/merged_ruin_commits_stop_and_denies_recovery.rs",
+      "source_sha256": "bd587be51e1b40a32f76ae4401a27bd0b40eba3bdef6fac92cd90b91e092fd2c",
+      "provider_sha256": "bd587be51e1b40a32f76ae4401a27bd0b40eba3bdef6fac92cd90b91e092fd2c",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/mod.rs",
+      "destination": "tests/daemon-control/cases/mod.rs",
+      "source_sha256": "ff864f6d6a8be54d408d4938f7c505449719d0409aaa3d30b539add37e2a1320",
+      "provider_sha256": "ff864f6d6a8be54d408d4938f7c505449719d0409aaa3d30b539add37e2a1320",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/observation_scope_is_the_same_static_supervisor_scope.rs",
+      "destination": "tests/daemon-control/cases/observation_scope_is_the_same_static_supervisor_scope.rs",
+      "source_sha256": "0fd8200baaaa29a575c785c74b4cd8b128fc14755b1014419a36a458d0f816ce",
+      "provider_sha256": "0fd8200baaaa29a575c785c74b4cd8b128fc14755b1014419a36a458d0f816ce",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/publisher_identity_survives_accepted_recovery_takeover.rs",
+      "destination": "tests/daemon-control/cases/publisher_identity_survives_accepted_recovery_takeover.rs",
+      "source_sha256": "1faf1e0faec79a4a71df3e671dccfb791b8e4cfea231c81c24913b070b8f28f7",
+      "provider_sha256": "1faf1e0faec79a4a71df3e671dccfb791b8e4cfea231c81c24913b070b8f28f7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/recovery_admission_accepts_only_a_named_supervisor_with_a_retired_target.rs",
+      "destination": "tests/daemon-control/cases/recovery_admission_accepts_only_a_named_supervisor_with_a_retired_target.rs",
+      "source_sha256": "0dec6e90579b65f76a76656ca55b85d9b43001e0d4db7c4ae292fca6a3bf8fa0",
+      "provider_sha256": "0dec6e90579b65f76a76656ca55b85d9b43001e0d4db7c4ae292fca6a3bf8fa0",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/recovery_admission_rejects_dynamic_copy_revocation_and_wrong_retirement.rs",
+      "destination": "tests/daemon-control/cases/recovery_admission_rejects_dynamic_copy_revocation_and_wrong_retirement.rs",
+      "source_sha256": "610a0448cd47f2a2b76dd1fe1cf2f7466685d9f88cbaf52498308d09b36c3c3a",
+      "provider_sha256": "610a0448cd47f2a2b76dd1fe1cf2f7466685d9f88cbaf52498308d09b36c3c3a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/recovery_admission_rejects_scope_guard_intent_and_closing.rs",
+      "destination": "tests/daemon-control/cases/recovery_admission_rejects_scope_guard_intent_and_closing.rs",
+      "source_sha256": "3909ec906198ac837380d316453c084c048e73d7bcc7c19a0278cb26ef7975db",
+      "provider_sha256": "3909ec906198ac837380d316453c084c048e73d7bcc7c19a0278cb26ef7975db",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/recovery_finish_transitions_to_embark_and_rolls_back_without_instance.rs",
+      "destination": "tests/daemon-control/cases/recovery_finish_transitions_to_embark_and_rolls_back_without_instance.rs",
+      "source_sha256": "df248c1659f17c177b2e9c28cbb26bc6259261d9a54e9cf124e4921bde6d1232",
+      "provider_sha256": "df248c1659f17c177b2e9c28cbb26bc6259261d9a54e9cf124e4921bde6d1232",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/supervision_validation_authorizes_only_a_complete_started_group.rs",
+      "destination": "tests/daemon-control/cases/supervision_validation_authorizes_only_a_complete_started_group.rs",
+      "source_sha256": "9e958ee775d0f83c8a546b19e76b094dc6e9b986377ae89eb7d9368cb412827b",
+      "provider_sha256": "9e958ee775d0f83c8a546b19e76b094dc6e9b986377ae89eb7d9368cb412827b",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/cases/support.rs",
+      "destination": "tests/daemon-control/cases/support.rs",
+      "source_sha256": "76f37532db72887d0c3c2830f3f8999dc897dab52aad5dc21543a0bf6e807a5c",
+      "provider_sha256": "76f37532db72887d0c3c2830f3f8999dc897dab52aad5dc21543a0bf6e807a5c",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/action.rs",
+      "destination": "tests/daemon-control/fixtures/action.rs",
+      "source_sha256": "dff81c02745fc35914ca2d6bd753ccb7e56a9d66589d6ef5c9dc7dbdc2f0e701",
+      "provider_sha256": "dff81c02745fc35914ca2d6bd753ccb7e56a9d66589d6ef5c9dc7dbdc2f0e701",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/active.rs",
+      "destination": "tests/daemon-control/fixtures/active.rs",
+      "source_sha256": "5d10c9180ffcf647bdaae210c3add2571f320e1904712e9135aab337e8116c88",
+      "provider_sha256": "5d10c9180ffcf647bdaae210c3add2571f320e1904712e9135aab337e8116c88",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/control.rs",
+      "destination": "tests/daemon-control/fixtures/control.rs",
+      "source_sha256": "8adda42ba5b19e5fc10cf48da00d5a0b50e9db1643693aa772880f2c048758b1",
+      "provider_sha256": "8adda42ba5b19e5fc10cf48da00d5a0b50e9db1643693aa772880f2c048758b1",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/control_config.rs",
+      "destination": "tests/daemon-control/fixtures/control_config.rs",
+      "source_sha256": "abef1942cfc8278900b4d0d859e4083ae9d7ee6fb3e219fa4dcac73f7b60ca95",
+      "provider_sha256": "abef1942cfc8278900b4d0d859e4083ae9d7ee6fb3e219fa4dcac73f7b60ca95",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/dependency.rs",
+      "destination": "tests/daemon-control/fixtures/dependency.rs",
+      "source_sha256": "dd4dc0f49286b13e416d8a16b174d6b050bf99cd91a471cc17cce836bfa1613a",
+      "provider_sha256": "dd4dc0f49286b13e416d8a16b174d6b050bf99cd91a471cc17cce836bfa1613a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/ending.rs",
+      "destination": "tests/daemon-control/fixtures/ending.rs",
+      "source_sha256": "b56d7f50a24c75df22285d62a2fd669e7af03f1045e7d03a257a0de6dc6a1efe",
+      "provider_sha256": "b56d7f50a24c75df22285d62a2fd669e7af03f1045e7d03a257a0de6dc6a1efe",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/execution.rs",
+      "destination": "tests/daemon-control/fixtures/execution.rs",
+      "source_sha256": "14caf637fcec60612941daa63f8476fd02652213498ae036597198dc78beda03",
+      "provider_sha256": "14caf637fcec60612941daa63f8476fd02652213498ae036597198dc78beda03",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/execution_progress.rs",
+      "destination": "tests/daemon-control/fixtures/execution_progress.rs",
+      "source_sha256": "0eab2da337b29b4fa45864aabfd534bc1f78f50d96c9037a99d0c06276f91cd8",
+      "provider_sha256": "0eab2da337b29b4fa45864aabfd534bc1f78f50d96c9037a99d0c06276f91cd8",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/fault.rs",
+      "destination": "tests/daemon-control/fixtures/fault.rs",
+      "source_sha256": "343b79cebca87770a9e5b88aa0f60aebb4410092e5a5f66f294734d6ade6f813",
+      "provider_sha256": "343b79cebca87770a9e5b88aa0f60aebb4410092e5a5f66f294734d6ade6f813",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/input.rs",
+      "destination": "tests/daemon-control/fixtures/input.rs",
+      "source_sha256": "27a7b009b19f7cec3ed1c61fb44066b3ccf559cd72b78ffea11c7c39eb5a5fbd",
+      "provider_sha256": "27a7b009b19f7cec3ed1c61fb44066b3ccf559cd72b78ffea11c7c39eb5a5fbd",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/instance.rs",
+      "destination": "tests/daemon-control/fixtures/instance.rs",
+      "source_sha256": "b467cd7d493d2b55a1714db7a84bcca59c9b03f3f2afe36ac0b728f16310e43a",
+      "provider_sha256": "b467cd7d493d2b55a1714db7a84bcca59c9b03f3f2afe36ac0b728f16310e43a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/mod.rs",
+      "destination": "tests/daemon-control/fixtures/mod.rs",
+      "source_sha256": "0c51161c783488640c899303ed1905a76eeaf7f9d2a3b9ccafc4eb5d9d2faa7e",
+      "provider_sha256": "0c51161c783488640c899303ed1905a76eeaf7f9d2a3b9ccafc4eb5d9d2faa7e",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/operation.rs",
+      "destination": "tests/daemon-control/fixtures/operation.rs",
+      "source_sha256": "02545c04a36f275ac8b42c08c525d687f51632767949bb8cd4fe7e433a291652",
+      "provider_sha256": "02545c04a36f275ac8b42c08c525d687f51632767949bb8cd4fe7e433a291652",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/operation_key.rs",
+      "destination": "tests/daemon-control/fixtures/operation_key.rs",
+      "source_sha256": "1f743c2bb722a248265ff8012bb27f4bbb5670b707861fb7cd7141f06797a42a",
+      "provider_sha256": "1f743c2bb722a248265ff8012bb27f4bbb5670b707861fb7cd7141f06797a42a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/operator_config.rs",
+      "destination": "tests/daemon-control/fixtures/operator_config.rs",
+      "source_sha256": "2ff27c12aae1d67ee388d38cb86e41e30ec2f472e8be66f64879a195b775dd97",
+      "provider_sha256": "2ff27c12aae1d67ee388d38cb86e41e30ec2f472e8be66f64879a195b775dd97",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/request.rs",
+      "destination": "tests/daemon-control/fixtures/request.rs",
+      "source_sha256": "d242ab3f96370d445588a2cc0145ef8c7d3111003e206636f5a0c4b24868819a",
+      "provider_sha256": "d242ab3f96370d445588a2cc0145ef8c7d3111003e206636f5a0c4b24868819a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/sender.rs",
+      "destination": "tests/daemon-control/fixtures/sender.rs",
+      "source_sha256": "7116526932253ceca73fc59659a28a909db8c6dc9cb1f6568f2f7bd5b4ec37f2",
+      "provider_sha256": "7116526932253ceca73fc59659a28a909db8c6dc9cb1f6568f2f7bd5b4ec37f2",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/settle.rs",
+      "destination": "tests/daemon-control/fixtures/settle.rs",
+      "source_sha256": "d4f886413cb0d56e1d5da30e63b9d1daa81c907d515962b1468a821bbc35125b",
+      "provider_sha256": "d4f886413cb0d56e1d5da30e63b9d1daa81c907d515962b1468a821bbc35125b",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/target.rs",
+      "destination": "tests/daemon-control/fixtures/target.rs",
+      "source_sha256": "b5a15a9b61716998af6aa88b578aa7977aeecc9940bbb3da2efa4c044c34a8f3",
+      "provider_sha256": "b5a15a9b61716998af6aa88b578aa7977aeecc9940bbb3da2efa4c044c34a8f3",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/tracked.rs",
+      "destination": "tests/daemon-control/fixtures/tracked.rs",
+      "source_sha256": "40f98d4e58767fdf6969f261539bbb1a4a9895ab5078c00e67b0514da6f55710",
+      "provider_sha256": "40f98d4e58767fdf6969f261539bbb1a4a9895ab5078c00e67b0514da6f55710",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/unit_file.rs",
+      "destination": "tests/daemon-control/fixtures/unit_file.rs",
+      "source_sha256": "8ff47ba070394403f6cdfb02133f24e6daabd92a85148b75d1cc4cf060992232",
+      "provider_sha256": "8ff47ba070394403f6cdfb02133f24e6daabd92a85148b75d1cc4cf060992232",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/fixtures/waiters.rs",
+      "destination": "tests/daemon-control/fixtures/waiters.rs",
+      "source_sha256": "0e4ef9d7a9db6c8c44785db45410f1d2cd2ea70ae8e8b6edb64a319291e5184f",
+      "provider_sha256": "0e4ef9d7a9db6c8c44785db45410f1d2cd2ea70ae8e8b6edb64a319291e5184f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/daemon-control/lib.rs",
+      "destination": "tests/daemon-control/lib.rs",
+      "source_sha256": "f8faf27106e6867a3e77f7a6d1deb600033b8fac16b5346421ad0f075cf67961",
+      "provider_sha256": "9fb73b8e60483f6d0b241db1dd8be578c8540369125b4f9b9d51dee51345aeff",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/Cargo.lock",
+      "destination": "tests/guard-deployment/Cargo.lock",
+      "source_sha256": "88c91b87d8320933eee1ce50f9df3cdc54ecb9ed5cff2463a0ba2e144911f0d0",
+      "provider_sha256": "88c91b87d8320933eee1ce50f9df3cdc54ecb9ed5cff2463a0ba2e144911f0d0",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/Cargo.toml",
+      "destination": "tests/guard-deployment/Cargo.toml",
+      "source_sha256": "dcedb3433a5cca444f2416535f07a1b94865b398e6e28ecd50c375d5c8e9bdeb",
+      "provider_sha256": "dcedb3433a5cca444f2416535f07a1b94865b398e6e28ecd50c375d5c8e9bdeb",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/app/settle.rs",
+      "destination": "tests/guard-deployment/fixtures/app/settle.rs",
+      "source_sha256": "4ef86aa0d48ddc628862f968d73a5cb2dcf16ef7a4368c82cd0f3937eb46d933",
+      "provider_sha256": "4ef86aa0d48ddc628862f968d73a5cb2dcf16ef7a4368c82cd0f3937eb46d933",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/app/supplies.rs",
+      "destination": "tests/guard-deployment/fixtures/app/supplies.rs",
+      "source_sha256": "7d446e08bcee89e94a51aee2fc184465a13cf28a95842b430017c4f5709456ba",
+      "provider_sha256": "7d446e08bcee89e94a51aee2fc184465a13cf28a95842b430017c4f5709456ba",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/assembly/jobs.rs",
+      "destination": "tests/guard-deployment/fixtures/assembly/jobs.rs",
+      "source_sha256": "a057fd61d4a172314c10b5c1affff92856ac27d6b4c7aa057e09eb03636561aa",
+      "provider_sha256": "a057fd61d4a172314c10b5c1affff92856ac27d6b4c7aa057e09eb03636561aa",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/control/construction.rs",
+      "destination": "tests/guard-deployment/fixtures/control/construction.rs",
+      "source_sha256": "c965ba81385418a66dc52298cbb76aa8e33446fe8500d5701e52a34e29b7e34a",
+      "provider_sha256": "c965ba81385418a66dc52298cbb76aa8e33446fe8500d5701e52a34e29b7e34a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/control/control.rs",
+      "destination": "tests/guard-deployment/fixtures/control/control.rs",
+      "source_sha256": "01b1b1b4966a13ef4a57a739f47d317bffabb3f17ed22065b4f8ec889627bf6e",
+      "provider_sha256": "01b1b1b4966a13ef4a57a739f47d317bffabb3f17ed22065b4f8ec889627bf6e",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/control/input.rs",
+      "destination": "tests/guard-deployment/fixtures/control/input.rs",
+      "source_sha256": "27a7b009b19f7cec3ed1c61fb44066b3ccf559cd72b78ffea11c7c39eb5a5fbd",
+      "provider_sha256": "27a7b009b19f7cec3ed1c61fb44066b3ccf559cd72b78ffea11c7c39eb5a5fbd",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/control/pending.rs",
+      "destination": "tests/guard-deployment/fixtures/control/pending.rs",
+      "source_sha256": "2d49ab55611ed5732bdd4695ed46be6e635bbd402d6fb11352577b7b9ff1c3c2",
+      "provider_sha256": "2d49ab55611ed5732bdd4695ed46be6e635bbd402d6fb11352577b7b9ff1c3c2",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/control/readiness.rs",
+      "destination": "tests/guard-deployment/fixtures/control/readiness.rs",
+      "source_sha256": "3ed11c912866e2d52318e909a71d4f9fcf0bef932a8694bd78c614c9d94a829a",
+      "provider_sha256": "3ed11c912866e2d52318e909a71d4f9fcf0bef932a8694bd78c614c9d94a829a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/control/roster.rs",
+      "destination": "tests/guard-deployment/fixtures/control/roster.rs",
+      "source_sha256": "2f1cf8e537f34641b6d7db8582678ccff98ab6569e22d5660e8d5d8db69cfbf7",
+      "provider_sha256": "2f1cf8e537f34641b6d7db8582678ccff98ab6569e22d5660e8d5d8db69cfbf7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/control/service.rs",
+      "destination": "tests/guard-deployment/fixtures/control/service.rs",
+      "source_sha256": "c6ad59d218c75b77f4d0d36fdc2605038814d0d6a52000b3f46403c5196258b1",
+      "provider_sha256": "c6ad59d218c75b77f4d0d36fdc2605038814d0d6a52000b3f46403c5196258b1",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/effects.rs",
+      "destination": "tests/guard-deployment/fixtures/effects.rs",
+      "source_sha256": "b2ea01d148a5542bb9cc19f362c1e66368a297d98199cbf751998e2a48b50602",
+      "provider_sha256": "b2ea01d148a5542bb9cc19f362c1e66368a297d98199cbf751998e2a48b50602",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/kernel.rs",
+      "destination": "tests/guard-deployment/fixtures/kernel.rs",
+      "source_sha256": "1a8c453a0806a53dbf07c5e8bf54f735e8931f8c081783462c88392c4b715d45",
+      "provider_sha256": "1a8c453a0806a53dbf07c5e8bf54f735e8931f8c081783462c88392c4b715d45",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/lifecycle/action.rs",
+      "destination": "tests/guard-deployment/fixtures/lifecycle/action.rs",
+      "source_sha256": "dff81c02745fc35914ca2d6bd753ccb7e56a9d66589d6ef5c9dc7dbdc2f0e701",
+      "provider_sha256": "dff81c02745fc35914ca2d6bd753ccb7e56a9d66589d6ef5c9dc7dbdc2f0e701",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/lifecycle/active.rs",
+      "destination": "tests/guard-deployment/fixtures/lifecycle/active.rs",
+      "source_sha256": "092feec6a05c630b4fb2472ea957e5eff2b412a4b4facb197ed6b43be696b70e",
+      "provider_sha256": "092feec6a05c630b4fb2472ea957e5eff2b412a4b4facb197ed6b43be696b70e",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/lifecycle/execution.rs",
+      "destination": "tests/guard-deployment/fixtures/lifecycle/execution.rs",
+      "source_sha256": "3d7f2983e621c44770c34e724d9ce9bc20839d3f1bb7d543ac16f3f82b3c8e5b",
+      "provider_sha256": "3d7f2983e621c44770c34e724d9ce9bc20839d3f1bb7d543ac16f3f82b3c8e5b",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/lifecycle/execution_progress.rs",
+      "destination": "tests/guard-deployment/fixtures/lifecycle/execution_progress.rs",
+      "source_sha256": "a33c3f996b9e8211eb3937cbb09bef3c47665366328f4e0d194c390abf7ca1c7",
+      "provider_sha256": "a33c3f996b9e8211eb3937cbb09bef3c47665366328f4e0d194c390abf7ca1c7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/lifecycle/instance.rs",
+      "destination": "tests/guard-deployment/fixtures/lifecycle/instance.rs",
+      "source_sha256": "7cb8a78a0a0d67d4518a26867c29f7d55d789b342e64392699712977bdbb7803",
+      "provider_sha256": "7cb8a78a0a0d67d4518a26867c29f7d55d789b342e64392699712977bdbb7803",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/lifecycle/operation.rs",
+      "destination": "tests/guard-deployment/fixtures/lifecycle/operation.rs",
+      "source_sha256": "d581086bcf28ca249e1482d20e7234ad238e8059a55de4b14d4f7256d71dc137",
+      "provider_sha256": "d581086bcf28ca249e1482d20e7234ad238e8059a55de4b14d4f7256d71dc137",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/lifecycle/operation_key.rs",
+      "destination": "tests/guard-deployment/fixtures/lifecycle/operation_key.rs",
+      "source_sha256": "e709c994567885588694fd26e70df62c7e97a3b74e77840d54b68dd1f37a466e",
+      "provider_sha256": "e709c994567885588694fd26e70df62c7e97a3b74e77840d54b68dd1f37a466e",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/lifecycle/request.rs",
+      "destination": "tests/guard-deployment/fixtures/lifecycle/request.rs",
+      "source_sha256": "8993ad0130220ece7940628b39904ca254ddf7a1dbae0aa370e251e69aef59c2",
+      "provider_sha256": "8993ad0130220ece7940628b39904ca254ddf7a1dbae0aa370e251e69aef59c2",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/setup.rs",
+      "destination": "tests/guard-deployment/fixtures/setup.rs",
+      "source_sha256": "a3ddd46088cd96e1dfdffcc70f9e7b4e8024e280c62afbea23ce63633bfb3489",
+      "provider_sha256": "a3ddd46088cd96e1dfdffcc70f9e7b4e8024e280c62afbea23ce63633bfb3489",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/unit/control_config.rs",
+      "destination": "tests/guard-deployment/fixtures/unit/control_config.rs",
+      "source_sha256": "479797053d91092a200880df61f28a9bd381ee06b2195e0f23459ac66239e0e3",
+      "provider_sha256": "479797053d91092a200880df61f28a9bd381ee06b2195e0f23459ac66239e0e3",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/unit/ready.rs",
+      "destination": "tests/guard-deployment/fixtures/unit/ready.rs",
+      "source_sha256": "991cabd41ed03870b92d8f4e0b47bc333ff5eda0205aab050c489c5549432cab",
+      "provider_sha256": "991cabd41ed03870b92d8f4e0b47bc333ff5eda0205aab050c489c5549432cab",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/unit/unit_file.rs",
+      "destination": "tests/guard-deployment/fixtures/unit/unit_file.rs",
+      "source_sha256": "dd66198ffb367f15b0f265dbd58b4a59e0ab58706efbeed62ce684f03cebfcd9",
+      "provider_sha256": "dd66198ffb367f15b0f265dbd58b4a59e0ab58706efbeed62ce684f03cebfcd9",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/unit_calls.rs",
+      "destination": "tests/guard-deployment/fixtures/unit_calls.rs",
+      "source_sha256": "83880ba28f16d39117d8d6f87f7b169cc065a3d7645c9b3c4e5c2adef137a58e",
+      "provider_sha256": "83880ba28f16d39117d8d6f87f7b169cc065a3d7645c9b3c4e5c2adef137a58e",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/fixtures/verdict.rs",
+      "destination": "tests/guard-deployment/fixtures/verdict.rs",
+      "source_sha256": "98a2833c7c5aa02df265cf6c90c77875997f77453fd99ae4da483faae7d7d0fb",
+      "provider_sha256": "98a2833c7c5aa02df265cf6c90c77875997f77453fd99ae4da483faae7d7d0fb",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/lib.rs",
+      "destination": "tests/guard-deployment/lib.rs",
+      "source_sha256": "d3c3c87300d92925ff59cbe9b1c4c93b27c15c45492e49e90ead94c314d0a8d9",
+      "provider_sha256": "3fb9881e9e868ed4d084eeb407464c150d22e0f45aeb36681911c5ed01c6e6c4",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/guard-deployment/tests.rs",
+      "destination": "tests/guard-deployment/tests.rs",
+      "source_sha256": "4eac3c2196417333c43385865dff6b9216ba5bf8a378976960026e3ec6d78e4a",
+      "provider_sha256": "4eac3c2196417333c43385865dff6b9216ba5bf8a378976960026e3ec6d78e4a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity/Cargo.lock",
+      "destination": "tests/identity/Cargo.lock",
+      "source_sha256": "d7f9a5347f0ba4e70c3618ad673a268dd31d6b7cdfad49e31d6b91e943bc3e73",
+      "provider_sha256": "d7f9a5347f0ba4e70c3618ad673a268dd31d6b7cdfad49e31d6b91e943bc3e73",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity/Cargo.toml",
+      "destination": "tests/identity/Cargo.toml",
+      "source_sha256": "8288a70c7df736a62a6a1df08a40e0bd92d7febf9e678958f9402860b0d01753",
+      "provider_sha256": "8288a70c7df736a62a6a1df08a40e0bd92d7febf9e678958f9402860b0d01753",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity/host.rs",
+      "destination": "tests/identity/host.rs",
+      "source_sha256": "c6d14d14bc86486d1034983ce3aaae5d5e320aa88c28742f029a15fdda9cacbf",
+      "provider_sha256": "47cd92f8383555c0462e780963aa178dcda433bb7cc4f4a9a9902c988425f787",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-publication/Cargo.lock",
+      "destination": "tests/identity-publication/Cargo.lock",
+      "source_sha256": "7145632fda386b1b34d9c9d88f7f1bea832f347b6324bb93e4abdb2ebb8abca3",
+      "provider_sha256": "7145632fda386b1b34d9c9d88f7f1bea832f347b6324bb93e4abdb2ebb8abca3",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-publication/Cargo.toml",
+      "destination": "tests/identity-publication/Cargo.toml",
+      "source_sha256": "419e38309dff6c6c68917e9c1fda43ac99aac8b0836c18de9795e3042ef69074",
+      "provider_sha256": "419e38309dff6c6c68917e9c1fda43ac99aac8b0836c18de9795e3042ef69074",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-publication/lib.rs",
+      "destination": "tests/identity-publication/lib.rs",
+      "source_sha256": "d452f108ef41c7605ef404330905a05d029e5e4509d67ba12533f5d931376893",
+      "provider_sha256": "dba64407fec4c8c65fbbb2062f3b2f6a6520707c484c9779425108cd7994035c",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-rpc/.gitignore",
+      "destination": "tests/identity-rpc/.gitignore",
+      "source_sha256": "07d64eb09a56c853b7853a47276799b38d7d6d25a4314b0c1abc10432c214e17",
+      "provider_sha256": "07d64eb09a56c853b7853a47276799b38d7d6d25a4314b0c1abc10432c214e17",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-rpc/Cargo.toml",
+      "destination": "tests/identity-rpc/Cargo.toml",
+      "source_sha256": "4d06df1ec7ab9a8f0df00993575925f1953e9b70a33d0dd1f22eb153fcecc1cd",
+      "provider_sha256": "4d06df1ec7ab9a8f0df00993575925f1953e9b70a33d0dd1f22eb153fcecc1cd",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-rpc/lib.rs",
+      "destination": "tests/identity-rpc/lib.rs",
+      "source_sha256": "7593dd741c01f04db0cde59368ac890fcfdbb2621c18d93682041ea4d906860f",
+      "provider_sha256": "6670ec91d1a4f110378ddef12241ba3a74b02c0c4bd764865151b4b3aa1ab67f",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-rpc/system.rs",
+      "destination": "tests/identity-rpc/system.rs",
+      "source_sha256": "6bce7829520d80c283c15e3b09c3eb96399295e1523c82a271fa3386b83e0ee8",
+      "provider_sha256": "6bce7829520d80c283c15e3b09c3eb96399295e1523c82a271fa3386b83e0ee8",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-rpc/system/identity.rs",
+      "destination": "tests/identity-rpc/system/identity.rs",
+      "source_sha256": "cdbda7b72ec35a06f1236faaddb8ac0a4848db3e84b43381c2c77bf28030244e",
+      "provider_sha256": "cdbda7b72ec35a06f1236faaddb8ac0a4848db3e84b43381c2c77bf28030244e",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-rpc/system/operator.rs",
+      "destination": "tests/identity-rpc/system/operator.rs",
+      "source_sha256": "a8e1ca13a8ff294554f4a1075f944077c06698f3cf4f338e9219e7dc0dfc931f",
+      "provider_sha256": "a8e1ca13a8ff294554f4a1075f944077c06698f3cf4f338e9219e7dc0dfc931f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-rpc/system/operator/client.rs",
+      "destination": "tests/identity-rpc/system/operator/client.rs",
+      "source_sha256": "b984eccc7194ddd59ea6f7c67e5da7ad63c4de11ae4457aee9bfc56b49a8c2c4",
+      "provider_sha256": "b984eccc7194ddd59ea6f7c67e5da7ad63c4de11ae4457aee9bfc56b49a8c2c4",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/identity-rpc/tests.rs",
+      "destination": "tests/identity-rpc/tests.rs",
+      "source_sha256": "33ffae5113acb22b62d93d2fab50afefcc3b38446285e53590e8ea58fc8a85e8",
+      "provider_sha256": "33ffae5113acb22b62d93d2fab50afefcc3b38446285e53590e8ea58fc8a85e8",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/lease-window/Cargo.lock",
+      "destination": "tests/lease-window/Cargo.lock",
+      "source_sha256": "71595975308fe60e58b6a44ba7d3e97e7404106791b35825828c15ed09e96169",
+      "provider_sha256": "71595975308fe60e58b6a44ba7d3e97e7404106791b35825828c15ed09e96169",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/lease-window/Cargo.toml",
+      "destination": "tests/lease-window/Cargo.toml",
+      "source_sha256": "dd6e702e0d4c73f3b0a70f62681b5b326de518b75411d553f14a0ffeb848fe75",
+      "provider_sha256": "dd6e702e0d4c73f3b0a70f62681b5b326de518b75411d553f14a0ffeb848fe75",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/lease-window/lib.rs",
+      "destination": "tests/lease-window/lib.rs",
+      "source_sha256": "cfad1a9eb6c98da1aaf345a983c1d8c7d263e37a688db169ee11395ad51dba3b",
+      "provider_sha256": "75b3a36999075ed027ef83768a4bdca91a3c1fa3f4307cac24b274706c0c686f",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/lease-window/tests.rs",
+      "destination": "tests/lease-window/tests.rs",
+      "source_sha256": "303813cca71679c84751be2d3020682dd016e61d6e92b885e5d35c9b0c22650a",
+      "provider_sha256": "303813cca71679c84751be2d3020682dd016e61d6e92b885e5d35c9b0c22650a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/loader-client/.gitignore",
+      "destination": "tests/loader-client/.gitignore",
+      "source_sha256": "c1e953ee360e77de57f7b02f1b7880bd6a3dc22d1a69e953c2ac2c52cc52d247",
+      "provider_sha256": "c1e953ee360e77de57f7b02f1b7880bd6a3dc22d1a69e953c2ac2c52cc52d247",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/loader-client/Cargo.toml",
+      "destination": "tests/loader-client/Cargo.toml",
+      "source_sha256": "14b537fb1e16511386b00d9149ab09f1821b69edb1ebb503f88767f8aa98add4",
+      "provider_sha256": "14b537fb1e16511386b00d9149ab09f1821b69edb1ebb503f88767f8aa98add4",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/loader-client/lib.rs",
+      "destination": "tests/loader-client/lib.rs",
+      "source_sha256": "abaca46596647977b219348694ea0d946495c4ef3ea4b59bfea640edf6ea28db",
+      "provider_sha256": "b9288603ec091da76e57e4cc5c2f7b00a5d51fbdf0f5381c67af04c4830eb0a8",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/loader-client/tests.rs",
+      "destination": "tests/loader-client/tests.rs",
+      "source_sha256": "53ac5db16426f22b6f34ff93d138173b9080e0491c5a5f16bd2c2caec6d9a3dc",
+      "provider_sha256": "53ac5db16426f22b6f34ff93d138173b9080e0491c5a5f16bd2c2caec6d9a3dc",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-installation/.gitignore",
+      "destination": "tests/namespace-installation/.gitignore",
+      "source_sha256": "306fd52e74fca6746e12acc750f232de15e71da917756a1270d74c91f5eb7368",
+      "provider_sha256": "306fd52e74fca6746e12acc750f232de15e71da917756a1270d74c91f5eb7368",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-installation/Cargo.lock",
+      "destination": "tests/namespace-installation/Cargo.lock",
+      "source_sha256": "750429fcddd802d6d8c075fd801b35e1756602ac78b5933dc7d7f6bc9a0a6ce6",
+      "provider_sha256": "750429fcddd802d6d8c075fd801b35e1756602ac78b5933dc7d7f6bc9a0a6ce6",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-installation/Cargo.toml",
+      "destination": "tests/namespace-installation/Cargo.toml",
+      "source_sha256": "2c311f5a714299b306138e6fbab40ba62b18423491d2e208dd6e59f4a0fbe58f",
+      "provider_sha256": "2c311f5a714299b306138e6fbab40ba62b18423491d2e208dd6e59f4a0fbe58f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-installation/lib.rs",
+      "destination": "tests/namespace-installation/lib.rs",
+      "source_sha256": "a99e38e1fb474f98c8b20e8fc677401b387da6e63ccfb43f3c2b94e83b6a1bc2",
+      "provider_sha256": "7efaae9b2b896a84ee31666f1b469d3ae441ab378dd40fa1eb8b23bed231152d",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-layout/Cargo.lock",
+      "destination": "tests/namespace-layout/Cargo.lock",
+      "source_sha256": "8cf5006916abe5e206ebe8d5d5d3172ad1971bd5ee3fbce5fb9fb0d240907e06",
+      "provider_sha256": "8cf5006916abe5e206ebe8d5d5d3172ad1971bd5ee3fbce5fb9fb0d240907e06",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-layout/Cargo.toml",
+      "destination": "tests/namespace-layout/Cargo.toml",
+      "source_sha256": "cc768ec3d0c7bd9b2680e9a85ca2baa2250058d984df4f86e1ba5d0d6f7bbda4",
+      "provider_sha256": "cc768ec3d0c7bd9b2680e9a85ca2baa2250058d984df4f86e1ba5d0d6f7bbda4",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-layout/lib.rs",
+      "destination": "tests/namespace-layout/lib.rs",
+      "source_sha256": "6d03941ebf6bd40dcf2cc0f9f8a74703e9488c1df99f08ffc36c3ffbb2b27c73",
+      "provider_sha256": "6d03941ebf6bd40dcf2cc0f9f8a74703e9488c1df99f08ffc36c3ffbb2b27c73",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-layout/system/operator/mod.rs",
+      "destination": "tests/namespace-layout/system/operator/mod.rs",
+      "source_sha256": "e07ad97b1c128600923170010921f4dff99b7c46bdc0dd2da350ef7721082e18",
+      "provider_sha256": "b7a2c9a008a5163a4f55342f37fccc5c08fcfcf4220971059332e40e55b9fef7",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-retirement/.gitignore",
+      "destination": "tests/namespace-retirement/.gitignore",
+      "source_sha256": "9cc2c8cc102e0b2a0a177c8f594abc9b9776300a04473c24b45d52c1007a4119",
+      "provider_sha256": "9cc2c8cc102e0b2a0a177c8f594abc9b9776300a04473c24b45d52c1007a4119",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-retirement/Cargo.toml",
+      "destination": "tests/namespace-retirement/Cargo.toml",
+      "source_sha256": "7cce9b0800c3af99afa8993e9bf1a96c00c4c5a0c3dfbc67280a5c4a472fd04f",
+      "provider_sha256": "7cce9b0800c3af99afa8993e9bf1a96c00c4c5a0c3dfbc67280a5c4a472fd04f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-retirement/cases/mod.rs",
+      "destination": "tests/namespace-retirement/cases/mod.rs",
+      "source_sha256": "0fc2acef3a11bda035abdee9216ff5f06ae22ffe622274c525fe1b6e3bb117bb",
+      "provider_sha256": "0fc2acef3a11bda035abdee9216ff5f06ae22ffe622274c525fe1b6e3bb117bb",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-retirement/fixtures/capability.rs",
+      "destination": "tests/namespace-retirement/fixtures/capability.rs",
+      "source_sha256": "2b97c177b4060088ceeb494202ba15bbad6211cda80d7e46f4bd79c5e293e0b7",
+      "provider_sha256": "2b97c177b4060088ceeb494202ba15bbad6211cda80d7e46f4bd79c5e293e0b7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-retirement/fixtures/mod.rs",
+      "destination": "tests/namespace-retirement/fixtures/mod.rs",
+      "source_sha256": "a22c9703b856e40d35696ff49fa2ca5dcf5313a4a79bf41ba08ea4d69af21eaa",
+      "provider_sha256": "a22c9703b856e40d35696ff49fa2ca5dcf5313a4a79bf41ba08ea4d69af21eaa",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-retirement/fixtures/system.rs",
+      "destination": "tests/namespace-retirement/fixtures/system.rs",
+      "source_sha256": "fda41c2a3e3478af95336f4247f4b59522f5604237d4f59b40f65a6ab9274f49",
+      "provider_sha256": "fda41c2a3e3478af95336f4247f4b59522f5604237d4f59b40f65a6ab9274f49",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/namespace-retirement/lib.rs",
+      "destination": "tests/namespace-retirement/lib.rs",
+      "source_sha256": "a3ac9c73f1befd03523221f92ab0aef40826b3ca25df6d8ba1a17c77697c4232",
+      "provider_sha256": "af64e0f99c0cbd35f58f9118f65e7d23d0b177a9f5e0c9aff06e08355a647629",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-api/.gitignore",
+      "destination": "tests/operator-api/.gitignore",
+      "source_sha256": "306fd52e74fca6746e12acc750f232de15e71da917756a1270d74c91f5eb7368",
+      "provider_sha256": "306fd52e74fca6746e12acc750f232de15e71da917756a1270d74c91f5eb7368",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-api/Cargo.lock",
+      "destination": "tests/operator-api/Cargo.lock",
+      "source_sha256": "4634a64de52c849d06e1430d4ae676f1ca31f85612301fc37bd3dcea2a253cb7",
+      "provider_sha256": "4634a64de52c849d06e1430d4ae676f1ca31f85612301fc37bd3dcea2a253cb7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-api/Cargo.toml",
+      "destination": "tests/operator-api/Cargo.toml",
+      "source_sha256": "e143af1037f1d67e2e18d23fe4d6cdc2401c4debb3c45906c8a9092f76f30467",
+      "provider_sha256": "e143af1037f1d67e2e18d23fe4d6cdc2401c4debb3c45906c8a9092f76f30467",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-api/lib.rs",
+      "destination": "tests/operator-api/lib.rs",
+      "source_sha256": "a78ce327b1431f539ee88359c8235e1ddd5af779e076ddfae384674d3d8533aa",
+      "provider_sha256": "9c15943a689d6c25578c44d667705a1051f5b5a32406eefbcbf960cfbfe6b9cc",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-client/Cargo.lock",
+      "destination": "tests/operator-client/Cargo.lock",
+      "source_sha256": "dd61737ebd353f298aff05cad5b12fa599151c5df8c2a8e0b4ef16ee2aa92885",
+      "provider_sha256": "dd61737ebd353f298aff05cad5b12fa599151c5df8c2a8e0b4ef16ee2aa92885",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-client/Cargo.toml",
+      "destination": "tests/operator-client/Cargo.toml",
+      "source_sha256": "3c37f6e35b6bad480e2c1ae049dabb7d1cf2ca882b156f068be8d410e88e8b28",
+      "provider_sha256": "3c37f6e35b6bad480e2c1ae049dabb7d1cf2ca882b156f068be8d410e88e8b28",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-client/lib.rs",
+      "destination": "tests/operator-client/lib.rs",
+      "source_sha256": "7702e1a2c378aa65b9bfe0c4eef33dd6d87b1a55042aedce1761afe514ec5df2",
+      "provider_sha256": "ab7e2679b6e1ef731b6af2d76cbf9ec6aeedabc707ea30424c4b16b2927ba091",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-client/lookup_regression.rs",
+      "destination": "tests/operator-client/lookup_regression.rs",
+      "source_sha256": "de12ae47d01f2920796f4b7402d9413794014ee23a111401adb1bf63d8d5c994",
+      "provider_sha256": "f8a7a202ae081c5286eedbb2edae07e3d40b11f214b6e13050d2f68aa22ba6df",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-connection/Cargo.lock",
+      "destination": "tests/operator-connection/Cargo.lock",
+      "source_sha256": "268396015b4dc4023172a917d632873d2e184b881d4c19a099fc9d791c6c7e4d",
+      "provider_sha256": "268396015b4dc4023172a917d632873d2e184b881d4c19a099fc9d791c6c7e4d",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-connection/Cargo.toml",
+      "destination": "tests/operator-connection/Cargo.toml",
+      "source_sha256": "39eb90870788570460993b0ff905d526b892e5eb8b312a0bc87fb3cf510c0140",
+      "provider_sha256": "39eb90870788570460993b0ff905d526b892e5eb8b312a0bc87fb3cf510c0140",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-connection/lib.rs",
+      "destination": "tests/operator-connection/lib.rs",
+      "source_sha256": "cc645f4292451bc48ed844eb31d0e8d5321f703a89f3388512acc14b99dc9c8c",
+      "provider_sha256": "3c91dfb71b0556b189ed3731a59f4f3987b413f45ee175f5aef07909f7a10144",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-connection/time.rs",
+      "destination": "tests/operator-connection/time.rs",
+      "source_sha256": "fbb27fca114e480a04e48fa2abe9819aebbc6ab2d82ec62d964ed2d5c5eecef9",
+      "provider_sha256": "fbb27fca114e480a04e48fa2abe9819aebbc6ab2d82ec62d964ed2d5c5eecef9",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-handoff/Cargo.lock",
+      "destination": "tests/operator-handoff/Cargo.lock",
+      "source_sha256": "56e132cf8d89a46fdf0e2f28f252762b42631190553b8592d3690be1735cadd3",
+      "provider_sha256": "56e132cf8d89a46fdf0e2f28f252762b42631190553b8592d3690be1735cadd3",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-handoff/Cargo.toml",
+      "destination": "tests/operator-handoff/Cargo.toml",
+      "source_sha256": "c1486fe63e74b792618c39cff85d9fbb692d019b3e2d4a1d6ca81a60dad9b12f",
+      "provider_sha256": "c1486fe63e74b792618c39cff85d9fbb692d019b3e2d4a1d6ca81a60dad9b12f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-handoff/lib.rs",
+      "destination": "tests/operator-handoff/lib.rs",
+      "source_sha256": "cd57970962255ca17188e71b8104d92a9969ac390751e078c2139cd571f6d596",
+      "provider_sha256": "72fc203eccf62b2d624a76ee82a870520fc9421fb8ecb09d5ba4406cb7c02e8c",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-watch/Cargo.lock",
+      "destination": "tests/operator-watch/Cargo.lock",
+      "source_sha256": "6d0b215a656a6b700bc9ef77d25ca1288dd604593ec7056e78bcbe2f955414f7",
+      "provider_sha256": "6d0b215a656a6b700bc9ef77d25ca1288dd604593ec7056e78bcbe2f955414f7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-watch/Cargo.toml",
+      "destination": "tests/operator-watch/Cargo.toml",
+      "source_sha256": "26b4191397a8d32902d691e1d0bfb4693b2ad2a427d3a7620ec17a12684ad576",
+      "provider_sha256": "26b4191397a8d32902d691e1d0bfb4693b2ad2a427d3a7620ec17a12684ad576",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-watch/kernel.rs",
+      "destination": "tests/operator-watch/kernel.rs",
+      "source_sha256": "eadf7c058c617e657cff4d1e59e26d05474bc5601273db04ba8215dee2df6a18",
+      "provider_sha256": "eadf7c058c617e657cff4d1e59e26d05474bc5601273db04ba8215dee2df6a18",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/operator-watch/lib.rs",
+      "destination": "tests/operator-watch/lib.rs",
+      "source_sha256": "fe44964b17a48d48204b7b1ca13055638b5444e4cfb411b311789848a538e27b",
+      "provider_sha256": "41861c28886f24852f07ea46f27858b4a9cdfe3a93f6bbd5df7784ef7af68792",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/Cargo.lock",
+      "destination": "tests/retirement-boundary/Cargo.lock",
+      "source_sha256": "85ab79f2241541c8adeb531679ef4b488fad1b86ee7bdfee454ae01b3afb3298",
+      "provider_sha256": "85ab79f2241541c8adeb531679ef4b488fad1b86ee7bdfee454ae01b3afb3298",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/Cargo.toml",
+      "destination": "tests/retirement-boundary/Cargo.toml",
+      "source_sha256": "91040f0f603bb552860a7617ac2f5e9b55e9bfae857b55e0cadfe7bc8e0ee4b1",
+      "provider_sha256": "91040f0f603bb552860a7617ac2f5e9b55e9bfae857b55e0cadfe7bc8e0ee4b1",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/backend/backend.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/backend/backend.rs",
+      "source_sha256": "d07149a11d1abf863b6d285c1b33eea4da4dc1a1bc364890bf780b12440cad56",
+      "provider_sha256": "d07149a11d1abf863b6d285c1b33eea4da4dc1a1bc364890bf780b12440cad56",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/backend/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/backend/mod.rs",
+      "source_sha256": "0362278f49ae4b9c21cf400395e70a4cf94c30266d0eb45c44ff31e8e3354aad",
+      "provider_sha256": "0362278f49ae4b9c21cf400395e70a4cf94c30266d0eb45c44ff31e8e3354aad",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/chrono.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/chrono.rs",
+      "source_sha256": "f4e5bbb8a9b221f0aaf4722f3c1ab69c0f08276264e0bd34f696a7c4b4c74903",
+      "provider_sha256": "f4e5bbb8a9b221f0aaf4722f3c1ab69c0f08276264e0bd34f696a7c4b4c74903",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/ipc/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/ipc/mod.rs",
+      "source_sha256": "ffd1fc1191fc15cc176c996bf819c93bbe704b4daacf585816e8e64a0d57dcd8",
+      "provider_sha256": "ffd1fc1191fc15cc176c996bf819c93bbe704b4daacf585816e8e64a0d57dcd8",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/ipc/rpc/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/ipc/rpc/mod.rs",
+      "source_sha256": "db6961a882ef342a5b3afa966974b0396398cad7411367a3df28dc580b809d65",
+      "provider_sha256": "db6961a882ef342a5b3afa966974b0396398cad7411367a3df28dc580b809d65",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/ipc/rpc/request/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/ipc/rpc/request/mod.rs",
+      "source_sha256": "c699dffc7aa807cfba1adafe5345b95a92e01fa3e686057da23a9524138eb746",
+      "provider_sha256": "c699dffc7aa807cfba1adafe5345b95a92e01fa3e686057da23a9524138eb746",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/ipc/rpc/request/pending.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/ipc/rpc/request/pending.rs",
+      "source_sha256": "fcbe3cff7a3700a7d79fea4ed978c9c28268815d099297fe71b34437f395fb76",
+      "provider_sha256": "fcbe3cff7a3700a7d79fea4ed978c9c28268815d099297fe71b34437f395fb76",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/programs.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/programs.rs",
+      "source_sha256": "0333212ae58523aa13d004445735ff11f8314e2ac3b5027048f4682de3faf46f",
+      "provider_sha256": "0333212ae58523aa13d004445735ff11f8314e2ac3b5027048f4682de3faf46f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/app/activity.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/app/activity.rs",
+      "source_sha256": "f86d2727a576bb699533707888c099cea379a4e77b877b0ef3658a9629991c27",
+      "provider_sha256": "f86d2727a576bb699533707888c099cea379a4e77b877b0ef3658a9629991c27",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/app/fault.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/app/fault.rs",
+      "source_sha256": "538cc5b6d2708d6e3d46f592185bcb906ad9cb6f46321101b9acd242d1117596",
+      "provider_sha256": "538cc5b6d2708d6e3d46f592185bcb906ad9cb6f46321101b9acd242d1117596",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/app/life/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/app/life/mod.rs",
+      "source_sha256": "6dad71e5e00e60f6df77270476fbd40fee2d6b03aafd2df941fc03e490394527",
+      "provider_sha256": "6dad71e5e00e60f6df77270476fbd40fee2d6b03aafd2df941fc03e490394527",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/app/life/phase.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/app/life/phase.rs",
+      "source_sha256": "d15e3d6a1d5fa0b1b767924d2acb144d9231881b37d19cabdeab0d22e7d56511",
+      "provider_sha256": "d15e3d6a1d5fa0b1b767924d2acb144d9231881b37d19cabdeab0d22e7d56511",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/app/life/status.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/app/life/status.rs",
+      "source_sha256": "5502edbd6f93567b0bb9c28c91284bf2261d57908fd8d57dad72bd60f4a160c0",
+      "provider_sha256": "5502edbd6f93567b0bb9c28c91284bf2261d57908fd8d57dad72bd60f4a160c0",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/app/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/app/mod.rs",
+      "source_sha256": "ae972328bdb04b0e884cc67dd0f0b6196e181793ccf8c1687b2ec303d892e049",
+      "provider_sha256": "ae972328bdb04b0e884cc67dd0f0b6196e181793ccf8c1687b2ec303d892e049",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/app/namespace.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/app/namespace.rs",
+      "source_sha256": "7123198a3aef51c8d0d4063565d9e90c80fa993c7e8be46007b8c92568aa9633",
+      "provider_sha256": "7123198a3aef51c8d0d4063565d9e90c80fa993c7e8be46007b8c92568aa9633",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/app/operator.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/app/operator.rs",
+      "source_sha256": "dc63f7728f6dfce1ea4e39673667906cf7af21ef45cc615d76f9e5a92fdf4a44",
+      "provider_sha256": "dc63f7728f6dfce1ea4e39673667906cf7af21ef45cc615d76f9e5a92fdf4a44",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/app/policy.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/app/policy.rs",
+      "source_sha256": "7545e53fe03fd7fb73f1ed57e0c674479dca58d577a639f452c4ce6a0af5f761",
+      "provider_sha256": "33fb49a4b78fe5d45e79ee83eeb1d6c37050440e98c3a1f508c05193c4193417",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/assembly/jobs.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/assembly/jobs.rs",
+      "source_sha256": "0c95b48070e9b4773f913f32a0f0ff662623442126c81ca4d161d47b8aded1bd",
+      "provider_sha256": "0c95b48070e9b4773f913f32a0f0ff662623442126c81ca4d161d47b8aded1bd",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/assembly/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/assembly/mod.rs",
+      "source_sha256": "3ca57f69482012b9530d15aa4253705b770404f3107a5205ade61d72369b0a7a",
+      "provider_sha256": "3ca57f69482012b9530d15aa4253705b770404f3107a5205ade61d72369b0a7a",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/assembly/namespace.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/assembly/namespace.rs",
+      "source_sha256": "5c25b0712d0dc9b8c73b103647601df8bd4517a4e4b500f6b449dd060aa88f48",
+      "provider_sha256": "5c25b0712d0dc9b8c73b103647601df8bd4517a4e4b500f6b449dd060aa88f48",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/assembly/retirement.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/assembly/retirement.rs",
+      "source_sha256": "11b2cb769591ae58f5f4c2b198607a212ae8dcab0f6e2b65aac8b59df13a349b",
+      "provider_sha256": "25388ba90b0aaeaebf6210ad7c68a4edb7d174ca87f2c93618ed91c0bd56c419",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/control/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/control/mod.rs",
+      "source_sha256": "86d674abac4b2a722685f1a306e21e9eef5aba55ab334acad14edde060089e20",
+      "provider_sha256": "86d674abac4b2a722685f1a306e21e9eef5aba55ab334acad14edde060089e20",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/control/startup.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/control/startup.rs",
+      "source_sha256": "d2f6e7b500396f49d06a3310b3e0472f057d26a43074836a320cef455f092814",
+      "provider_sha256": "d2f6e7b500396f49d06a3310b3e0472f057d26a43074836a320cef455f092814",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/control/unit/control.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/control/unit/control.rs",
+      "source_sha256": "869c0dc247b56b07348f30061d68c17cb2ee0048cd80b751e0ca88ab5c87cf68",
+      "provider_sha256": "869c0dc247b56b07348f30061d68c17cb2ee0048cd80b751e0ca88ab5c87cf68",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/control/unit/instance.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/control/unit/instance.rs",
+      "source_sha256": "6b0131a9cdff5b841ae83c9ea7c30ab8e1eab48c45e2825a91741b1fb00e1662",
+      "provider_sha256": "6b0131a9cdff5b841ae83c9ea7c30ab8e1eab48c45e2825a91741b1fb00e1662",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/control/unit/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/control/unit/mod.rs",
+      "source_sha256": "466fe67a3d03473c55b365a72879f07c896c070a7be13ef5be36a91d0dfad1fc",
+      "provider_sha256": "466fe67a3d03473c55b365a72879f07c896c070a7be13ef5be36a91d0dfad1fc",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system/mod.rs",
+      "source_sha256": "1596f3220ceb9bc4a54afbd66c370cec2d48b591fe447068d26aeea0dc14e132",
+      "provider_sha256": "1596f3220ceb9bc4a54afbd66c370cec2d48b591fe447068d26aeea0dc14e132",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_api/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_api/mod.rs",
+      "source_sha256": "bffb52a8d0d88a9440b40cb1501ee0cb1915830eaff2cce8bc59af2dd1a552f7",
+      "provider_sha256": "bffb52a8d0d88a9440b40cb1501ee0cb1915830eaff2cce8bc59af2dd1a552f7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_api/operator/entry.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_api/operator/entry.rs",
+      "source_sha256": "680a35af3e8028464cf54a8563f210b24c51df074ccea6a7f8a5ca047410b9b5",
+      "provider_sha256": "680a35af3e8028464cf54a8563f210b24c51df074ccea6a7f8a5ca047410b9b5",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_api/operator/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_api/operator/mod.rs",
+      "source_sha256": "b4799cb9d1a01c6ae14ffd7b1ddd64799611ad4d98c41c50638cfb367c5b76a2",
+      "provider_sha256": "b4799cb9d1a01c6ae14ffd7b1ddd64799611ad4d98c41c50638cfb367c5b76a2",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_api/operator/permit.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_api/operator/permit.rs",
+      "source_sha256": "e3b872ada700b93bc76a1ca342c02df4205412c4fdfab8eaed31a1377074883f",
+      "provider_sha256": "e3b872ada700b93bc76a1ca342c02df4205412c4fdfab8eaed31a1377074883f",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_api/retirement/call.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_api/retirement/call.rs",
+      "source_sha256": "b644482155edb2067666a7a600b3975c58edf6e9c46754b87e3b68d97469ecbc",
+      "provider_sha256": "b644482155edb2067666a7a600b3975c58edf6e9c46754b87e3b68d97469ecbc",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_api/retirement/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_api/retirement/mod.rs",
+      "source_sha256": "06b7def08477e7de0f81b6a5103f818552cc2d43eacadb41d84b41da2779a628",
+      "provider_sha256": "06b7def08477e7de0f81b6a5103f818552cc2d43eacadb41d84b41da2779a628",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_api/retirement/retirement.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_api/retirement/retirement.rs",
+      "source_sha256": "116a1c4142b90eee970a8080a700cf689e44e922184b6a98075448154e91ee93",
+      "provider_sha256": "116a1c4142b90eee970a8080a700cf689e44e922184b6a98075448154e91ee93",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_client/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_client/mod.rs",
+      "source_sha256": "bffb52a8d0d88a9440b40cb1501ee0cb1915830eaff2cce8bc59af2dd1a552f7",
+      "provider_sha256": "bffb52a8d0d88a9440b40cb1501ee0cb1915830eaff2cce8bc59af2dd1a552f7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_client/operator/bound_resource.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_client/operator/bound_resource.rs",
+      "source_sha256": "de77bfdd41edcdb30becb11eca3c92dd93f8555c196827a5489bb247f6ab8d23",
+      "provider_sha256": "de77bfdd41edcdb30becb11eca3c92dd93f8555c196827a5489bb247f6ab8d23",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_client/operator/capability.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_client/operator/capability.rs",
+      "source_sha256": "594d4f62d8f493fac8b3a10bbc332b879602123a0959f5ca2376f015c6aac969",
+      "provider_sha256": "594d4f62d8f493fac8b3a10bbc332b879602123a0959f5ca2376f015c6aac969",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_client/operator/grant_info.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_client/operator/grant_info.rs",
+      "source_sha256": "8be3932f77e54e9c7280bc0cb90f21990e7d15ed76f028ce74d2eccbb6235f80",
+      "provider_sha256": "8be3932f77e54e9c7280bc0cb90f21990e7d15ed76f028ce74d2eccbb6235f80",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_client/operator/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_client/operator/mod.rs",
+      "source_sha256": "619024b208aeb1f2e9c189a92e5fe2547174303030778478af6020b72a90e389",
+      "provider_sha256": "619024b208aeb1f2e9c189a92e5fe2547174303030778478af6020b72a90e389",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/system_client/retirement.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/system_client/retirement.rs",
+      "source_sha256": "5f8dd310a2f18fe1cdf789bc32dc66c4ea5efbf51c79f887496e29dd5f9fb306",
+      "provider_sha256": "5f8dd310a2f18fe1cdf789bc32dc66c4ea5efbf51c79f887496e29dd5f9fb306",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/unit/control_config.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/unit/control_config.rs",
+      "source_sha256": "2f86b36197919971961e80e31a612742277e54a35e1434875b3d431983e4cdab",
+      "provider_sha256": "2f86b36197919971961e80e31a612742277e54a35e1434875b3d431983e4cdab",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/unit/mod.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/unit/mod.rs",
+      "source_sha256": "3405b07917710cab891b5333a5f53382d2218c03e2ed7cf3ed59f7431bf571e5",
+      "provider_sha256": "3405b07917710cab891b5333a5f53382d2218c03e2ed7cf3ed59f7431bf571e5",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/unit/retirement.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/unit/retirement.rs",
+      "source_sha256": "afc3ccc0a7e8b4523efe9556054fc3254866b011281f67cb1dc8e1115091c846",
+      "provider_sha256": "afc3ccc0a7e8b4523efe9556054fc3254866b011281f67cb1dc8e1115091c846",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/fixtures/unit/unit_file.rs",
+      "destination": "tests/retirement-boundary/src/fixtures/unit/unit_file.rs",
+      "source_sha256": "24404dbfcd7e531c2965473a6a06adf72e7add1879fd4ae28452468fe0c322c1",
+      "provider_sha256": "24404dbfcd7e531c2965473a6a06adf72e7add1879fd4ae28452468fe0c322c1",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/retirement-boundary/src/lib.rs",
+      "destination": "tests/retirement-boundary/src/lib.rs",
+      "source_sha256": "5d67881e3ea08471faafec6466284147ba0809d86f51e92b3bc089038d75070c",
+      "provider_sha256": "f29c8c6b19f2e230b56b3c47fa4d9c622640b45a25e51bbc8d502944bacfe823",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/shutdown-policy/Cargo.lock",
+      "destination": "tests/shutdown-policy/Cargo.lock",
+      "source_sha256": "148c0dff299d06e4ff40e8cf6c19b4863e94cd094c5e491f5f1b9ea44c6d9874",
+      "provider_sha256": "148c0dff299d06e4ff40e8cf6c19b4863e94cd094c5e491f5f1b9ea44c6d9874",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/shutdown-policy/Cargo.toml",
+      "destination": "tests/shutdown-policy/Cargo.toml",
+      "source_sha256": "7ededf464e3b72b6e010fa900b7e4a90d21c043d8b934d3af4c86d4d6b225d62",
+      "provider_sha256": "7ededf464e3b72b6e010fa900b7e4a90d21c043d8b934d3af4c86d4d6b225d62",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/shutdown-policy/fixtures/control.rs",
+      "destination": "tests/shutdown-policy/fixtures/control.rs",
+      "source_sha256": "91c7f161ed79155940fc24e7d15e0e60e015f3651ecf00482d6896bb1dba96c4",
+      "provider_sha256": "91c7f161ed79155940fc24e7d15e0e60e015f3651ecf00482d6896bb1dba96c4",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/shutdown-policy/fixtures/ending.rs",
+      "destination": "tests/shutdown-policy/fixtures/ending.rs",
+      "source_sha256": "b56d7f50a24c75df22285d62a2fd669e7af03f1045e7d03a257a0de6dc6a1efe",
+      "provider_sha256": "b56d7f50a24c75df22285d62a2fd669e7af03f1045e7d03a257a0de6dc6a1efe",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/shutdown-policy/fixtures/instance.rs",
+      "destination": "tests/shutdown-policy/fixtures/instance.rs",
+      "source_sha256": "2ee10ca843db25b115109ac40c53d854ee2598d93f2df6516e4947e2f967c9ce",
+      "provider_sha256": "2ee10ca843db25b115109ac40c53d854ee2598d93f2df6516e4947e2f967c9ce",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/shutdown-policy/lib.rs",
+      "destination": "tests/shutdown-policy/lib.rs",
+      "source_sha256": "136075e9287718890e6036a4f4cf4ca7a3bdb9e85eaf6d4904a7ea68914ef3a4",
+      "provider_sha256": "67ed34097498332b17fa66f1811361c8899592207181590688c1b3ab1d5a85b5",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/startup-authority/Cargo.lock",
+      "destination": "tests/startup-authority/Cargo.lock",
+      "source_sha256": "d265641bac2cb3ccaf8add412b91fbed1f5b7f0d028bfd20198c5d6233e4fd09",
+      "provider_sha256": "d265641bac2cb3ccaf8add412b91fbed1f5b7f0d028bfd20198c5d6233e4fd09",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/startup-authority/Cargo.toml",
+      "destination": "tests/startup-authority/Cargo.toml",
+      "source_sha256": "e018d1b93c0ce9026f6264c793aa441c7ee4170ddc6661bd1032c964be1ffbd7",
+      "provider_sha256": "e018d1b93c0ce9026f6264c793aa441c7ee4170ddc6661bd1032c964be1ffbd7",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/startup-authority/lib.rs",
+      "destination": "tests/startup-authority/lib.rs",
+      "source_sha256": "3280db03efd8637a1a7312e24d734c4c13604a9e6a09f4a7779c8de865dd86c4",
+      "provider_sha256": "27a6cf32eca95b04f80c791c71ea4cf37843f693eac67437bb90548450f9f96d",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/supply/Cargo.lock",
+      "destination": "tests/supply/Cargo.lock",
+      "source_sha256": "24f265d31f378bd82594de1c51e5a6b1c38fe82087a21f721dc875901f6b6868",
+      "provider_sha256": "24f265d31f378bd82594de1c51e5a6b1c38fe82087a21f721dc875901f6b6868",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/supply/Cargo.toml",
+      "destination": "tests/supply/Cargo.toml",
+      "source_sha256": "de5f9fb59b126ea28b28398bf957b042330b539f6013ce1afd037117eb6f37d0",
+      "provider_sha256": "de5f9fb59b126ea28b28398bf957b042330b539f6013ce1afd037117eb6f37d0",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/supply/lib.rs",
+      "destination": "tests/supply/lib.rs",
+      "source_sha256": "8190d86d7910d8890717cfe51f1fc77fa8f69b128511e2c94a92fb061984d89d",
+      "provider_sha256": "92b9bf8aa58139bac60761559e36a4e60455d81f9753f99eb3dfcde6f66f1d11",
+      "byte_identical": false,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/supply/tests.rs",
+      "destination": "tests/supply/tests.rs",
+      "source_sha256": "2c37440f8314909273adb65a737491ff6164bb8dd6f9262ffc206e1f890f4e9c",
+      "provider_sha256": "2c37440f8314909273adb65a737491ff6164bb8dd6f9262ffc206e1f890f4e9c",
+      "byte_identical": true,
+      "mapping": "pure-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-rpc/.gitignore",
+      "destination": "tests/control-rpc/.gitignore",
+      "source_sha256": "07d64eb09a56c853b7853a47276799b38d7d6d25a4314b0c1abc10432c214e17",
+      "provider_sha256": "07d64eb09a56c853b7853a47276799b38d7d6d25a4314b0c1abc10432c214e17",
+      "byte_identical": true,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-rpc/Cargo.toml",
+      "destination": "tests/control-rpc/Cargo.toml",
+      "source_sha256": "cdf66f3c461de9b431555d71efd6fbff90222fd059629898f103ac51160b5b00",
+      "provider_sha256": "e2caf9555bbd12b569a4babde05449b7871ab38133d49e2800132b44fff809e2",
+      "byte_identical": false,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-rpc/lib.rs",
+      "destination": "tests/control-rpc/lib.rs",
+      "source_sha256": "45a91ad19abdf2f8cf2b92c6b6491d615d07a22b851a647d9680e50ce5d2ad50",
+      "provider_sha256": "1216f883b7e5666acfd0fca3e4de35400a415d8dbb088a6c5c4e111031266bc0",
+      "byte_identical": false,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-rpc/reply_cases.rs",
+      "destination": "tests/control-rpc/reply_cases.rs",
+      "source_sha256": "07c2b43e5328e764686273dd365f063395803416584ae001ce5147e006d5e8bd",
+      "provider_sha256": "07c2b43e5328e764686273dd365f063395803416584ae001ce5147e006d5e8bd",
+      "byte_identical": true,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/control-rpc/rpc/reply.rs",
+      "destination": "tests/control-rpc/rpc/reply.rs",
+      "source_sha256": "48e151182197c38a4cefc012df7760a178710ad06b3800d7c92f52cc0b02a82c",
+      "provider_sha256": "48e151182197c38a4cefc012df7760a178710ad06b3800d7c92f52cc0b02a82c",
+      "byte_identical": true,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/capability-import/Cargo.lock",
+      "destination": "tests/capability-import/Cargo.lock",
+      "source_sha256": "3a62d164e4b60e8f712e9b5c167451dca3ed95b13d012c1f9ec41ee3dc36b4fd",
+      "provider_sha256": "74f1939d5719a295aeeb1e975441fd9b2a2733ac3e2ac1ffa0ca24726bf34cdb",
+      "byte_identical": false,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/capability-import/Cargo.toml",
+      "destination": "tests/capability-import/Cargo.toml",
+      "source_sha256": "744200a959b006debdb77187045e2b5f278989d29384a99512258e0c36e5d003",
+      "provider_sha256": "9a0297786f868805e07b1f5418b1560062813fd66dbdaf810167e22b2f444f76",
+      "byte_identical": false,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/capability-import/lib.rs",
+      "destination": "tests/capability-import/lib.rs",
+      "source_sha256": "ba6480e8bebb9d4bf996d9e3286aa09ee9f26ece0968d30f42f7621cdfc43fed",
+      "provider_sha256": "4cd329c631cc5aed342abf36b712db81f9c932e0c6da56b33cdc8da257c14849",
+      "byte_identical": false,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/system-shape/Cargo.lock",
+      "destination": "tests/system-shape/Cargo.lock",
+      "source_sha256": "6d47d511f93eddfc380a849913ea498ac7abc5c5c04f16511278663bab80c721",
+      "provider_sha256": "6d47d511f93eddfc380a849913ea498ac7abc5c5c04f16511278663bab80c721",
+      "byte_identical": true,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/system-shape/Cargo.toml",
+      "destination": "tests/system-shape/Cargo.toml",
+      "source_sha256": "6a4f9c6fd6b34845523a30be308016056aa2dbb59906743a08157b6c6159616a",
+      "provider_sha256": "6a4f9c6fd6b34845523a30be308016056aa2dbb59906743a08157b6c6159616a",
+      "byte_identical": true,
+      "mapping": "mixed-test-snapshot-map.json"
+    },
+    {
+      "source": "programs/tests/system-shape/lib.rs",
+      "destination": "tests/system-shape/lib.rs",
+      "source_sha256": "1d9934259e162272a5c3a6160682ba6c017772b383a4d812e90a06f6f02ba073",
+      "provider_sha256": "22c21b1a759528a7896abad8bb0cad0c023fcec9c1183f6731256c6fc49d5644",
+      "byte_identical": false,
+      "mapping": "mixed-test-snapshot-map.json"
+    }
+  ],
+  "notes": [
+    "Mixed test assertions are split between Source and provider; see TEST-OWNERSHIP.md.",
+    "New crate roots, opaque fixture interfaces and extracted state files adapt the listed original modules; original history and license status retained."
+  ],
+  "derived_adapters": [
+    {
+      "origin": "programs/src/harness/probe/account.rs",
+      "destination": "server/src/test_support/account/hook_fault.rs",
+      "sha256": "a4d5e2865b6781060f17ece87bdaa8f3792d8d9942f234515d9e869aef0bdf37",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/probe/account.rs",
+      "destination": "server/src/test_support/account/hooks.rs",
+      "sha256": "581d68a7e073bdc56f70d167c96158304fd504080e70d27b3f8d738a9a750f04",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/probe/account.rs",
+      "destination": "server/src/test_support/account/mod.rs",
+      "sha256": "d4574b90a34cecfb2f0ea96c6762657c651578831ba388d865853dad0f3b251b",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/probe/account.rs",
+      "destination": "server/src/test_support/account/rig.rs",
+      "sha256": "ab8c6769ef00d7a5e1367e014aa20df33d0af4b51c6c7da0a8ec7fa67bf540f9",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/probe/account.rs",
+      "destination": "server/src/test_support/account/signals.rs",
+      "sha256": "c618dcdadbd6468bca0e042e4b527e7837c55332bf011ea1e7af4c25547812f2",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/probe/fixture.rs",
+      "destination": "server/src/test_support/fixture.rs",
+      "sha256": "0baa40d55b13ad17fc61b4131be5dad6531b9c6563d7d2422cf4fcca6ab63fee",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/probe/lifecycle.rs",
+      "destination": "server/src/test_support/lifecycle.rs",
+      "sha256": "ac2ba897f71c0017d16a9103815855c51dd61354bd7af9e3c6b7b5049b039786",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/probe/identity.rs",
+      "destination": "server/src/test_support/identity_hooks.rs",
+      "sha256": "5d8b7712cf1946f616d77fa48e609e1ea2cc808c5db032b78c02c4e5b575bc5e",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/bench/rig.rs",
+      "destination": "server/src/test_support/bench/rig/tally.rs",
+      "sha256": "8fdb52a52e09ac6a12e7b3d5134c6770e30513d791560c13c83103dc7c941d05",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/bench/rig.rs",
+      "destination": "server/src/test_support/bench/rig/verdict.rs",
+      "sha256": "66de381b9e0f2b01e79bf9874fcf19b89194adac08da7e5cedd9cadf2f25f3fb",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    },
+    {
+      "origin": "programs/src/harness/mod.rs",
+      "destination": "server/src/test_support/bench/mod.rs",
+      "sha256": "1542ed3e3896f597536f7856f1f33195bdc68323e0944d6d4d456d7f04893819",
+      "kind": "extracted scenario/helper or typed adapter; behavior reviewed against origin"
+    }
+  ],
+  "counts": {
+    "mapped_files": 445,
+    "byte_identical_mapped_files": 379
+  }
+}

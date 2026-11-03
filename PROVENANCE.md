@@ -123,3 +123,33 @@ The source project declares no license. At commit `e6302af`, no tracked
 `LICENSE`, `COPYING`, or `NOTICE` file matched the project. No license text or
 license metadata is added by this extraction; do not assume a license that the
 source does not grant.
+
+## Server/client/support snapshot continuation
+
+This continuation extends provider history `9e5d63ca536a176583cf1b0054b4ecf7ddd88257`.
+Its source is public repository `https://github.com/anreonyr/sqware.git`, commit
+`a29707fb83191647c63cc9ccfef1e8721bbe8dad` (PR46), authored by
+`anreonyr <anreonyr@gmail.com>`. The source history is retained at that URL.
+No history is rewritten and no license text or grant is invented. No tracked
+project LICENSE/COPYING file was found at this continuation checkpoint either.
+
+`MIGRATION-MAP.json` records 184 source-to-provider file mappings, source SHA256
+and adapted SHA256. Initially 167 mapped files are byte-identical; 17 adapt
+crate/logging paths, manifests, explicit PLIC-class input or the selected
+Deployment entry boundary. New package manifests and crate roots are adapters.
+The existing `api/` tree and API-owned test files remain unchanged.
+
+System state, rollback, retry, lifecycle and supervision remain in `server`.
+Shared boot parsing, machine parsing, face helper, timing and logging live in
+neutral `support`; it has no server/client dependency. Boot acquisition remains
+server-owned, takes the PLIC class explicitly, and does not enumerate devices
+early. Source chooses the Deployment before passing Boot/declarations/selection
+to the server. This snapshot adds no executable entry, allocator, panic handler,
+global declaration registry or Source dependency to the provider.
+
+The server and moved client intentionally consume the original API Git SHA,
+matching the public `unit` dependency, while local API tests still use `api/`.
+Cargo generated the expanded root lock: no old package tuple was removed or
+modified. Added packages belong to the server/client/support dependency closure.
+Source consumer migration and whole-system acceptance are not established by
+this provider library checkpoint.
