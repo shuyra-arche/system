@@ -1,6 +1,7 @@
-use env::ledger::{args as boot_args, entry::Entries, manifest};
-use env::{Name, PieToken};
 use crate::debug;
+use env::ledger::{args as boot_args, entry::Entries};
+use env::{Name, PieToken};
+use initrd::ledger::bundle::Archive;
 
 pub struct Accounts {
     view: &'static [u8],
@@ -19,7 +20,7 @@ impl Accounts {
         let ledger = unsafe {
             core::slice::from_raw_parts(a[boot_args::LEDGER] as *const u8, a[boot_args::LEDGER_LEN])
         };
-        manifest::Entries::new(view)?;
+        Archive::parse(view).ok()?;
         Some(Self {
             view,
             entries: Entries::new(ledger)?,

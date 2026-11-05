@@ -1,17 +1,17 @@
-use crate::unit::{Dependency, Target};
 use super::unit::start::Input;
+use crate::unit::{Dependency, Target};
 use alloc::vec::Vec;
 
 /// Validate the declared supervision group against the deployed start set.
 /// The declaration authorizes an existing Deployment target; it never creates one.
 pub(crate) fn validate(
     inputs: &[Input],
-    targets: &'static [Target],
+    targets: &[Target],
     guarded: &[&str],
 ) -> Result<(), &'static str> {
-    let mut declared: Option<(&'static crate::unit::UnitFile, &'static str)> = None;
+    let mut declared: Option<(unit::runtime::Unit, &'static str)> = None;
     for input in inputs {
-        let program = input.program;
+        let program = input.program.clone();
         let Some(group) = program.control.supervision else {
             continue;
         };
@@ -33,10 +33,12 @@ pub(crate) fn validate(
     if target.members.is_empty() {
         return Err("empty supervision target");
     }
-    let ordered = supervisor.control.after.is_some_and(|after| {
-        after
-            .iter()
-            .any(|dependency| matches!(dependency, Dependency::Target(name) if *name == group_name))
+    let ordered = supervisor.control.after.as_ref().is_some_and(|after| {
+        target.members.iter().all(|member| {
+            after
+                .iter()
+                .any(|dependency| matches!(dependency, Dependency::Unit(name) if name == member))
+        })
     });
     if !ordered {
         return Err("supervision ordering missing");
@@ -44,17 +46,14 @@ pub(crate) fn validate(
     let mut seen: Vec<&str> = Vec::new();
     seen.try_reserve_exact(target.members.len())
         .map_err(|_| "supervision capacity")?;
-    for member in target.members {
+    for member in &target.members {
         if *member == supervisor.name() {
             return Err("supervision includes self");
         }
         if guarded.iter().any(|guarded| guarded == member) {
             return Err("supervision includes guarded target");
         }
-        if !inputs
-            .iter()
-            .any(|input| input.program.name() == *member)
-        {
+        if !inputs.iter().any(|input| input.program.name() == *member) {
             return Err("supervision member not started");
         }
         if seen.iter().any(|seen| seen == member) {

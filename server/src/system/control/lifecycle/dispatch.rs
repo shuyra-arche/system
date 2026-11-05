@@ -31,6 +31,7 @@ pub fn select(
     };
     tracked.operation.program = operations
         .declarations
+        .as_ref()
         .and_then(|declarations| declarations.find(&tracked.operation.key.request.name));
     active.0 = Some(tracked.operation);
     dispatch.select(Invocation {

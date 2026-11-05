@@ -4,8 +4,8 @@ use alloc::vec::Vec;
 use core::cell::Cell;
 use env::{PieToken, TaskId, Wait};
 use system_api::operator::{
-    self as api, Entry, GrantId, GrantSpec, NamespaceKey, OperationId, PathBuf, Permit, ResourceView,
-    Scope,
+    self as api, Entry, GrantId, GrantSpec, NamespaceKey, OperationId, PathBuf, Permit,
+    ResourceView, Scope,
 };
 use system_client::operator::{Capability, PartResult};
 
@@ -420,7 +420,7 @@ impl Prepare {
             return None;
         }
         let grant = authority(AuthorityInput {
-            declaration,
+            declaration: declaration.clone(),
             id: input.grant_id,
             holder: input.holder,
             anchor: input.base,

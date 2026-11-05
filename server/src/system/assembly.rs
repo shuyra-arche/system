@@ -209,7 +209,7 @@ pub(crate) struct Launched {
 pub(crate) struct Delivery {
     pub owner: TaskId,
     pub identity: Install,
-    pub program: Option<&'static crate::unit::UnitFile>,
+    pub program: Option<unit::runtime::Unit>,
     pub back: Option<Sender<Said>>,
 }
 pub(crate) struct Request {
@@ -282,9 +282,9 @@ struct ConstructFinish {
     key: Option<CreateKey>,
 }
 pub(crate) type JobCompletion = work::Completed<JobResult>;
+mod bootstrap;
 #[path = "assembly/work.rs"]
 mod work;
-mod bootstrap;
 use work::WorkQueue;
 impl work::JobIdentity for Work {
     fn completed_id(&self) -> Option<JobId> {
@@ -542,7 +542,8 @@ impl Jobs {
             if tracked.operation.key.request.name != request.name {
                 continue;
             }
-            return match crate::system::control::lifecycle::takeover::accept(tracked, &mut request) {
+            return match crate::system::control::lifecycle::takeover::accept(tracked, &mut request)
+            {
                 Ok(_) => Ok((tracked.operation.key.id, true)),
                 Err(fail) => Err((fail, request)),
             };
@@ -644,7 +645,9 @@ impl Jobs {
             let Some(request) = incoming.as_ref() else {
                 continue;
             };
-            if command.from != request.from { continue; }
+            if command.from != request.from {
+                continue;
+            }
             if matches!(
                 request.wire,
                 system_api::control::frame::Wire::StateInstance(_)
@@ -715,6 +718,7 @@ impl Jobs {
             .installation
             .delivery
             .program
+            .as_ref()
             .map_or(crate::unit::Ready::OnSpawn, |program| program.control.ready);
         launch
             .installation
@@ -1216,7 +1220,10 @@ fn construct(
         control: &mut control,
     };
     for (job_id, mut request) in requests {
-        let bytes = match request.image.snapshot(jobs.catalog, jobs.declarations) {
+        let bytes = match request
+            .image
+            .snapshot(jobs.catalog, jobs.declarations.as_ref())
+        {
             Ok(bytes) => bytes,
             Err(fail) => {
                 request.image.release();
@@ -1233,7 +1240,7 @@ fn construct(
             }
         };
         request.image.release();
-        request.delivery.program = request.image.program(jobs.declarations);
+        request.delivery.program = request.image.program(jobs.declarations.as_ref());
         if let Some(key) = request.create {
             let fingerprint = sha256(&bytes);
             let existing = jobs
@@ -1353,7 +1360,10 @@ fn construct_one(
         image, delivery, ..
     } = request;
     let (count, values, stack) = image.parameters();
-    let declarations = delivery.program.map_or(&[][..], |program| program.control.retirement);
+    let declarations = delivery
+        .program
+        .as_ref()
+        .map_or(&[][..], |program| program.control.retirement.as_slice());
     let mut retirement = Vec::new();
     if retirement.try_reserve(declarations.len()).is_err() {
         return Err((Fail::Full, delivery));
@@ -1379,6 +1389,7 @@ fn construct_one(
                         bytes: &bytes,
                         kind: delivery
                             .program
+                            .as_ref()
                             .map_or(env::ProgramKind::User, |program| program.loader.space),
                     },
                     Spawn {
@@ -1393,9 +1404,11 @@ fn construct_one(
     match result {
         Ok(built) => {
             let service = crate::system::control::unit::Service::new(built.task);
-            retirement.extend(declarations.iter().map(|declaration| {
-                retirement::Participant::new(*declaration, built.task)
-            }));
+            retirement.extend(
+                declarations
+                    .iter()
+                    .map(|declaration| retirement::Participant::new(*declaration, built.task)),
+            );
             Ok(Launch {
                 instance: Launched {
                     reference: InstanceRef {

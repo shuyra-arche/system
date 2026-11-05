@@ -14,7 +14,7 @@ pub(super) fn prepare(
         .iter_mut()
         .find(|launch| launch.instance.reference == reference)
         .ok_or("instance supply installation")?;
-    let Some(program) = launch.installation.delivery.program else {
+    let Some(program) = launch.installation.delivery.program.as_ref() else {
         return Ok(Progress::Done);
     };
     let Some(service) = launch.installation.service.as_mut() else {

@@ -1,7 +1,8 @@
-pub(crate) mod boot;
 mod activity;
+pub(crate) mod boot;
 pub(crate) mod bootstrap;
 pub(crate) mod declarations;
+pub(crate) mod events;
 mod execute;
 pub(crate) mod install;
 pub(crate) mod life;
@@ -14,14 +15,21 @@ pub(crate) mod wait;
 pub(crate) use declarations::Declarations;
 pub(crate) use execute::supervise;
 
-/// Executable-system entry: accept the boot taken by composition, the explicit
-/// declaration set, and the already selected deployment.
-pub fn run(
-    boot: crate::boot::Boot,
-    declarations: &'static [&'static unit::UnitFile],
-    deployment: &'static unit::Deployment,
-) -> Result<(), env::Reason> {
-    execute::run(boot, Declarations(declarations), deployment)
+/// System derives its runtime inputs from the Unit records in the boot initrd.
+pub fn run(boot: crate::boot::Boot) -> Result<(), env::Reason> {
+    let system = env::unit::self_id().get() as u64;
+    events::emit(unit::event::Event::Started { system }).map_err(|_| 3usize)?;
+    let declarations = Declarations::decode(&boot.catalog).map_err(|why| {
+        crate::debug!("system: {why}");
+        crate::system::control::unit::start::E_PROGRAM
+    })?;
+    let result = execute::run(boot, declarations);
+    events::emit(unit::event::Event::Complete {
+        system,
+        reason: result.as_ref().err().copied().unwrap_or(env::EXIT_OK) as u64,
+    })
+    .map_err(|_| 3usize)?;
+    result
 }
 
 mod config;

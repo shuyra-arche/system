@@ -292,13 +292,12 @@ impl Supplies {
             roots: alloc::vec::Vec::new(),
         };
         for entry in catalog.entries() {
-            let entry = entry.map_err(|_| "image manifest entry")?;
-            let length = (entry.elf.len() as u64).to_le_bytes();
+            let length = (entry.bytes.len() as u64).to_le_bytes();
             let resource = system_api::supply::Key::of(entry.name);
             let definition = match crate::system::supply::PoleResource::from_bytes(
                 crate::system::supply::PoleSpec {
                     key: resource,
-                    bytes: entry.elf,
+                    bytes: entry.bytes,
                     description: &length,
                     admission: move |request: &crate::system::supply::LeaseRequest| {
                         request.origin.requester == actor

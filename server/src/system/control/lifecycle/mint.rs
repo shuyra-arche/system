@@ -17,7 +17,7 @@ pub fn pre(active: Res<Active>, mut control: ResMut<Control>) -> Result<Progress
             return Err(Fail::NotReady);
         }
     } else {
-        control.enlist(p).map_err(|_| Fail::Full)?;
+        control.enlist(&p).map_err(|_| Fail::Full)?;
     }
     control.pending.try_reserve(1).map_err(|_| Fail::Full)?;
     match super::intent::change(

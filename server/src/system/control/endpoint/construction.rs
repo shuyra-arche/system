@@ -174,7 +174,7 @@ impl Construction {
     pub(crate) fn grant(
         &mut self,
         task: TaskId,
-        policies: &'static [crate::unit::Construction],
+        policies: &[crate::unit::Construction],
     ) -> Result<(), &'static str> {
         if policies.is_empty() || policies.iter().any(|policy| !policy.valid()) {
             return if policies.is_empty() {

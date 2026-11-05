@@ -13,19 +13,19 @@ use env::{TaskId, Wait};
 mod reclamation;
 mod service;
 pub use service::Service;
-mod wait;
 pub(crate) mod guard;
+mod wait;
 pub struct Control {
     pub(in crate::system::control) reclaimed_at: u64,
     pub(in crate::system::control) status: Arc<Status>,
-    pub(in crate::system::control) targets: &'static [crate::unit::Target],
+    pub(in crate::system::control) targets: Vec<crate::unit::Target>,
     pub(in crate::system::control) table: Table,
     pub(in crate::system::control) inputs: Vec<start::Input>,
     pub(in crate::system::control) internal: Vec<TaskId>,
     pub(in crate::system::control) instances:
         Vec<crate::system::control::instance::state::Instance>,
     pub(in crate::system::control) pending: Vec<Pending>,
-    pub(in crate::system::control) guarded: &'static [&'static str],
+    pub(in crate::system::control) guarded: Vec<&'static str>,
     pub(in crate::system::control) guard_token: Option<env::PieToken>,
 }
 pub(crate) struct Pending {
@@ -33,7 +33,7 @@ pub(crate) struct Pending {
     pub(crate) service: Service,
 }
 impl Control {
-    pub fn new(status: Arc<Status>, targets: &'static [crate::unit::Target]) -> Self {
+    pub fn new(status: Arc<Status>, targets: Vec<crate::unit::Target>) -> Self {
         Self {
             reclaimed_at: 0,
             status,
@@ -43,12 +43,12 @@ impl Control {
             internal: Vec::new(),
             pending: Vec::new(),
             instances: Vec::new(),
-            guarded: &[],
+            guarded: Vec::new(),
             guard_token: None,
         }
     }
     pub(crate) fn guard_required(&self, name: &str) -> bool {
-        guard::required(self.guarded, name)
+        guard::required(&self.guarded, name)
     }
     pub(crate) fn guard_held(&self, name: &str) -> bool {
         self.table.guard_held(name)
@@ -64,7 +64,7 @@ impl Control {
             return Err(Error::Step("invalid supply declaration"));
         }
         let name = program.name().to_string();
-        let restart = program.control.ending.ok_or(Error::Step("no ending"))?;
+        let restart = program.control.ending;
         self.table
             .register(Declaration {
                 name,

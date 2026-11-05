@@ -1,0 +1,9 @@
+schema = 1
+id = "system"
+
+[loader]
+image = "system"
+space = "supervisor"
+
+[control]
+creation = "startup"

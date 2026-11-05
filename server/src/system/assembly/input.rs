@@ -26,8 +26,8 @@ impl Source {
     }
     pub(crate) fn program(
         &self,
-        declarations: Option<Declarations>,
-    ) -> Option<&'static crate::unit::UnitFile> {
+        declarations: Option<&Declarations>,
+    ) -> Option<unit::runtime::Unit> {
         match self {
             Self::Image { .. } => None,
             Self::Unit(unit) => declarations?.find(&unit.name),
@@ -42,7 +42,7 @@ impl Source {
     pub(crate) fn snapshot(
         &self,
         catalog: Option<crate::boot::Catalog<'static>>,
-        declarations: Option<Declarations>,
+        declarations: Option<&Declarations>,
     ) -> Result<Vec<u8>, Fail> {
         match self {
             Self::Image { image, from } => {
@@ -54,9 +54,7 @@ impl Source {
             }
             Self::Unit(_) => {
                 let declarations = declarations.ok_or(Fail::NotReady)?;
-                let program = self
-                    .program(Some(declarations))
-                    .ok_or(Fail::Unknown)?;
+                let program = self.program(Some(declarations)).ok_or(Fail::Unknown)?;
                 if !program.valid() {
                     return Err(Fail::Bad);
                 }
@@ -64,7 +62,7 @@ impl Source {
                     .ok_or(Fail::NotReady)?
                     .find(program.loader.image)
                     .ok_or(Fail::BadImage)?
-                    .elf;
+                    .bytes;
                 if source.is_empty() || source.len() > system_api::loader::MAX_IMAGE {
                     return Err(Fail::BadImage);
                 }

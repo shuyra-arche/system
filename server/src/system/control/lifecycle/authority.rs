@@ -12,7 +12,11 @@ use env::TaskId;
 
 /// Recover admission: the actual static sender must be the named supervisor
 /// for this target and the old retirement must be fully finalized.
-pub fn admit(active: Res<Active>, control: Res<Control>, settle: Res<Settle>) -> Result<Progress, Fail> {
+pub fn admit(
+    active: Res<Active>,
+    control: Res<Control>,
+    settle: Res<Settle>,
+) -> Result<Progress, Fail> {
     let job = active.0.as_ref().ok_or(Fail::Unknown)?;
     let Origin::Recovery { caller } = job.key.request.directive.origin else {
         return Ok(Progress::Done);
@@ -87,12 +91,12 @@ pub(crate) fn supervisor(control: &Control, caller: TaskId) -> Result<&Service, 
         .ok_or(Fail::Denied)
 }
 
-pub(crate) fn targets(control: &Control, caller: TaskId) -> Result<&'static Target, Fail> {
+pub(crate) fn targets(control: &Control, caller: TaskId) -> Result<&Target, Fail> {
     let source = supervisor(control, caller)?;
     group(control, source.name.as_str())
 }
 
-pub(crate) fn group(control: &Control, name: &str) -> Result<&'static Target, Fail> {
+pub(crate) fn group<'a>(control: &'a Control, name: &str) -> Result<&'a Target, Fail> {
     let group = control
         .input(name)?
         .program

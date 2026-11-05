@@ -25,7 +25,7 @@ pub fn receive(
         };
         let Request { index, .. } = incoming.request;
         let reply = match authority::targets(&control, incoming.from) {
-            Ok(target) => view(&control, target.members, index),
+            Ok(target) => view(&control, &target.members, index),
             Err(_) => Reply::denied(index),
         };
         let _ = incoming.reply.send(reply);
@@ -33,7 +33,7 @@ pub fn receive(
     Ok(::schedule::Progress::Done)
 }
 
-fn view(control: &Control, members: &'static [&'static str], index: u32) -> Reply {
+fn view(control: &Control, members: &[&str], index: u32) -> Reply {
     let Some(name) = members.get(index as usize).copied() else {
         return Reply::end(index);
     };

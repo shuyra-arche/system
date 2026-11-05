@@ -1,6 +1,6 @@
 //! Validate pure UnitFile policy before constructing runtime resources.
 
-pub(crate) fn validate(declarations: &[&unit::UnitFile]) -> Result<(), &'static str> {
+pub(crate) fn validate(declarations: &[unit::runtime::Unit]) -> Result<(), &'static str> {
     for (program_index, program) in declarations.iter().enumerate() {
         if program
             .operator

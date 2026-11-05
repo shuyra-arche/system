@@ -20,8 +20,8 @@ pub(crate) mod takeover;
 mod transition;
 
 pub use directive::Directive;
-pub use origin::Origin;
 pub(crate) use intent::accepted as accept_intent;
+pub use origin::Origin;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Key {
@@ -56,7 +56,7 @@ pub struct Execution {
 pub struct Operation {
     pub key: OperationKey,
     pub progress: ExecutionProgress,
-    pub program: Option<&'static crate::unit::UnitFile>,
+    pub program: Option<unit::runtime::Unit>,
 }
 pub struct OperationKey {
     pub id: crate::system::assembly::JobId,

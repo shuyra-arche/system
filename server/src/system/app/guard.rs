@@ -4,7 +4,7 @@ use env::{Permission, PieKind, PieToken};
 /// An empty selection needs no authority; a non-empty one must carry a live
 /// FETCH-only Nole owned by the System task.
 pub(crate) fn authority(
-    guarded: &'static [&'static str],
+    guarded: &[&str],
     token: Option<PieToken>,
 ) -> Result<Option<PieToken>, &'static str> {
     if guarded.is_empty() {
