@@ -1,5 +1,9 @@
 # Dynamic runtime selection
 
+System's package metadata declares the runtime resources it generates from boot
+facts. The host does not require machine inventory or platform capabilities to be
+files in initrd, and undeclared missing file resources still fail packaging.
+
 The host passes no Deployment file. System reads the VNI1 bundle, validates each
 VNU1 record and image space, enforces the required inclusion set, and derives
 startup order from selected declarations. Requested templates remain available
