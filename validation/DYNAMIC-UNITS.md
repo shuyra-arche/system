@@ -17,7 +17,8 @@ Validation on nightly-2026-10-09, without local Cargo patches:
 
 - Actual RV64 `system-server` / `system` executable built using public Unit
   ad50b803c3bd5cd2ef90010d80badf23551e88d5 and bundle reader
-  4d0f5a5526b9f7251627f58b80d769259395c9e3. Formal root Cargo.lock is tracked.
+  ee9357070996e2e559095904ff137a289a4ca156, preserving Env's Kernel ABI facade
+  and using the canonical capsule reader. Formal root Cargo.lock is tracked.
 - Two new host tests compile the actual catalog, decoder and startup selection
   against generated binary bundle fixtures: requested-instance exclusion,
   missing dependencies, boot image mismatch, inactive readiness and selected cycles.

@@ -49,7 +49,10 @@ dependencies = [
 [[package]]
 name = "env-initrd"
 version = "0.1.0"
-source = "git+https://github.com/shuyra-arche/env.git?rev=4d0f5a5526b9f7251627f58b80d769259395c9e3#4d0f5a5526b9f7251627f58b80d769259395c9e3"
+source = "git+https://github.com/shuyra-arche/env.git?rev=ee9357070996e2e559095904ff137a289a4ca156#ee9357070996e2e559095904ff137a289a4ca156"
+dependencies = [
+ "kernel-api-env",
+]
 
 [[package]]
 name = "erra"
@@ -115,6 +118,32 @@ dependencies = [
  "resource",
  "wire",
 ]
+
+[[package]]
+name = "kernel-api-env"
+version = "0.1.0"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=a9986c82127cf25183bf5c30e7d42e4a9376b734#a9986c82127cf25183bf5c30e7d42e4a9376b734"
+dependencies = [
+ "bitflags",
+ "erra",
+ "kernel-api-macros",
+ "kernel-api-wire",
+]
+
+[[package]]
+name = "kernel-api-macros"
+version = "0.1.0"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=a9986c82127cf25183bf5c30e7d42e4a9376b734#a9986c82127cf25183bf5c30e7d42e4a9376b734"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "kernel-api-wire"
+version = "0.1.0"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=a9986c82127cf25183bf5c30e7d42e4a9376b734#a9986c82127cf25183bf5c30e7d42e4a9376b734"
 
 [[package]]
 name = "kernel-test-api"
