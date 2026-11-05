@@ -192,6 +192,7 @@ impl Default for Jobs {
 pub(crate) struct Launch {
     pub instance: Launched,
     pub installation: InstanceInstall,
+    pub observation: observation::Observation,
 }
 pub(crate) struct InstanceInstall {
     pub delivery: Delivery,
@@ -720,12 +721,32 @@ impl Jobs {
             .program
             .as_ref()
             .map_or(crate::unit::Ready::OnSpawn, |program| program.control.ready);
-        launch
+        let ready = launch
             .installation
             .service
             .as_mut()
             .ok_or(crate::system::control::unit::verdict::Fail::NotReady)?
-            .ready_for(ready)
+            .ready_for(ready)?;
+        if ready {
+            launch.observation
+                .ready(reference.task.get() as u64)
+                .map_err(|_| crate::system::control::unit::verdict::Fail::NotReady)?;
+        }
+        Ok(ready)
+    }
+
+    pub(crate) fn observe_exit(
+        &mut self,
+        reference: InstanceRef,
+        exit: env::TaskExit,
+    ) -> Result<(), &'static str> {
+        if exit.task != reference.task {
+            return Ok(());
+        }
+        let launch = self.launches.iter_mut()
+            .find(|launch| launch.instance.reference == reference)
+            .ok_or("instance exit observation reference")?;
+        launch.observation.exit(exit.task.get() as u64, exit.into())
     }
     pub(crate) fn take_commands(&mut self, limit: usize) -> Vec<Command> {
         let mut commands = Vec::new();
@@ -1320,6 +1341,15 @@ fn construct(
                 ) {
                     if done == reference {
                         jobs.launches.push(launch);
+                        let launch = jobs.launches.last_mut()
+                            .ok_or(crate::system::app::Fault::Room)?;
+                        let team = context.control.instance(reference.task)
+                            .and_then(|item| item.team()).ok_or(crate::system::app::Fault::Room)?;
+                        let name = launch.installation.delivery.program.as_ref()
+                            .map_or("image", |program| program.name());
+                        launch.observation
+                            .bind(name, reference.task.get() as u64, team.get() as u64)
+                            .map_err(|_| crate::system::app::Fault::Room)?;
                     }
                 }
             }
@@ -1410,6 +1440,7 @@ fn construct_one(
                     .map(|declaration| retirement::Participant::new(*declaration, built.task)),
             );
             Ok(Launch {
+                observation: observation::Observation::default(),
                 instance: Launched {
                     reference: InstanceRef {
                         job: job_id,
@@ -1495,8 +1526,15 @@ pub(crate) fn completed(
     while index < jobs.launches.len() {
         let task = jobs.launches[index].instance.task;
         if control.instance(task).is_none_or(|item| {
-            item.state == crate::system::control::unit::table::State::Dead && item.team().is_none()
+            item.state == crate::system::control::unit::table::State::Dead
+                && matches!(item.receipt, crate::system::control::instance::receipt::Receipt::Consumed
+                    | crate::system::control::instance::receipt::Receipt::Reported)
         }) {
+            if control.instance(task).is_some() {
+                jobs.launches[index].observation
+                    .retired(task.get() as u64)
+                    .map_err(|_| crate::system::app::Fault::Room)?;
+            }
             let launch = jobs.launches.remove(index);
             if let Some(key) = launch.instance.create {
                 if let Some(record) = jobs.creates.iter_mut().find(|record| record.key == key) {
@@ -1564,5 +1602,7 @@ pub(crate) mod static_plan;
 pub(crate) mod namespace;
 #[path = "assembly/retirement.rs"]
 pub(crate) mod retirement;
+#[path = "assembly/observation.rs"]
+mod observation;
 #[path = "assembly/supply.rs"]
 pub(crate) mod supply;
