@@ -20,6 +20,11 @@
 
 `rust-toolchain.toml` 固定为 `nightly-2026-09-04`，与来源工程一致。
 
+本轮依赖检查点使用已安装的 `nightly-2026-10-09`，未重跑声明的 09-04。
+Server、Client 和 Support 统一使用已发布的 Execution/Kernel Client；根工作区
+为历史间接 SDK pin 显式选择公开转发包。见 [SDK 依赖验证](SDK-VALIDATION.md)
+中的来源、根组合责任和本轮实际验证结果。
+
 ## 构建与测试
 
 ```sh
@@ -34,9 +39,10 @@ cargo check -p system-server --features test-support --target riscv64gc-unknown-
 cargo test -p system-server --lib --features test-support --target x86_64-unknown-linux-gnu --locked
 ```
 
-缓存就绪后，同一组命令加 `--offline` 复验。实际测试为 shape 3 个、identity 9
+缓存就绪后，同一组命令加 `--offline` 复验。原始迁移记录中的测试为 shape 3 个、identity 9
 个、loader 6 个，共 18 个；server 原有内联宿主测试另有 23 个。上述测试不需要 QEMU。
-另有 27 个迁入/拆分工作区共 317 项宿主测试。`RELEASE-CHECKPOINT.md` 区分这些结果
+原始迁移另有 27 个迁入/拆分工作区共 317 项宿主测试；本轮没有重跑这些独立工作区。
+`RELEASE-CHECKPOINT.md` 区分这些历史结果
 与尚待消费端运行的整机、故障和最终回收验收。
 
 server/client 固定使用旧发布 `9e5d63ca536a176583cf1b0054b4ecf7ddd88257`
