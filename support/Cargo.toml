@@ -1,0 +1,18 @@
+[package]
+name = "system-support"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "src/lib.rs"
+test = false
+bench = false
+doctest = false
+
+[dependencies]
+initrd = { package = "env-initrd", git = "https://github.com/shuyra-arche/env.git", rev = "ee9357070996e2e559095904ff137a289a4ca156" }
+env = { git = "https://github.com/shuyra-arche/env.git", rev = "d3000253cd5d13d466e91fafd4dbb27a5ec5aaae" }
+resource = { git = "https://github.com/shuyra-arche/resource.git", rev = "dbc96834f50f094b5c386e54a0a2ae5560dcd7f8" }
+execution = { git = "https://github.com/shuyra-arche/execution.git", rev = "1b333a28bc4c34beaea3f7986a9bb6e8ab2db414" }
+hub-api = { git = "https://github.com/shuyra-arche/hub.git", rev = "cccef3f325198c8390007ae88b064bae0f21f93e" }
+fdt = { version = "0.1.5", default-features = false }

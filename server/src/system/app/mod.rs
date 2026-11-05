@@ -1,0 +1,103 @@
+mod activity;
+pub(crate) mod boot;
+pub(crate) mod bootstrap;
+pub(crate) mod declarations;
+pub(crate) mod events;
+mod execute;
+pub(crate) mod install;
+pub(crate) mod life;
+pub(crate) mod namespace;
+pub(crate) mod operator;
+pub(crate) mod policy;
+pub(crate) mod scene;
+pub(crate) mod schedule;
+pub(crate) mod wait;
+pub(crate) use declarations::Declarations;
+pub(crate) use execute::supervise;
+
+/// System derives its runtime inputs from the Unit records in the boot initrd.
+pub fn run(boot: crate::boot::Boot) -> Result<(), env::Reason> {
+    let system = env::unit::self_id().get() as u64;
+    events::emit(unit::event::Event::Started { system }).map_err(|_| 3usize)?;
+    let declarations = Declarations::decode(&boot.catalog).map_err(|why| {
+        crate::debug!("system: {why}");
+        crate::system::control::unit::start::E_PROGRAM
+    })?;
+    let result = execute::run(boot, declarations);
+    events::emit(unit::event::Event::Complete {
+        system,
+        reason: result.as_ref().err().copied().unwrap_or(env::EXIT_OK) as u64,
+    })
+    .map_err(|_| 3usize)?;
+    result
+}
+
+mod config;
+mod guard;
+pub(crate) mod supplies;
+
+mod waiting;
+
+#[derive(Debug)]
+pub(crate) enum Fault {
+    Room,
+    Dead,
+    Wait,
+    Idle,
+    Shutdown,
+}
+
+#[derive(Debug)]
+pub(crate) enum InstallError {
+    Resource(::schedule::resource::AccessError),
+    Capability(erra::Error<env::PieFail>),
+    Notification(erra::Error<env::NoleFail>),
+    Waiting(erra::Error<env::ToleFail>),
+    Configuration(&'static str),
+}
+impl From<::schedule::resource::AccessError> for InstallError {
+    fn from(error: ::schedule::resource::AccessError) -> Self {
+        Self::Resource(error)
+    }
+}
+impl From<erra::Error<env::PieFail>> for InstallError {
+    fn from(error: erra::Error<env::PieFail>) -> Self {
+        Self::Capability(error)
+    }
+}
+impl From<erra::Error<env::NoleFail>> for InstallError {
+    fn from(error: erra::Error<env::NoleFail>) -> Self {
+        Self::Notification(error)
+    }
+}
+impl From<erra::Error<env::ToleFail>> for InstallError {
+    fn from(error: erra::Error<env::ToleFail>) -> Self {
+        Self::Waiting(error)
+    }
+}
+impl core::fmt::Display for InstallError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Resource(error) => write!(f, "resource: {:?}", error),
+            Self::Capability(error) => write!(f, "capability: {}", error),
+            Self::Notification(error) => write!(f, "notification: {}", error),
+            Self::Waiting(error) => write!(f, "waiting: {}", error),
+            Self::Configuration(reason) => write!(f, "configuration: {reason}"),
+        }
+    }
+}
+impl From<::schedule::resource::AccessError> for Fault {
+    fn from(_: ::schedule::resource::AccessError) -> Self {
+        Self::Room
+    }
+}
+impl From<::schedule::DispatchError> for Fault {
+    fn from(_: ::schedule::DispatchError) -> Self {
+        Self::Room
+    }
+}
+impl From<alloc::collections::TryReserveError> for Fault {
+    fn from(_: alloc::collections::TryReserveError) -> Self {
+        Self::Room
+    }
+}

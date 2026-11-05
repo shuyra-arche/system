@@ -1,0 +1,14 @@
+[package]
+name = "system-dynamic-unit-tests"
+version = "0.1.0"
+edition = "2024"
+publish = false
+[workspace]
+
+[dependencies]
+initrd = { package = "env-initrd", git = "https://github.com/shuyra-arche/env.git", rev = "ee9357070996e2e559095904ff137a289a4ca156" }
+unit = { git = "https://github.com/shuyra-arche/unit.git", rev = "ad50b803c3bd5cd2ef90010d80badf23551e88d5" }
+
+[build-dependencies]
+initrd = { package = "env-initrd", git = "https://github.com/shuyra-arche/env.git", rev = "ee9357070996e2e559095904ff137a289a4ca156" }
+unit = { git = "https://github.com/shuyra-arche/unit.git", rev = "ad50b803c3bd5cd2ef90010d80badf23551e88d5" }
