@@ -98,7 +98,11 @@ impl Control {
         true
     }
 
-    pub(crate) fn reap_instances(&mut self, settling: bool) {
+    pub(crate) fn reap_instances(
+        &mut self,
+        settling: bool,
+        mut observe: impl FnMut(crate::system::assembly::InstanceRef, env::TaskExit) -> Result<(), &'static str>,
+    ) -> Result<(), &'static str> {
         self.reclaim_returned();
         for item in &mut self.instances {
             if item.state == State::Dead {
@@ -111,13 +115,17 @@ impl Control {
                 if let Ok(env::JoinReply::Reaped(exit)) =
                     unit::join(item.task.into(), Wait::POLL, false)
                 {
+                    observe(item.reference, exit)?;
                     item.reap(exit);
                 }
             } else if let Some(team) = item.team() {
                 // Receive every member independently; main/auxiliary policy is Control's.
                 for _ in 0..64 {
                     match unit::join(env::UnitTarget::Team(team), Wait::POLL, true) {
-                        Ok(env::JoinReply::Reaped(exit)) => item.reap(exit),
+                        Ok(env::JoinReply::Reaped(exit)) => {
+                            observe(item.reference, exit)?;
+                            item.reap(exit);
+                        }
                         _ => break,
                     }
                 }
@@ -138,6 +146,7 @@ impl Control {
             }
         }
         self.instances.retain(|item| item.retains_after_reap());
+        Ok(())
     }
 
     pub(crate) fn instance_wait(&self, mut wait: Wait) -> Wait {
