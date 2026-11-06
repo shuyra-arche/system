@@ -6,29 +6,27 @@ use crate::system::{assembly, control, identity, loader, operator};
 use ::schedule::Resources;
 use alloc::vec::Vec;
 use env::{Call, Name};
-use unit::Deployment;
 
 pub(crate) fn resources(
     boot: Boot,
     declarations: Declarations,
-    deployment: &'static Deployment,
 ) -> Result<Resources<'static>, crate::system::app::InstallError> {
     super::config::validate(declarations.list())
         .map_err(crate::system::app::InstallError::Configuration)?;
     let status = boot::status();
-    let inputs = deployment
-        .start
+    let inputs = declarations
+        .list()
         .iter()
-        .map(|name| {
-            let program = declarations.find(name).ok_or(
-                crate::system::app::InstallError::Configuration(
-                    "deployment start UnitFile missing",
-                ),
-            )?;
+        .filter(|program| {
+            program.name() != declarations.system()
+                && program.control.creation == unit::document::Creation::Startup
+        })
+        .map(|program| {
+            let program = program.clone();
             let image = boot
                 .catalog
                 .find(program.loader.image)
-                .map(|entry| entry.elf)
+                .map(|entry| entry.bytes)
                 .ok_or(crate::system::app::InstallError::Configuration(
                     "deployment start image missing",
                 ))?;
@@ -38,30 +36,41 @@ pub(crate) fn resources(
             })
         })
         .collect::<Result<Vec<_>, crate::system::app::InstallError>>()?;
-    let deployed = inputs.iter().map(|input| input.program).collect::<Vec<_>>();
-    let guarded = deployment.guarded(declarations.list()).map_err(|why| {
-        crate::debug!(
-            "system: invalid guarded deployment {}: {why:?}",
-            deployment.name
-        );
-        crate::system::app::InstallError::Configuration("invalid guarded deployment")
-    })?;
-    let guard = super::guard::authority(guarded, boot.accounts.token(Name::Call(Call::Guard)))
+    let deployed = inputs
+        .iter()
+        .map(|input| input.program.clone())
+        .collect::<Vec<_>>();
+    let guarded = deployed
+        .iter()
+        .filter(|unit| unit.control.guarded)
+        .map(|unit| unit.name())
+        .collect::<Vec<_>>();
+    let mut groups = alloc::collections::BTreeMap::<&'static str, Vec<&'static str>>::new();
+    for unit in &deployed {
+        for group in &unit.control.groups {
+            groups.entry(group).or_default().push(unit.name());
+        }
+    }
+    let targets = groups
+        .into_iter()
+        .map(|(name, members)| crate::unit::Target { name, members })
+        .collect::<Vec<_>>();
+    let guard = super::guard::authority(&guarded, boot.accounts.token(Name::Call(Call::Guard)))
         .map_err(crate::system::app::InstallError::Configuration)?;
     let mut resources = Resources::new();
     resources.insert(boot.catalog)?.insert(
         Supplies::new(boot.machine, boot.accounts, boot.catalog)
             .map_err(crate::system::app::InstallError::Configuration)?,
     )?;
-    resources.insert(declarations)?;
+    resources.insert(declarations.clone())?;
     resources.insert(super::operator::Layout::default())?;
-    resources.insert(super::operator::BootstrapReceipt::new(declarations))?;
+    resources.insert(super::operator::BootstrapReceipt::new(declarations.clone()))?;
     control::install(
         &mut resources,
         status.clone(),
         control::Configuration {
             inputs,
-            targets: deployment.targets,
+            targets,
             guarded,
             guard,
         },

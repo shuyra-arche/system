@@ -1,6 +1,6 @@
 use super::{Control, Service, task as service};
 pub use crate::support::timing::BOOT_MS;
-use crate::unit::{Died, UnitFile};
+use crate::unit::Died;
 
 pub const E_PROGRAM: Died = 3;
 pub const E_TABLE: Died = 4;
@@ -10,16 +10,16 @@ pub enum Error {
     Spawn,
     Step(&'static str),
 }
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(crate) struct Input {
-    pub program: &'static UnitFile,
+    pub program: unit::runtime::Unit,
     pub image: Option<&'static [u8]>,
 }
 impl Control {
     pub(crate) fn input(&self, name: &str) -> Result<Input, super::verdict::Fail> {
         self.inputs
             .iter()
-            .copied()
+            .cloned()
             .find(|input| input.program.name() == name)
             .ok_or(super::verdict::Fail::Unknown)
     }

@@ -1,6 +1,6 @@
-use crate::system::assembly::retirement::Participant;
 use crate::system::app::Fault as Fail;
 use crate::system::assembly::Jobs;
+use crate::system::assembly::retirement::Participant;
 use crate::system::control::Startup;
 use crate::system::control::unit::Control;
 
@@ -30,10 +30,10 @@ pub struct Settle {
 }
 
 impl Settle {
-    pub fn new(flow: Flow, programs: &[&crate::unit::UnitFile]) -> Self {
+    pub fn new(flow: Flow, programs: &[unit::runtime::Unit]) -> Self {
         let mut participants: Vec<Participant> = Vec::new();
         for program in programs {
-            for declaration in program.control.retirement {
+            for declaration in &program.control.retirement {
                 if participants
                     .iter()
                     .any(|participant| participant.declaration == *declaration)
@@ -101,7 +101,7 @@ impl Settle {
     }
 
     pub(crate) fn gate(&mut self, program: &crate::unit::UnitFile) -> bool {
-        let declarations = program.control.retirement;
+        let declarations = &program.control.retirement;
         self.advance(declarations);
         self.settled_for(declarations)
     }
@@ -188,10 +188,7 @@ pub fn settle(
     Ok(Progress::Done)
 }
 pub fn domains(control: Res<Control>, mut settle: ResMut<Settle>) -> Result<Progress, Fail> {
-    if settle.closing()
-        && !settle.flow.settling
-        && control.instances().all(|item| item.settled())
-    {
+    if settle.closing() && !settle.flow.settling && control.instances().all(|item| item.settled()) {
         settle.domains_settled();
     }
     Ok(Progress::Done)

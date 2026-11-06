@@ -100,12 +100,12 @@ pub(crate) fn bootstrap(
     }
     for program in receipt
         .declarations
+        .as_ref()
         .ok_or("declaration set")?
         .list()
         .iter()
-        .copied()
     {
-        for declaration in program.operator.namespace {
+        for declaration in &program.operator.namespace {
             match system.resolve(declaration.key, WAIT) {
                 Ok(_) => {}
                 Err(api::Fail::Unjudged) => return Ok(Progress::Pending),

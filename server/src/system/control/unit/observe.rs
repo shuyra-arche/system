@@ -44,7 +44,7 @@ impl Control {
                     };
                     // Reuse the declaration: stop users before their providers.
                     // Stopping users still hold the provider until reclaim finishes.
-                    input.program.control.after.is_some_and(|after| {
+                    input.program.control.after.as_ref().is_some_and(|after| {
                         after.iter().any(|dependency| match *dependency {
                             crate::unit::Dependency::Unit(name) => name == row.name,
                             crate::unit::Dependency::Target(name) => {

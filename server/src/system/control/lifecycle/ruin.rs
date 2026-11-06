@@ -17,7 +17,7 @@ pub(crate) fn drain(
 ) -> Result<Progress, Fail> {
     let job = active.0.as_ref().ok_or(Fail::Unknown)?;
     let program = control.input(&job.key.request.name)?.program;
-    if !settle.gate(program) {
+    if !settle.gate(&program) {
         return Ok(Progress::Pending);
     }
     Ok(Progress::Done)
@@ -56,10 +56,7 @@ pub(crate) fn pre(
     apply(&mut control, change, &job.key.request.name)?;
     Ok(Progress::Done)
 }
-pub fn release_guard(
-    active: Res<Active>,
-    mut control: ResMut<Control>,
-) -> Result<Progress, Fail> {
+pub fn release_guard(active: Res<Active>, mut control: ResMut<Control>) -> Result<Progress, Fail> {
     let job = active.0.as_ref().ok_or(Fail::Unknown)?;
     let name = job.key.request.name.as_str();
     if !control.guard_held(name) {
@@ -116,6 +113,18 @@ pub fn run(active: Res<Active>, control: Res<Control>) -> Result<Progress, Fail>
                 };
             }
         }
+    }
+    if let Some(task) = job.progress.execution.task {
+        let env::JoinReply::Reaped(exit) =
+            env::unit::join(task.into(), Wait::POLL, false).map_err(|_| Fail::NotReady)?
+        else {
+            return Err(Fail::NotReady);
+        };
+        crate::system::app::events::emit(unit::event::Event::Exited {
+            task: task.get() as u64,
+            exit: exit.into(),
+        })
+        .map_err(|_| Fail::NotReady)?;
     }
     Ok(Progress::Done)
 }
@@ -211,6 +220,10 @@ pub fn finalize(
         .detach_unit(&job.key.request.name)
         .map_err(|_| Fail::NotReady)?;
     if let Some((task, team)) = retired {
+        crate::system::app::events::emit(unit::event::Event::Retired {
+            task: task.get() as u64,
+        })
+        .map_err(|_| Fail::NotReady)?;
         crate::debug::put(&alloc::format!(
             "system: retired name={} task={} team={}",
             job.key.request.name.as_str(),

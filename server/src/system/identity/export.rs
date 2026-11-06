@@ -14,7 +14,7 @@ const EXPORT_CAP: usize = 256;
 
 pub struct GrantRequest<'a> {
     pub task: TaskId,
-    pub program: &'static crate::unit::UnitFile,
+    pub program: unit::runtime::Unit,
     pub namespaces: &'a crate::system::assembly::namespace::NamespaceInstallations,
 }
 
@@ -41,7 +41,7 @@ struct NamespaceGrant {
 
 struct ExportOwner {
     task: TaskId,
-    program: &'static crate::unit::UnitFile,
+    program: unit::runtime::Unit,
 }
 
 struct ExportGrant {
@@ -139,7 +139,7 @@ impl Exports {
         namespace_grants
             .try_reserve_exact(program.operator.namespace.len())
             .map_err(|_| "identity export capacity")?;
-        for (index, declaration) in program.operator.namespace.iter().copied().enumerate() {
+        for (index, declaration) in program.operator.namespace.iter().cloned().enumerate() {
             let grant = namespaces
                 .grant(task, index)
                 .ok_or("identity export namespace not prepared")?;
@@ -247,7 +247,7 @@ impl Exports {
                 named: control.task(grant.owner.program.name()) == Some(from),
             },
             admission::AliasClaim {
-                aliases: grant.owner.program.identity.aliases,
+                aliases: &grant.owner.program.identity.aliases,
                 request: &request,
             },
             |task, subject| {

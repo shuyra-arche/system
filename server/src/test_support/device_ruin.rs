@@ -1,5 +1,7 @@
 //! Provider-owned device-ruin scenario. Source supplies boot and deployment only.
+use alloc::rc::Rc;
 use alloc::sync::Arc;
+use core::cell::RefCell;
 use core::sync::atomic::{AtomicBool, Ordering};
 use schedule::{Progress, Res, ResMut, Schedule};
 
@@ -8,9 +10,13 @@ use crate::system::app;
 use crate::system::control::{self, identity::Roster, unit::Control};
 use unit::{Deployment, UnitFile};
 
+/// Single-supervisor ownership: `run` owns the outer `Rc`; `Caller` holds one
+/// clone so the supervisor task can retain the spawned `Join` outside the
+/// `Resources` consumed by `app::supervise`. The spawned closure only receives
+/// `Arc<AtomicBool>`.
 struct Caller {
-    task: env::TaskId,
     ready: Arc<AtomicBool>,
+    worker: Rc<RefCell<Option<execution::unit::task::Join<()>>>>,
 }
 
 pub const REQUEST: env::Mark = env::Mark::of("device-ruin/request");
@@ -28,10 +34,77 @@ pub fn run(
         .write::<control::Startup>()
         .map_err(|_| 9usize)?
         .configure(programs);
-    let root = env::unit::self_id();
     let ready = Arc::new(AtomicBool::new(false));
-    let start = ready.clone();
-    let worker = execution::unit::task::spawn(move || {
+    let worker = Rc::new(RefCell::new(None));
+    resources
+        .insert(Caller {
+            ready,
+            worker: worker.clone(),
+        })
+        .map_err(|_| 9usize)?;
+    let mut frame = Schedule::sequence();
+    frame.system("ruin.caller", prepare).map_err(|_| 9usize)?;
+    frame
+        .plan("system", app::schedule::frame().map_err(|_| 9usize)?)
+        .map_err(|_| 9usize)?;
+    let result = app::supervise(resources, frame.build().map_err(|_| 9usize)?);
+    // Take the Join after supervision; never hold the RefCell borrow across
+    // the blocking join. A supervisor success without a spawned caller is a
+    // fault, not a pass.
+    let worker = worker.borrow_mut().take();
+    match worker {
+        Some(join) => {
+            join.join();
+            result
+        }
+        None => match result {
+            Ok(()) => Err(9usize),
+            Err(reason) => Err(reason),
+        },
+    }
+}
+
+fn prepare(
+    caller: Res<Caller>,
+    endpoints: Res<control::namespace::Endpoints>,
+    mut roster: ResMut<Roster>,
+    mut control: ResMut<Control>,
+) -> Result<Progress, app::Fault> {
+    if caller.ready.load(Ordering::Acquire) {
+        return Ok(Progress::Done);
+    }
+    // Spawn-after-request is take-once: a present worker that is not ready can
+    // only be a broken partial path, never a reason to spawn a second caller.
+    if caller.worker.borrow().is_some() {
+        return Err(app::Fault::Room);
+    }
+    let grants = [
+        system_api::control::Grant::Ruin,
+        system_api::control::Grant::State,
+    ];
+    if grants.iter().any(|grant| endpoints.face(*grant).is_none()) {
+        return Ok(Progress::Done);
+    }
+    let Some(controller) = control.task("device-ctl-ruin") else {
+        return Ok(Progress::Done);
+    };
+    let Ok(request) = ipc::session::establish::find(controller, REQUEST) else {
+        return Ok(Progress::Done);
+    };
+    let mut bytes = [0u8; 1];
+    let Ok((len, from)) = resource::raw::Hole::from_raw(request).pull(&mut bytes, env::Wait::POLL)
+    else {
+        return Ok(Progress::Done);
+    };
+    if (len, from, bytes) != (1, controller, [1]) {
+        return Err(app::Fault::Room);
+    }
+    // The controller's post-submit request has been pulled and strictly
+    // validated. Spawn now, so the unchanged 5 s Control-delivery assertion
+    // begins at the actual caller spawn.
+    let root = env::unit::self_id();
+    let start = caller.ready.clone();
+    let join = execution::unit::task::spawn(move || {
         let until = env::chrono::clock().saturating_add(5_000_000_000);
         while !start.load(Ordering::Acquire) {
             assert!(
@@ -61,62 +134,18 @@ pub fn run(
         );
         crate::debug::put("ruin: virtio-blk dead after reply");
     });
-    resources
-        .insert(Caller {
-            task: worker.id(),
-            ready,
-        })
-        .map_err(|_| 9usize)?;
-    let mut frame = Schedule::sequence();
-    frame.system("ruin.caller", prepare).map_err(|_| 9usize)?;
-    frame
-        .plan("system", app::schedule::frame().map_err(|_| 9usize)?)
-        .map_err(|_| 9usize)?;
-    let result = app::supervise(resources, frame.build().map_err(|_| 9usize)?);
-    worker.join();
-    result
-}
-
-fn prepare(
-    caller: Res<Caller>,
-    endpoints: Res<control::namespace::Endpoints>,
-    mut roster: ResMut<Roster>,
-    mut control: ResMut<Control>,
-) -> Result<Progress, app::Fault> {
-    if caller.ready.load(Ordering::Acquire) {
-        return Ok(Progress::Done);
-    }
-    let grants = [
-        system_api::control::Grant::Ruin,
-        system_api::control::Grant::State,
-    ];
-    if grants.iter().any(|grant| endpoints.face(*grant).is_none()) {
-        return Ok(Progress::Done);
-    }
-    let Some(controller) = control.task("device-ctl-ruin") else {
-        return Ok(Progress::Done);
-    };
-    let Ok(request) = ipc::session::establish::find(controller, REQUEST) else {
-        return Ok(Progress::Done);
-    };
-    let mut bytes = [0u8; 1];
-    let Ok((len, from)) = resource::raw::Hole::from_raw(request).pull(&mut bytes, env::Wait::POLL)
-    else {
-        return Ok(Progress::Done);
-    };
-    if (len, from, bytes) != (1, controller, [1]) {
-        return Err(app::Fault::Room);
-    }
+    let task = join.id();
+    *caller.worker.borrow_mut() = Some(join);
     roster
-        .inherit(caller.task, env::unit::self_id())
+        .inherit(task, env::unit::self_id())
         .map_err(|_| app::Fault::Room)?;
     control
-        .register_internal(caller.task)
+        .register_internal(task)
         .map_err(|_| app::Fault::Room)?;
     for grant in grants {
         env::pie::accord(
             endpoints.face(grant).ok_or(app::Fault::Room)?,
-            caller.task,
+            task,
             env::Permission::STORE,
             grant.mark(),
         )

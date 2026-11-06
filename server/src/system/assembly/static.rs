@@ -20,7 +20,7 @@ pub(crate) fn mint(
             },
             crate::system::loader::Spawn {
                 sire: env::unit::self_id(),
-                args: input.program.loader.args,
+                args: &input.program.loader.args,
                 stack: input.program.loader.stack,
             },
         )
@@ -39,6 +39,12 @@ pub(crate) fn mint(
         identity_install: None,
     });
     let team = control.task_team(task).ok_or(Fail::Unknown)?;
+    crate::system::app::events::emit(unit::event::Event::Bound {
+        unit: input.program.name(),
+        task: task.get() as u64,
+        team: team.get() as u64,
+    })
+    .map_err(|_| Fail::NotReady)?;
     crate::debug::put(&alloc::format!(
         "system: static construct name={} task={} team={} owner={}",
         input.program.name(),
@@ -55,7 +61,7 @@ fn namespace(
 ) -> Result<Progress, Fail> {
     let job = active.0.as_ref().ok_or(Fail::Unknown)?;
     let task = active.task().ok_or(Fail::NotReady)?;
-    let program = job.program.ok_or(Fail::Unknown)?;
+    let program = job.program.clone().ok_or(Fail::Unknown)?;
     crate::debug::put(&alloc::format!(
         "system: prepare {} namespace",
         program.name()
@@ -121,11 +127,8 @@ pub(crate) fn prepare(
     control: Res<Control>,
 ) -> Result<Progress, Fail> {
     let job = active.0.as_ref().ok_or(Fail::Unknown)?;
-    let policies = control
-        .input(&job.key.request.name)?
-        .program
-        .control
-        .construction;
+    let input = control.input(&job.key.request.name)?;
+    let policies = &input.program.control.construction;
     construction
         .grant(active.task().ok_or(Fail::NotReady)?, policies)
         .map_err(|_| Fail::Full)?;
@@ -138,7 +141,7 @@ fn identity_exports(
 ) -> Result<Progress, Fail> {
     let job = active.0.as_ref().ok_or(Fail::Unknown)?;
     let task = active.task().ok_or(Fail::NotReady)?;
-    let program = job.program.ok_or(Fail::Unknown)?;
+    let program = job.program.clone().ok_or(Fail::Unknown)?;
     exports
         .grant(crate::system::identity::export::GrantRequest {
             task,
@@ -163,9 +166,9 @@ fn claim_grant(
 ) -> Result<Progress, Fail> {
     let job = active.0.as_ref().ok_or(Fail::Unknown)?;
     let task = active.task().ok_or(Fail::NotReady)?;
-    let program = job.program.ok_or(Fail::Unknown)?;
+    let program = job.program.as_ref().ok_or(Fail::Unknown)?;
     endpoint
-        .grant_claim(task, program.control.construction)
+        .grant_claim(task, &program.control.construction)
         .map_err(|_| Fail::NotReady)?;
     Ok(Progress::Done)
 }
@@ -185,12 +188,8 @@ pub(crate) fn identity_grants(
 ) -> Result<Progress, Fail> {
     let job = active.0.as_ref().ok_or(Fail::Unknown)?;
     let task = active.task().ok_or(Fail::NotReady)?;
-    for grant in control
-        .input(&job.key.request.name)?
-        .program
-        .identity
-        .grants
-    {
+    let input = control.input(&job.key.request.name)?;
+    for grant in &input.program.identity.grants {
         roster
             .grant_face(task, *grant)
             .map_err(|_| Fail::NotReady)?;

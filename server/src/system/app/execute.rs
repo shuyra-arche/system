@@ -5,19 +5,10 @@ use crate::boot::Boot;
 use crate::system::app::scene;
 use crate::system::control::unit::start;
 use ::schedule::{Cursor, Progress};
-use unit::Deployment;
 
-pub(crate) fn run(
-    boot: Boot,
-    declarations: Declarations,
-    deployment: &'static Deployment,
-) -> Result<(), env::Reason> {
-    let list = scene::programs(&boot.catalog, declarations, deployment)
-        .map_err(|_| start::E_PROGRAM)?;
-    if list.is_empty() {
-        return Err(start::E_PROGRAM);
-    }
-    let resources = install::resources(boot, declarations, deployment).map_err(|error| {
+pub(crate) fn run(boot: Boot, declarations: Declarations) -> Result<(), env::Reason> {
+    let list = scene::programs(&declarations).map_err(|_| start::E_PROGRAM)?;
+    let resources = install::resources(boot, declarations).map_err(|error| {
         crate::debug::put(&alloc::format!("system: install {}", error));
         start::E_TABLE
     })?;

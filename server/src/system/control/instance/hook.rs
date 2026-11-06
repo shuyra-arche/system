@@ -165,7 +165,7 @@ pub fn finish(
 }
 pub fn reclaim(
     mut control: ResMut<Control>,
-    active: Res<crate::system::assembly::Jobs>,
+    mut active: ResMut<crate::system::assembly::Jobs>,
 ) -> Result<Progress, &'static str> {
     let reference = active
         .active_hook_reference()
@@ -181,6 +181,7 @@ pub fn reclaim(
     for at in 0..64 {
         match unit::join(env::UnitTarget::Team(team), Wait::POLL, true) {
             Ok(env::JoinReply::Reaped(exit)) => {
+                active.observe_exit(item.reference, exit)?;
                 item.reap(exit);
                 // Do not let Oust discard results beyond this round's budget.
                 if at == 63 {

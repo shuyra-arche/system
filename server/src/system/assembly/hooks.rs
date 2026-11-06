@@ -35,13 +35,22 @@ pub(crate) fn children() -> Result<alloc::vec::Vec<(Key, Plan<&'static str>)>, B
     ])
 }
 fn channels(mut jobs: ResMut<Jobs>) -> Result<Progress, &'static str> {
-    let reference = jobs.active_hook_reference().ok_or("instance channel reference")?;
-    let launch = jobs.launches.iter_mut()
+    let reference = jobs
+        .active_hook_reference()
+        .ok_or("instance channel reference")?;
+    let launch = jobs
+        .launches
+        .iter_mut()
         .find(|launch| launch.instance.reference == reference)
         .ok_or("instance channel installation")?;
-    if let Some(program) = launch.installation.delivery.program {
-        launch.installation.service.as_mut().ok_or("instance channel service")?
-            .connect(program).map_err(|_| "instance channels")?;
+    if let Some(program) = launch.installation.delivery.program.as_ref() {
+        launch
+            .installation
+            .service
+            .as_mut()
+            .ok_or("instance channel service")?
+            .connect(program)
+            .map_err(|_| "instance channels")?;
     }
     Ok(Progress::Done)
 }
@@ -67,16 +76,18 @@ fn retirement_dependencies(
         participant.discover(system, &namespaces);
         participant.advance();
     }
-    Ok(if launch
-        .installation
-        .retirement
-        .iter()
-        .all(|participant| participant.done)
-    {
-        Progress::Done
-    } else {
-        Progress::Pending
-    })
+    Ok(
+        if launch
+            .installation
+            .retirement
+            .iter()
+            .all(|participant| participant.done)
+        {
+            Progress::Done
+        } else {
+            Progress::Pending
+        },
+    )
 }
 
 fn release_supply(
@@ -157,7 +168,7 @@ fn prepare_namespace(
             system,
             super::namespace::PrepareTask {
                 task,
-                program: delivery.program,
+                program: delivery.program.clone(),
                 wait: env::Wait::AtMost(crate::support::timing::BOOT_MS),
             },
         )
@@ -187,14 +198,13 @@ fn retire_namespace(
 ) -> Result<Progress, &'static str> {
     let task = jobs.active_hook_task().ok_or("instance hook target")?;
     let system = layout.as_ref().ok_or("operator layout unavailable")?;
-    let done = namespaces
-        .retire_task(system, task)
-        .map_err(|why| {
-            crate::debug::put(&alloc::format!(
-                "system: namespace retire task={} failed={why:?}", task.get()
-            ));
-            "instance namespace retire"
-        })?;
+    let done = namespaces.retire_task(system, task).map_err(|why| {
+        crate::debug::put(&alloc::format!(
+            "system: namespace retire task={} failed={why:?}",
+            task.get()
+        ));
+        "instance namespace retire"
+    })?;
     Ok(if done {
         Progress::Done
     } else {
@@ -231,8 +241,8 @@ fn constructor(
 ) -> Result<Progress, &'static str> {
     let task = jobs.active_hook_task().ok_or("instance hook target")?;
     let delivery = launch(&jobs, Some(task))?;
-    if let Some(program) = delivery.program {
-        construction.grant(task, program.control.construction)?;
+    if let Some(program) = delivery.program.as_ref() {
+        construction.grant(task, &program.control.construction)?;
     }
     Ok(Progress::Done)
 }
@@ -243,10 +253,10 @@ fn identity_exports(
     mut exports: ResMut<crate::system::identity::export::Exports>,
 ) -> Result<Progress, &'static str> {
     let task = jobs.active_hook_task().ok_or("instance hook target")?;
-    if let Some(program) = launch(&jobs, Some(task))?.program {
+    if let Some(program) = launch(&jobs, Some(task))?.program.as_ref() {
         exports.grant(crate::system::identity::export::GrantRequest {
             task,
-            program,
+            program: program.clone(),
             namespaces: &namespaces,
         })?;
     }
@@ -266,8 +276,8 @@ fn claim_grant(
     mut endpoint: ResMut<crate::system::loader::EndpointState>,
 ) -> Result<Progress, &'static str> {
     let task = jobs.active_hook_task().ok_or("instance hook target")?;
-    if let Some(program) = launch(&jobs, Some(task))?.program {
-        endpoint.grant_claim(task, program.control.construction)?;
+    if let Some(program) = launch(&jobs, Some(task))?.program.as_ref() {
+        endpoint.grant_claim(task, &program.control.construction)?;
     }
     Ok(Progress::Done)
 }

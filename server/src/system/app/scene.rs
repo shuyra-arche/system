@@ -1,48 +1,37 @@
-//! 从已选部署取启动单元，并按依赖关系排序。
-
-use alloc::vec::Vec;
-
-use crate::debug;
-
-use crate::boot::Catalog;
-use crate::system::app::Declarations;
+use super::Declarations;
 use crate::system::control::unit::start::Error;
-use unit::{Deployment, UnitFile};
+use alloc::vec::Vec;
+use unit::runtime::Unit;
 
-/// 启动项必须在部署和镜像清单中同时存在。
-pub fn programs(
-    catalog: &Catalog,
-    declarations: Declarations,
-    deployment: &'static Deployment,
-) -> Result<Vec<&'static UnitFile>, Error> {
-    let mut list: Vec<&'static UnitFile> = deployment
-        .start
+/// Packaged declarations remain available for runtime construction; only the
+/// startup policy creates an initial instance.
+pub fn programs(declarations: &Declarations) -> Result<Vec<Unit>, Error> {
+    let mut pending: Vec<Unit> = declarations
+        .list()
         .iter()
-        .map(|name| {
-            let program = declarations.find(name).ok_or_else(|| {
-                debug!(
-                    "system: deployment {} references missing UnitFile {}",
-                    deployment.name,
-                    name
-                );
-                Error::Step("deployment start UnitFile missing")
-            })?;
-            if catalog.find(program.loader.image).is_none() {
-                debug!(
-                    "system: deployment {} start image missing {}",
-                    deployment.name,
-                    name
-                );
-                return Err(Error::Step("deployment start image missing"));
-            }
-            Ok(program)
+        .filter(|unit| {
+            unit.name() != declarations.system()
+                && unit.control.creation == unit::document::Creation::Startup
         })
-        .collect::<Result<_, _>>()?;
-    crate::unit::order_scene(&mut list, deployment.targets, deployment.bootstrap).map_err(
-        |why| {
-            debug!("system: bad deps {why:?}");
-            Error::Step("bad deps")
-        },
-    )?;
-    Ok(list)
+        .cloned()
+        .collect();
+    pending.sort_by_key(|unit| unit.name());
+    let mut ordered: Vec<Unit> = Vec::new();
+    while !pending.is_empty() {
+        let index = pending
+            .iter()
+            .position(|unit| {
+                unit.control.after.as_ref().is_none_or(|after| {
+                    after.iter().all(|dependency| match dependency {
+                        unit::Dependency::Unit(name) => {
+                            !pending.iter().any(|other| other.name() == *name)
+                        }
+                        _ => false,
+                    })
+                })
+            })
+            .ok_or(Error::Step("cyclic Unit readiness dependencies"))?;
+        ordered.push(pending.remove(index));
+    }
+    Ok(ordered)
 }

@@ -1,6 +1,7 @@
 [workspace]
 members = ["api", "server", "client", "support"]
 resolver = "3"
+exclude = ["tests/dynamic-units"]
 
 # Select published forwarding SDK packages for legacy transitive Git pins.
 # Dependency consumers own their own root composition.

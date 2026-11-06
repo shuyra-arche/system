@@ -19,7 +19,7 @@ pub struct Coordinates {
 
 pub struct PrepareTask {
     pub task: TaskId,
-    pub program: Option<&'static crate::unit::UnitFile>,
+    pub program: Option<unit::runtime::Unit>,
     pub wait: Wait,
 }
 
@@ -100,7 +100,10 @@ impl NamespaceInstallations {
         system: &crate::system::app::namespace::System,
         request: PrepareTask,
     ) -> Result<bool, api::Fail> {
-        let program_name = request.program.map_or("", crate::unit::UnitFile::name);
+        let program_name = request
+            .program
+            .as_ref()
+            .map_or("", |program| program.name());
         let existing_index = self
             .tasks
             .iter()
@@ -109,7 +112,8 @@ impl NamespaceInstallations {
         let coordinates = self.tasks[existing_index].coordinates;
         let declarations = request
             .program
-            .map_or(&[][..], |program| program.operator.namespace);
+            .as_ref()
+            .map_or(&[][..], |program| program.operator.namespace.as_slice());
         if self.tasks[existing_index].program.is_some() {
             if self.tasks[existing_index].program != Some(program_name) {
                 return Err(api::Fail::Denied);
@@ -128,7 +132,7 @@ impl NamespaceInstallations {
             placements
                 .try_reserve_exact(declarations.len())
                 .map_err(|_| api::Fail::Full)?;
-            for declaration in declarations.iter().copied() {
+            for declaration in declarations.iter() {
                 if declaration.placement != crate::unit::operator::Placement::Instance
                     || placements.iter().any(|(key, _)| *key == declaration.key)
                 {
@@ -190,7 +194,7 @@ impl NamespaceInstallations {
                     .try_reserve_exact(declarations.len())
                     .map_err(|_| api::Fail::Full)?;
                 let mut next_grant = self.next_grant;
-                for declaration in declarations.iter().copied() {
+                for declaration in declarations.iter().cloned() {
                     let base = match declaration.placement {
                         crate::unit::operator::Placement::Shared => {
                             system.resolve(declaration.key, request.wait)?
@@ -295,7 +299,9 @@ impl NamespaceInstallations {
             if let Some(root) = delivery.root {
                 pie::release(root, env::ReleaseMode::Revoke).map_err(|why| {
                     crate::debug::put(&alloc::format!(
-                        "system: namespace delivery revoke token={} failed={:?}", root.get(), why.source
+                        "system: namespace delivery revoke token={} failed={:?}",
+                        root.get(),
+                        why.source
                     ));
                     api::Fail::Dead
                 })?;
@@ -352,11 +358,7 @@ impl NamespaceInstallations {
     }
 
     #[cfg(test)]
-    pub fn prepared_task(
-        &self,
-        task: TaskId,
-        program: Option<&'static crate::unit::UnitFile>,
-    ) -> bool {
+    pub fn prepared_task(&self, task: TaskId, program: Option<unit::runtime::Unit>) -> bool {
         let Some(record) = self
             .tasks
             .iter()
@@ -364,8 +366,10 @@ impl NamespaceInstallations {
         else {
             return false;
         };
-        let program_name = program.map_or("", crate::unit::UnitFile::name);
-        let declarations = program.map_or(0, |program| program.operator.namespace.len());
+        let program_name = program.as_ref().map_or("", |program| program.name());
+        let declarations = program
+            .as_ref()
+            .map_or(0, |program| program.operator.namespace.len());
         record.program == Some(program_name)
             && record.complete
             && record.planned

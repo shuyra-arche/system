@@ -10,7 +10,7 @@ pub(crate) struct Startup {
 }
 
 struct StartPlan {
-    units: Vec<&'static crate::unit::UnitFile>,
+    units: Vec<unit::runtime::Unit>,
     next: usize,
 }
 
@@ -25,7 +25,7 @@ impl Startup {
             waiting: None,
         }
     }
-    pub(crate) fn configure(&mut self, list: Vec<&'static crate::unit::UnitFile>) {
+    pub(crate) fn configure(&mut self, list: Vec<unit::runtime::Unit>) {
         self.plan.units = list;
     }
     pub(crate) fn complete(&self) -> bool {

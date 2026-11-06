@@ -192,6 +192,7 @@ impl Default for Jobs {
 pub(crate) struct Launch {
     pub instance: Launched,
     pub installation: InstanceInstall,
+    pub observation: observation::Observation,
 }
 pub(crate) struct InstanceInstall {
     pub delivery: Delivery,
@@ -209,7 +210,7 @@ pub(crate) struct Launched {
 pub(crate) struct Delivery {
     pub owner: TaskId,
     pub identity: Install,
-    pub program: Option<&'static crate::unit::UnitFile>,
+    pub program: Option<unit::runtime::Unit>,
     pub back: Option<Sender<Said>>,
 }
 pub(crate) struct Request {
@@ -282,9 +283,9 @@ struct ConstructFinish {
     key: Option<CreateKey>,
 }
 pub(crate) type JobCompletion = work::Completed<JobResult>;
+mod bootstrap;
 #[path = "assembly/work.rs"]
 mod work;
-mod bootstrap;
 use work::WorkQueue;
 impl work::JobIdentity for Work {
     fn completed_id(&self) -> Option<JobId> {
@@ -542,7 +543,8 @@ impl Jobs {
             if tracked.operation.key.request.name != request.name {
                 continue;
             }
-            return match crate::system::control::lifecycle::takeover::accept(tracked, &mut request) {
+            return match crate::system::control::lifecycle::takeover::accept(tracked, &mut request)
+            {
                 Ok(_) => Ok((tracked.operation.key.id, true)),
                 Err(fail) => Err((fail, request)),
             };
@@ -644,7 +646,9 @@ impl Jobs {
             let Some(request) = incoming.as_ref() else {
                 continue;
             };
-            if command.from != request.from { continue; }
+            if command.from != request.from {
+                continue;
+            }
             if matches!(
                 request.wire,
                 system_api::control::frame::Wire::StateInstance(_)
@@ -715,13 +719,34 @@ impl Jobs {
             .installation
             .delivery
             .program
+            .as_ref()
             .map_or(crate::unit::Ready::OnSpawn, |program| program.control.ready);
-        launch
+        let ready = launch
             .installation
             .service
             .as_mut()
             .ok_or(crate::system::control::unit::verdict::Fail::NotReady)?
-            .ready_for(ready)
+            .ready_for(ready)?;
+        if ready {
+            launch.observation
+                .ready(reference.task.get() as u64)
+                .map_err(|_| crate::system::control::unit::verdict::Fail::NotReady)?;
+        }
+        Ok(ready)
+    }
+
+    pub(crate) fn observe_exit(
+        &mut self,
+        reference: InstanceRef,
+        exit: env::TaskExit,
+    ) -> Result<(), &'static str> {
+        if exit.task != reference.task {
+            return Ok(());
+        }
+        let launch = self.launches.iter_mut()
+            .find(|launch| launch.instance.reference == reference)
+            .ok_or("instance exit observation reference")?;
+        launch.observation.exit(exit.task.get() as u64, exit.into())
     }
     pub(crate) fn take_commands(&mut self, limit: usize) -> Vec<Command> {
         let mut commands = Vec::new();
@@ -1216,7 +1241,10 @@ fn construct(
         control: &mut control,
     };
     for (job_id, mut request) in requests {
-        let bytes = match request.image.snapshot(jobs.catalog, jobs.declarations) {
+        let bytes = match request
+            .image
+            .snapshot(jobs.catalog, jobs.declarations.as_ref())
+        {
             Ok(bytes) => bytes,
             Err(fail) => {
                 request.image.release();
@@ -1233,7 +1261,7 @@ fn construct(
             }
         };
         request.image.release();
-        request.delivery.program = request.image.program(jobs.declarations);
+        request.delivery.program = request.image.program(jobs.declarations.as_ref());
         if let Some(key) = request.create {
             let fingerprint = sha256(&bytes);
             let existing = jobs
@@ -1313,6 +1341,15 @@ fn construct(
                 ) {
                     if done == reference {
                         jobs.launches.push(launch);
+                        let launch = jobs.launches.last_mut()
+                            .ok_or(crate::system::app::Fault::Room)?;
+                        let team = context.control.instance(reference.task)
+                            .and_then(|item| item.team()).ok_or(crate::system::app::Fault::Room)?;
+                        let name = launch.installation.delivery.program.as_ref()
+                            .map_or("image", |program| program.name());
+                        launch.observation
+                            .bind(name, reference.task.get() as u64, team.get() as u64)
+                            .map_err(|_| crate::system::app::Fault::Room)?;
                     }
                 }
             }
@@ -1353,7 +1390,10 @@ fn construct_one(
         image, delivery, ..
     } = request;
     let (count, values, stack) = image.parameters();
-    let declarations = delivery.program.map_or(&[][..], |program| program.control.retirement);
+    let declarations = delivery
+        .program
+        .as_ref()
+        .map_or(&[][..], |program| program.control.retirement.as_slice());
     let mut retirement = Vec::new();
     if retirement.try_reserve(declarations.len()).is_err() {
         return Err((Fail::Full, delivery));
@@ -1379,6 +1419,7 @@ fn construct_one(
                         bytes: &bytes,
                         kind: delivery
                             .program
+                            .as_ref()
                             .map_or(env::ProgramKind::User, |program| program.loader.space),
                     },
                     Spawn {
@@ -1393,10 +1434,13 @@ fn construct_one(
     match result {
         Ok(built) => {
             let service = crate::system::control::unit::Service::new(built.task);
-            retirement.extend(declarations.iter().map(|declaration| {
-                retirement::Participant::new(*declaration, built.task)
-            }));
+            retirement.extend(
+                declarations
+                    .iter()
+                    .map(|declaration| retirement::Participant::new(*declaration, built.task)),
+            );
             Ok(Launch {
+                observation: observation::Observation::default(),
                 instance: Launched {
                     reference: InstanceRef {
                         job: job_id,
@@ -1482,8 +1526,15 @@ pub(crate) fn completed(
     while index < jobs.launches.len() {
         let task = jobs.launches[index].instance.task;
         if control.instance(task).is_none_or(|item| {
-            item.state == crate::system::control::unit::table::State::Dead && item.team().is_none()
+            item.state == crate::system::control::unit::table::State::Dead
+                && matches!(item.receipt, crate::system::control::instance::receipt::Receipt::Consumed
+                    | crate::system::control::instance::receipt::Receipt::Reported)
         }) {
+            if control.instance(task).is_some() {
+                jobs.launches[index].observation
+                    .retired(task.get() as u64)
+                    .map_err(|_| crate::system::app::Fault::Room)?;
+            }
             let launch = jobs.launches.remove(index);
             if let Some(key) = launch.instance.create {
                 if let Some(record) = jobs.creates.iter_mut().find(|record| record.key == key) {
@@ -1551,5 +1602,7 @@ pub(crate) mod static_plan;
 pub(crate) mod namespace;
 #[path = "assembly/retirement.rs"]
 pub(crate) mod retirement;
+#[path = "assembly/observation.rs"]
+mod observation;
 #[path = "assembly/supply.rs"]
 pub(crate) mod supply;

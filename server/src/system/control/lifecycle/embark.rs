@@ -76,7 +76,7 @@ pub(crate) fn pre(
     ) {
         control.table.mark_static(instance.service.task());
     }
-    instance.service.connect(p).map_err(|why| {
+    instance.service.connect(&p).map_err(|why| {
         crate::debug::put(&alloc::format!(
             "system: channels {} failed: {why:?}",
             p.name()
@@ -188,6 +188,10 @@ pub fn post(active: Res<Active>, control: Res<Control>) -> Result<Progress, Fail
         .find(&job.key.request.name)
         .is_some_and(|r| r.state == State::Ready)
     {
+        crate::system::app::events::emit(unit::event::Event::Ready {
+            task: active.task().ok_or(Fail::NotReady)?.get() as u64,
+        })
+        .map_err(|_| Fail::NotReady)?;
         Ok(Progress::Done)
     } else {
         Err(Fail::NotReady)
