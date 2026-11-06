@@ -24,19 +24,19 @@ doctest = false
 test-support = ["dep:kernel-test-api", "dep:iommu-api"]
 
 [dependencies]
-initrd = { package = "env-initrd", git = "https://github.com/shuyra-arche/env.git", rev = "ee9357070996e2e559095904ff137a289a4ca156" }
+initrd = { package = "env-initrd", git = "https://github.com/shuyra-arche/env.git", rev = "f54f9a1ab3f0df3631fb80ff2bf5d0cfaecbe927" }
 mold = { git = "https://github.com/shuyra-arche/mold.git", rev = "f52501f4c91b686eded8b4bcd743b4e96084b7f9" }
 router-api = { git = "https://github.com/shuyra-arche/router.git", rev = "94fec223f3c5df6c99a49527a65d016d88de3af4" }
 env = { git = "https://github.com/shuyra-arche/env.git", rev = "d3000253cd5d13d466e91fafd4dbb27a5ec5aaae" }
 wire = { git = "https://github.com/shuyra-arche/wire.git", rev = "0ff77dc4573fa2620d2fe995a18c01949d9c7e57" }
 unit = { git = "https://github.com/shuyra-arche/unit.git", rev = "ad50b803c3bd5cd2ef90010d80badf23551e88d5" }
 resource = { git = "https://github.com/shuyra-arche/resource.git", rev = "dbc96834f50f094b5c386e54a0a2ae5560dcd7f8" }
-execution = { git = "https://github.com/shuyra-arche/execution.git", rev = "1b333a28bc4c34beaea3f7986a9bb6e8ab2db414" }
+execution = { git = "https://github.com/shuyra-arche/execution.git", rev = "ea49192e5df8bf744e083ced23ff0908b5bab3a3" }
 schedule = { git = "https://github.com/shuyra-arche/schedule.git", rev = "a806630061a1d939f31ad8c683d544d00a385854" }
 ipc = { git = "https://github.com/shuyra-arche/ipc.git", rev = "29ad97dc08d9dfc4ea6578b1b77874261229b3b5" }
 hub-api = { git = "https://github.com/shuyra-arche/hub.git", rev = "cccef3f325198c8390007ae88b064bae0f21f93e" }
 system-api = { git = "https://github.com/shuyra-arche/system.git", rev = "9e5d63ca536a176583cf1b0054b4ecf7ddd88257" }
-system-client = { git = "https://github.com/shuyra-arche/system.git", rev = "5a792ff2d39901a970925b1a6d63206adf6c16d8" }
+system-client = { path = "../client" }
 system-support = { path = "../support" }
 kernel-test-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "3aa0a155f825fbf377fc8d04009472ca67cbbf8c", optional = true }
 iommu-api = { git = "https://github.com/shuyra-arche/iommu.git", rev = "5d2038033efcbd55de77534b35e611729d4bd9bd", optional = true }

@@ -16,8 +16,10 @@ exits and acknowledged reclamation. Integration verdicts do not depend on kernel
 event logging or diagnostic strings.
 
 The new bundle reader is selected as the `initrd` dependency. Existing `env` ABI
-dependencies keep their pinned type identity. The same-repository support crate
-is a path dependency; externally consumed APIs retain their public Git pins.
+paths forward to the canonical Kernel API, and Execution uses Kernel Client.
+The same-repository Client and Support crates are workspace dependencies;
+externally consumed protocols retain their public Git pins. The default branch's
+Unit policy, five runtime resource declarations and boot behavior are preserved.
 
 ```sh
 cargo build -p system-server --bin system --target riscv64gc-unknown-none-elf --locked
@@ -25,7 +27,10 @@ cargo test --manifest-path tests/dynamic-units/Cargo.toml --target x86_64-unknow
 ```
 
 Validation used installed nightly-2026-10-09; the historical repository toolchain
-pin is unchanged. See [validation/DYNAMIC-UNITS.md](validation/DYNAMIC-UNITS.md).
+pin is unchanged. See [SDK dependency validation](SDK-VALIDATION.md) for the
+current default-branch SDK selection and standalone executable checks, and
+[dynamic Unit validation](validation/DYNAMIC-UNITS.md) for the earlier reader.
 Old scenario workspaces and test-support fixtures are not migrated by this
-change, and their historical results are not evidence for the new reader.
-No guest or SMP acceptance was run for this migration.
+dependency update. The historical `5a792ff` library-only SDK result is distinct
+from the current default's executable; historical fixture counts are not new
+acceptance evidence. No new guest or SMP acceptance is claimed by this update.

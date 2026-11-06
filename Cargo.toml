@@ -2,3 +2,10 @@
 members = ["api", "server", "client", "support"]
 resolver = "3"
 exclude = ["tests/dynamic-units"]
+
+# Select published forwarding SDK packages for legacy transitive Git pins.
+# Dependency consumers own their own root composition.
+[replace]
+"git+https://github.com/shuyra-arche/env.git?rev=d3000253cd5d13d466e91fafd4dbb27a5ec5aaae#env@0.1.0" = { git = "https://github.com/shuyra-arche/env.git", rev = "f54f9a1ab3f0df3631fb80ff2bf5d0cfaecbe927" }
+"git+https://github.com/shuyra-arche/wire.git?rev=0ff77dc4573fa2620d2fe995a18c01949d9c7e57#wire@0.1.0" = { git = "https://github.com/shuyra-arche/wire.git", rev = "4b7619fda4bbd202e9a5c952872a84c2145c681e" }
+"git+https://github.com/shuyra-arche/mold.git?rev=f52501f4c91b686eded8b4bcd743b4e96084b7f9#mold@0.1.0" = { git = "https://github.com/shuyra-arche/mold.git", rev = "1addd302789e6a1c0dea6a7adf27e975a05d5ada" }
