@@ -1,17 +1,16 @@
 # Bootstrap carrier
 
-Run from the repository root:
+From the repository root:
 
 ```sh
-cargo test --manifest-path programs/tests/bootstrap-carrier/Cargo.toml --target x86_64-unknown-linux-gnu --offline
+cargo test --manifest-path tests/bootstrap-carrier/Cargo.toml --locked --target x86_64-unknown-linux-gnu
 ```
 
-The suite compiles the production Assembly carrier and client decoder. The ABI and
-wire frame are real; effects are host fixtures. The schedule test executes the real
-Pending cursor behavior, including each failed carrier boundary and later-step gating.
-It checks the same root across retries and failed release, a fixed timeout before new
-publication, independent children, exact permissions, and untrusted frames.
+The suite compiles the production Assembly carrier and client decoder. ABI and
+wire frames are real; effects are host fixtures. It checks Pending cursor
+ordering, failed carrier boundaries, retry root identity, release failure,
+publication timeout, independent children, permissions and untrusted frames.
 
-Control's whole-Team completion and failed-prepare transitions are covered separately
-by control-instance. Kernel Creator authority and actual boot/reclamation require the
-native tests and product/soak scenes recorded in docs/driver-composition.md.
+Control completion is covered by `tests/control-instance`. This is a legacy
+fixture: current `test-support` compatibility is unresolved as described in the
+root README. Kernel authority, actual boot and reclamation need guest tests.
