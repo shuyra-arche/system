@@ -1,36 +1,55 @@
 # System
 
-System owns its `system` boot executable and `server/unit.toml`. The host
-Vanllia CLI selects and packages necessary Unit records and images into initrd;
-System validates those records, owns the decoded runtime policy and instantiates
-Units according to startup/requested creation. Deployment stays in host memory.
+System boots and supervises Vanllia Units. It owns execution, identity,
+namespace, readiness and retirement. The host Vanllia CLI selects Unit records
+and images for initrd; System validates the bundle and instantiates startup or
+requested Units. Deployment remains a host-side construction.
 
-`server/` owns execution, identity, namespace, readiness, supervision and resource
-retirement. `support/` exposes the validated borrowed initrd catalog and boot
-facts. Operator and Identity bootstrap remain internal System threads. `api/`
-and `client/` keep their existing public protocol responsibilities.
+## Code map
 
-Runtime declarations use shared owned arrays and strings borrowed from genuine
-immutable initrd storage. System forwards typed lifecycle frames with native task
-exits and acknowledged reclamation. Integration verdicts do not depend on kernel
-event logging or diagnostic strings.
+| Entry | Responsibility |
+| --- | --- |
+| `api/` | Public System protocol types and contracts |
+| `client/` | Typed clients for System protocols |
+| `server/` | Runtime state, supervision and the `system` executable |
+| `server/unit.toml` | System's Unit declaration |
+| `support/` | Borrowed initrd catalog, boot facts and shared helpers |
+| `tests/` | Independent host fixtures and structural checks |
 
-The new bundle reader is selected as the `initrd` dependency. Existing `env` ABI
-paths forward to the canonical Kernel API, and Execution uses Kernel Client.
-The same-repository Client and Support crates are workspace dependencies;
-externally consumed protocols retain their public Git pins. The default branch's
-Unit policy, five runtime resource declarations and boot behavior are preserved.
+Operator and Identity bootstrap are internal System threads. Account, drivers
+and product selection remain outside System. `support/` must not acquire a
+server/client dependency. See [runtime contracts](docs/runtime-contracts.md).
+
+## Build and verify
+
+Use `rust-toolchain.toml` (`nightly-2026-09-04`, RV64 target and Rust source).
+Run from this repository root; examples use a Linux x86-64 host.
 
 ```sh
-cargo build -p system-server --bin system --target riscv64gc-unknown-none-elf --locked
-cargo test --manifest-path tests/dynamic-units/Cargo.toml --target x86_64-unknown-linux-gnu --locked
+cargo build --locked -p system-server --bin system --target riscv64gc-unknown-none-elf
+cargo test --locked -p system-api --tests --target x86_64-unknown-linux-gnu
+cargo test --locked -p system-server --lib --target x86_64-unknown-linux-gnu
+cargo test --locked --manifest-path tests/dynamic-units/Cargo.toml --target x86_64-unknown-linux-gnu
+cargo test --locked --manifest-path tests/instance-events/Cargo.toml --target x86_64-unknown-linux-gnu
 ```
 
-Validation used installed nightly-2026-10-09; the historical repository toolchain
-pin is unchanged. See [SDK dependency validation](SDK-VALIDATION.md) for the
-current default-branch SDK selection and standalone executable checks, and
-[dynamic Unit validation](validation/DYNAMIC-UNITS.md) for the earlier reader.
-Old scenario workspaces and test-support fixtures are not migrated by this
-dependency update. The historical `5a792ff` library-only SDK result is distinct
-from the current default's executable; historical fixture counts are not new
-acceptance evidence. No new guest or SMP acceptance is claimed by this update.
+These are separate checks: host fixtures do not establish boot, SMP, driver
+recovery or physical reclamation. Product image construction and guest testing
+belong to [Vanllia](https://github.com/shuyra-arche/vanllia).
+
+## Current limitations
+
+The pinned nightly needs fresh verification: previous executable checks used
+`nightly-2026-10-09`. The old `test-support` scenarios still use declarations and
+Unit shapes from before dynamic selection and require repair; do not treat all
+historical fixtures as a passing current suite. Early owner death can prevent a
+requested Unit's Retired frame from being published; absent receipts must fail
+acceptance rather than imply reclamation.
+
+Root Cargo `[replace]` entries select forwarding SDK revisions for specific old
+pins. They apply only to this workspace root; consumers must unify their own
+Env/Wire/Mold and canonical Kernel API sources. The public Git System API pin is
+also distinct from the local API workspace member. Keep lockfiles and actual
+resolved dependency identity aligned when updating either.
+
+See [contribution rules](CONTRIBUTING.md) and [source attribution](PROVENANCE.md).
