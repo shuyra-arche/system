@@ -54,7 +54,8 @@ pub(crate) fn snapshot(source: Source<'_>) -> Result<Vec<u8>, frame::Fail> {
 
 pub(super) fn load(loader: &mut Loader, image: Image<'_>, sire: env::TaskId) -> UnitResult<Unit> {
     let Image { bytes, kind } = image;
-    let plan = elf::parse(bytes).map_err(|error| {
+    let target = elf::Target::native().ok_or_else(|| fail(UnitFail::BadImage))?;
+    let plan = elf::parse::<{ env::ledger::capsule::PAGE }>(bytes, target).map_err(|error| {
         if error == elf::Error::Memory {
             fail(UnitFail::OoM)
         } else {

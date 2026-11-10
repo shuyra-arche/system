@@ -31,6 +31,7 @@ cargo test --locked -p system-api --tests --target x86_64-unknown-linux-gnu
 cargo test --locked -p system-server --lib --target x86_64-unknown-linux-gnu
 cargo test --locked --manifest-path tests/dynamic-units/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo test --locked --manifest-path tests/instance-events/Cargo.toml --target x86_64-unknown-linux-gnu
+cargo test --locked --manifest-path tests/loader-image/Cargo.toml --target x86_64-unknown-linux-gnu
 ```
 
 These are separate checks: host fixtures do not establish boot, SMP, driver
