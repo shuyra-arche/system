@@ -1,6 +1,9 @@
 use env::TaskId;
 use env::wire::Span as _;
-use system_api::{bootstrap::Frame, supply::{MAX_DESCRIPTION, SupplyFrame}};
+use system_api::{
+    bootstrap::Frame,
+    supply::{MAX_DESCRIPTION, SupplyFrame},
+};
 use weave::{Codec, EncodedSize};
 use wire::Message;
 
@@ -18,7 +21,10 @@ fn bootstrap_encoding_preserves_legacy_frame() {
     let mut legacy = [0u8; Frame::LEN];
     assert_eq!(frame.store_at(&mut legacy, 0), Some(Frame::LEN));
     assert_eq!(legacy, bytes);
-    assert_eq!(<Frame as Message>::store(&frame, &mut legacy), Some(Frame::LEN));
+    assert_eq!(
+        <Frame as Message>::store(&frame, &mut legacy),
+        Some(Frame::LEN)
+    );
     assert_eq!(legacy, bytes);
 
     let decoded = Frame::decode_exact(&bytes).unwrap();
@@ -40,7 +46,10 @@ fn supply_encoding_checks_length_and_preserves_wire_bytes() {
     assert_eq!(frame.encode(&mut bytes), Some(SupplyFrame::LEN));
     assert_eq!(&bytes[..5], &[3, 0, b'a', b'b', b'c']);
     let mut legacy = [0u8; SupplyFrame::LEN];
-    assert_eq!(<SupplyFrame as Message>::store(&frame, &mut legacy), Some(SupplyFrame::LEN));
+    assert_eq!(
+        <SupplyFrame as Message>::store(&frame, &mut legacy),
+        Some(SupplyFrame::LEN)
+    );
     assert_eq!(legacy, bytes);
 
     let decoded = SupplyFrame::decode_exact(&bytes).unwrap();
@@ -52,7 +61,10 @@ fn supply_encoding_checks_length_and_preserves_wire_bytes() {
     assert!(SupplyFrame::decode_exact(&trailing).is_none());
     assert!(<SupplyFrame as Message>::store(&frame, &mut trailing).is_none());
 
-    let invalid = SupplyFrame { length: MAX_DESCRIPTION as u16 + 1, description };
+    let invalid = SupplyFrame {
+        length: MAX_DESCRIPTION as u16 + 1,
+        description,
+    };
     assert!(invalid.encode(&mut bytes).is_none());
     bytes[..2].copy_from_slice(&invalid.length.to_le_bytes());
     assert!(SupplyFrame::decode_exact(&bytes).is_none());
