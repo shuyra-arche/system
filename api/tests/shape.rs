@@ -18,7 +18,7 @@ fn provider_api_keeps_one_way_dependencies() {
         result
     }
     let api = dependencies(&Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"));
-    assert!(api.iter().all(|name| ["env", "wire", "mold"].contains(&name.as_str())));
+    assert!(api.iter().all(|name| ["env", "wire", "mold", "weave"].contains(&name.as_str())));
 }
 
 #[test]

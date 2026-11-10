@@ -323,6 +323,7 @@ dependencies = [
 name = "system-api"
 version = "0.1.0"
 dependencies = [
+ "weave",
  "env 0.1.0 (git+https://github.com/shuyra-arche/env.git?rev=d3000253cd5d13d466e91fafd4dbb27a5ec5aaae)",
  "mold 0.1.0 (git+https://github.com/shuyra-arche/mold.git?rev=f52501f4c91b686eded8b4bcd743b4e96084b7f9)",
  "wire 0.1.0 (git+https://github.com/shuyra-arche/wire.git?rev=0ff77dc4573fa2620d2fe995a18c01949d9c7e57)",
@@ -453,4 +454,22 @@ version = "0.1.0"
 source = "git+https://github.com/shuyra-arche/wire.git?rev=4b7619fda4bbd202e9a5c952872a84c2145c681e#4b7619fda4bbd202e9a5c952872a84c2145c681e"
 dependencies = [
  "kernel-api-wire",
+]
+
+[[package]]
+name = "weave"
+version = "0.0.1"
+source = "git+https://github.com/shuyra-arche/weave.git?rev=7a7d67fb3f190aeb43049d051b0972bcd53213bc#7a7d67fb3f190aeb43049d051b0972bcd53213bc"
+dependencies = [
+ "weave-macros",
+]
+
+[[package]]
+name = "weave-macros"
+version = "0.0.1"
+source = "git+https://github.com/shuyra-arche/weave.git?rev=7a7d67fb3f190aeb43049d051b0972bcd53213bc#7a7d67fb3f190aeb43049d051b0972bcd53213bc"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
