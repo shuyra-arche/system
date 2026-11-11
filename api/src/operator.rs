@@ -407,51 +407,6 @@ pub mod authority {
     pub struct Call;
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Guest {
-    pub who: TaskId,
-    pub request: PendId,
-    pub reply: PendId,
-}
-#[derive(weave::Frame)]
-struct RawGuest {
-    who: TaskId,
-    request: PendId,
-    reply: PendId,
-}
-impl Guest {
-    pub fn valid(&self) -> bool {
-        self.who != TaskId::NONE
-            && self.request != PendId::NONE
-            && self.reply != PendId::NONE
-            && self.request != self.reply
-    }
-}
-impl weave::Codec for Guest {
-    type Decoded = Self;
-    const SIZE: weave::EncodedSize = RawGuest::SIZE;
-    fn encode(&self, out: &mut [u8]) -> Option<usize> {
-        if !self.valid() {
-            return None;
-        }
-        RawGuest {
-            who: self.who,
-            request: self.request,
-            reply: self.reply,
-        }
-        .encode(out)
-    }
-    fn decode(bytes: &[u8]) -> Option<(Self, usize)> {
-        let (raw, used) = RawGuest::decode(bytes)?;
-        let value = Self {
-            who: raw.who,
-            request: raw.request,
-            reply: raw.reply,
-        };
-        value.valid().then_some((value, used))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Wired {
     pub authority: TaskId,
     pub resolve: PendId,
@@ -507,8 +462,6 @@ pub mod setup {
     use super::*;
     #[weave::interface(tag = u8)]
     pub mod operations {
-        #[operation(code = 2, request = super::Guest, response = super::Outcome<(), super::Fail>)]
-        pub struct Guest;
         #[operation(code = 3, request = super::Wired, response = super::Outcome<(), super::Fail>)]
         pub struct Wired;
         #[operation(code = 7, request = (), response = super::Outcome<(), super::Fail>)]

@@ -158,6 +158,7 @@ fn unknown_operations_and_failure_codes_do_not_decode_as_success() {
     assert!(operator::operations::Request::decode_exact(&[255]).is_none());
     assert!(operator::authority::operations::Request::decode_exact(&[255]).is_none());
     assert!(operator::setup::operations::Request::decode_exact(&[255]).is_none());
+    assert!(operator::setup::operations::Request::decode_exact(&[2]).is_none());
     assert!(loader::operations::Request::decode_exact(&[255]).is_none());
     assert!(supply::operations::Request::decode_exact(&[255]).is_none());
     assert!(retirement::operations::Request::decode_exact(&[255]).is_none());

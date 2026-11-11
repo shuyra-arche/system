@@ -1,118 +1,177 @@
-//! 订阅状态、路径过滤与事件投递。
-use ::resource::raw::{Hole, alive, reserve};
+//! Bounded native Clone subscriptions. Events are best effort, as in the
+//! original contract: full queues can leave sequence gaps, without blocking
+//! namespace mutations. Cleanup retains ownership until native Return succeeds.
 use alloc::vec::Vec;
-use env::{PieToken, TaskId, Wait};
-use system_api::operator::path::{Path, PathBuf};
-use system_api::operator::{Event, WATCH_MARK};
-use wire::Message;
-
-/// 已核验的订阅端点；字段不能由接入方直接构造。
-pub(crate) struct Subscription {
-    who: TaskId,
-    road: PathBuf,
-    hole: PieToken,
+use kernel_api::{
+    address::VirtAddr,
+    model::{
+        identity::PendId,
+        pend::{CloneRights, Operations, PendInfo, PendStatus},
+    },
+};
+use kernel_client::call::pend;
+use system_protocol::{
+    Path, TaskId,
+    operator::{Event, Fail},
+};
+use twine::view::clone::Sender;
+use weave::{Codec, transport};
+enum Phase {
+    Candidate,
+    Live,
+    Closing,
 }
-impl Subscription {
-    pub(crate) fn import(who: TaskId, road: PathBuf, hole: PieToken) -> Result<Self, ()> {
-        if !alive(hole)
-            || !matches!(reserve(hole), Ok((giver, owner, mark))
-            if giver == who && owner == who && mark == WATCH_MARK)
-        {
-            return Err(());
-        }
-        Ok(Self { who, road, hole })
-    }
+struct Watch {
+    caller: TaskId,
+    token: PendId,
+    path: Path,
+    phase: Phase,
 }
-
-struct Subscriber {
-    who: TaskId,
-    filter: PathBuf,
-    hole: PieToken,
-}
-
 pub(crate) struct Watchers {
-    list: Vec<Subscriber>,
-    buffer: <Event as Message>::Buf,
-    seq: u64,
+    rows: Vec<Watch>,
+    bytes: Vec<u8>,
 }
-
 impl Watchers {
-    pub(crate) fn new() -> Self {
-        Self {
-            list: Vec::new(),
-            buffer: Event::EMPTY,
-            seq: 0,
-        }
+    pub(crate) fn new() -> Result<Self, Fail> {
+        let mut rows = Vec::new();
+        rows.try_reserve_exact(257).map_err(|_| Fail::Full)?;
+        let mut bytes = Vec::new();
+        bytes
+            .try_reserve_exact(Event::SIZE.maximum().unwrap())
+            .map_err(|_| Fail::Full)?;
+        bytes.resize(Event::SIZE.maximum().unwrap(), 0);
+        Ok(Self { rows, bytes })
     }
-
-    pub(crate) fn join(&mut self, subscription: Subscription) -> Result<(), ()> {
-        let Subscription { who, road, hole } = subscription;
-        self.list.retain(|subscriber| alive(subscriber.hole));
-        if self
-            .list
-            .iter()
-            .any(|one| one.who == who && one.filter.as_str() == road.as_str())
-        {
-            return Err(());
+    pub(crate) fn blocked(&self) -> bool {
+        self.rows.len() > 256
+    }
+    pub(crate) fn contains(&self, token: PendId) -> bool {
+        self.rows.iter().any(|row| row.token == token)
+    }
+    pub(crate) fn join(&mut self, caller: TaskId, token: PendId, path: Path) -> Result<(), Fail> {
+        if token == PendId::NONE || self.contains(token) {
+            return Err(Fail::Conflict);
         }
-        self.list.try_reserve(1).map_err(|_| ())?;
-        let filter = road;
-        self.list.push(Subscriber { who, filter, hole });
-        let at = self.list.len() - 1;
-        crate::debug::put(&alloc::format!(
-            "operator: watch joined who={} road={} watchers={}",
-            who.get(),
-            self.list[at].filter,
-            self.len()
-        ));
+        if self.blocked() {
+            return Err(Fail::Full);
+        }
+        self.rows.push(Watch {
+            caller,
+            token,
+            path,
+            phase: Phase::Candidate,
+        });
+        let at = self.rows.len() - 1;
+        let info = match inspect(token) {
+            Ok(info) => info,
+            Err(Fail::Unknown) => {
+                self.rows.swap_remove(at);
+                return Err(Fail::Unknown);
+            }
+            Err(error) => return Err(error),
+        };
+        if info.lender.get() as u64 != caller.get() {
+            self.rows.swap_remove(at);
+            return Err(Fail::Denied);
+        }
+        self.rows[at].phase = Phase::Closing;
+        if self.rows.len() > 256 {
+            return Err(Fail::Full);
+        }
+        if info.owner.get() as u64 != caller.get()
+            || info.status != PendStatus::Active
+            || !matches!(info.limits.operations, Operations::Clone(rights) if rights.contains(CloneRights::PUSH))
+            || info.limits.modifiable != kernel_api::model::modifiable::Modifiable::Yes
+        {
+            return Err(Fail::Denied);
+        }
+        if self.rows[..at].iter().any(|row| {
+            row.caller == caller
+                && row.path == self.rows[at].path
+                && matches!(row.phase, Phase::Live)
+        }) {
+            return Err(Fail::Conflict);
+        }
+        self.rows[at].phase = Phase::Live;
         Ok(())
     }
-
-    pub(crate) fn publish(&mut self, mut ev: Event) -> usize {
-        self.seq += 1;
-        ev.seq = self.seq;
-        let Some(size) = ev.store(&mut self.buffer) else {
-            crate::debug::put(&alloc::format!(
-                "operator: watch event too long seq={}",
-                ev.seq
-            ));
-            return 0;
-        };
-        let bytes = &self.buffer[..size];
-        let road = ev.road.as_str();
-        let mut sent = 0usize;
-        let mut dead: Vec<usize> = Vec::new();
-        for (at, one) in self.list.iter_mut().enumerate() {
-            if !prefix_of(&one.filter, road) {
+    pub(crate) fn publish(&mut self, event: &Event) {
+        for row in &mut self.rows {
+            if !matches!(row.phase, Phase::Live) || !prefix(&row.path, &event.path) {
                 continue;
             }
-            match Hole::from_raw(one.hole).push(bytes, Wait::POLL) {
-                Ok(()) => sent += 1,
-                Err(e) if e.source.is_busy() => {}
-                Err(_) => dead.push(at),
+            match transport::send(&mut Sender::new(row.token), event, &mut self.bytes) {
+                Ok(()) => (),
+                Err(transport::SendError::Transport(error)) if error.source.is_busy() => (),
+                Err(_) => row.phase = Phase::Closing,
             }
         }
-        for at in dead.into_iter().rev() {
-            let one = self.list.swap_remove(at);
-            crate::debug::put(&alloc::format!(
-                "operator: watch dropped who={} watchers={}",
-                one.who.get(),
-                self.list.len()
-            ));
-        }
-        sent
     }
-
-    pub(crate) fn len(&self) -> usize {
-        self.list.len()
+    pub(crate) fn sweep(&mut self) -> bool {
+        let mut at = 0;
+        while at < self.rows.len() {
+            let row = &mut self.rows[at];
+            match inspect(row.token) {
+                Ok(info)
+                    if matches!(row.phase, Phase::Candidate)
+                        && info.lender.get() as u64 != row.caller.get() =>
+                {
+                    self.rows.swap_remove(at);
+                    continue;
+                }
+                Ok(info) => {
+                    if matches!(row.phase, Phase::Candidate) || info.status != PendStatus::Active {
+                        row.phase = Phase::Closing;
+                    }
+                }
+                Err(Fail::Unknown) => {
+                    self.rows.swap_remove(at);
+                    continue;
+                }
+                Err(_) => {
+                    at += 1;
+                    continue;
+                }
+            }
+            if matches!(row.phase, Phase::Closing) && pend::return_(row.token).is_ok() {
+                self.rows.swap_remove(at);
+            } else {
+                at += 1;
+            }
+        }
+        self.rows
+            .iter()
+            .any(|row| !matches!(row.phase, Phase::Live))
+    }
+    pub(crate) fn finish(&mut self) -> Result<(), Fail> {
+        for row in &mut self.rows {
+            if !matches!(row.phase, Phase::Candidate) {
+                row.phase = Phase::Closing;
+            }
+        }
+        self.sweep();
+        if self.rows.is_empty() {
+            Ok(())
+        } else {
+            Err(Fail::Unjudged)
+        }
     }
 }
-
-fn prefix_of(filter: &Path, road: &str) -> bool {
-    let f = filter.as_str();
-    if f.is_empty() {
-        return true;
-    }
-    road.strip_prefix(f)
-        .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+fn prefix(base: &Path, path: &Path) -> bool {
+    base.as_str().is_empty()
+        || path
+            .as_str()
+            .strip_prefix(base.as_str())
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+}
+fn inspect(token: PendId) -> Result<PendInfo, Fail> {
+    let mut words = [0; PendInfo::WORDS];
+    pend::inspect(token, VirtAddr::new(words.as_mut_ptr().addr())).map_err(|error| {
+        if error.source.is_busy() {
+            Fail::Unjudged
+        } else {
+            Fail::Unknown
+        }
+    })?;
+    PendInfo::from_words(words).ok_or(Fail::Bad)
 }

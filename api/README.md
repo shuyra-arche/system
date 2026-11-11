@@ -73,7 +73,13 @@ checks remaining scope against canonical component boundaries and path bounds.
 Namespace Associate carries Mark, Name and Entry and returns a unit receipt;
 it is distinct from importing a resource through Bind. A delivered GrantStatus
 carries its entrance coordinate in the declared holder's table. The requester
-must not interpret it as a local authorization handle.
+must not interpret it as a local authorization handle. The unreleased draft
+setup Guest/tag 2 handshake is retired: native discovery grants are delivered
+explicitly to consumers, with fresh per-call replies. Setup retains Root and
+Wired, authenticated against the configured controller. Part and Bind use zero
+expected revision for a new child under their anchor; Replace, Unbind and Unpart
+require the existing target's exact binding revision. Panes use Public admission;
+resource policies belong to tiles.
 
 Control grant mapping keeps Observe, Recover, Ruin and ordinary State distinct.
 Identity mutation retains the Install grant boundary. Trusted export has a

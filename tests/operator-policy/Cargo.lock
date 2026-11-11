@@ -47,9 +47,12 @@ dependencies = [
 name = "operator-policy-tests"
 version = "0.0.0"
 dependencies = [
+ "erra",
  "kernel-api",
+ "kernel-client",
  "system-api",
  "system-client",
+ "twine",
  "weave",
 ]
 

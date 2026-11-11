@@ -47,6 +47,14 @@ and the [service lifecycle](server/src/system/identity/service/README.md) record
 its native ownership and cleanup rules. Supervisor wiring and the other service
 loops still need migration.
 
+The production Operator namespace, mutation journal, native grant lifecycle and
+watch loop are also ported. Its [ownership contract](server/src/system/operator/runtime/README.md)
+distinguishes Unbind retention from authority withdrawal. The guest runs real
+controller/publisher/Operator Tasks and verifies namespace operations, scoped
+source checks, reply-failure replay, consumer grants and cleanup. Legacy Operator
+session, handshake and Schedule paths are removed; supervisor callers still need
+their native bootstrap migration.
+
 Cross-Team service reply grants are a separate confirmed blocker under ABI 9.
 The guest verifies that a Unit may grant its creator a reply route, but cannot
 grant a sibling worker in the creator's Team. See

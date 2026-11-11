@@ -12,12 +12,17 @@ mod adjacency;
 mod authority_life;
 mod authority_query;
 mod fixture;
+mod operator;
 #[allow(dead_code)]
 #[path = "../../../server/src/system/operator/authority.rs"]
-mod operator_authority;
-#[allow(dead_code)]
-#[path = "../../../server/src/system/operator/tree/gate.rs"]
-mod operator_gate;
+pub mod operator_authority;
+use operator_tree::gate as operator_gate;
+#[path = "../../../server/src/system/operator/runtime/mod.rs"]
+pub mod operator_runtime;
+#[path = "../../../server/src/system/operator/tree/mod.rs"]
+pub mod operator_tree;
+#[path = "../../../server/src/system/operator/watch.rs"]
+pub mod operator_watch;
 use identity_service::answer as identity_answer;
 #[allow(dead_code)]
 #[path = "../../../server/src/system/identity/book/mod.rs"]
@@ -30,6 +35,12 @@ mod protocol;
 #[path = "../../../server/src/system/identity/revision.rs"]
 pub mod revision;
 pub mod system {
+    pub mod operator {
+        pub use crate::{
+            operator_authority as authority, operator_runtime as runtime, operator_tree as tree,
+            operator_watch as watch,
+        };
+    }
     pub(crate) mod app {
         pub(crate) use crate::waiting;
     }
