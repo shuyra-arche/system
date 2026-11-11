@@ -42,6 +42,13 @@ stops further receives and returns watches and the reply root. Failed cleanup
 retains the unfinished resource. Destructors are best effort. Closing a route
 does not cancel service work already submitted.
 
+`identity::TaskQuery` borrows the Resolve, Matches and Same grant bundle wired
+by the trusted bootstrap path. Each call rechecks the live endpoint owner and
+rights. It retains unfinished reply cleanup between calls; no query result is
+returned while that cleanup is incomplete. Retry `finish()` after a cleanup
+failure. Missing identity, a denied policy and unavailable authority are
+distinct outcomes. All calls accept the caller's original absolute `Wait`.
+
 ## Checks
 
 ```sh

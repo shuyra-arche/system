@@ -18,9 +18,8 @@ use system_api::operator::path::Path;
 use system_api::operator::path::PathBuf;
 
 mod gate;
-mod judge;
 pub(super) use gate::{Code, verdict};
-pub(super) use judge::Facts;
+pub(super) use gate::Facts;
 
 /// **一格**：名字 + 去处。它住在 Operator::slots 里，**下标就是它的号**
 /// 名字只是一段（String：不长于 255 字节那一格由**编帧**那一刻判），不是整条路——路那一层只剩

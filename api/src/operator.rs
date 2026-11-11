@@ -102,6 +102,9 @@ impl Ops {
     pub fn contains(self, child: Self) -> bool {
         self.0 & child.0 == child.0
     }
+    pub const fn union(self, other: Self) -> Self {
+        Self(self.0 | other.0)
+    }
 }
 impl Codec for Ops {
     type Decoded = Self;
@@ -170,6 +173,22 @@ impl Scope {
             }
         }
     }
+
+    /// Check a child's scope after moving its anchor below this one.
+    /// The empty path keeps the current anchor; component boundaries and the
+    /// ordinary path bounds apply to every composed name.
+    pub fn narrows_at(&self, relative: &Path, child: &Self) -> bool {
+        if relative.as_str().is_empty() {
+            return self.narrows(child);
+        }
+        match child {
+            Self::Subtree => self.allows(relative.as_str()),
+            Self::Names(names) => names.names.iter().all(|name| {
+                let joined = alloc::format!("{}/{}", relative.as_str(), name.as_str());
+                Path::new(&joined).is_some() && self.allows(&joined)
+            }),
+        }
+    }
 }
 request_id!(GrantId);
 
@@ -190,7 +209,8 @@ pub struct GrantSpec {
     pub scope: Scope,
     pub ops: Ops,
     pub permit: Optional<Permit>,
-    pub source: Optional<Source>,
+    pub source: Optional<TaskId>,
+    pub source_mark: Optional<Mark>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]

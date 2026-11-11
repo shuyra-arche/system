@@ -12,6 +12,36 @@ fn bytes<C: Codec>(value: &C) -> Vec<u8> {
     bytes
 }
 
+#[test]
+fn operator_grant_keeps_independent_source_constraints_and_nonzero_identity() {
+    for (source, source_mark) in [
+        (Some(TaskId::new(42)), None),
+        (None, Some(Mark::new(u64::MAX))),
+        (Some(TaskId::new(42)), Some(Mark::new(u64::MAX))),
+    ] {
+        let grant = operator::GrantSpec {
+            id: operator::GrantId::new(1).unwrap(),
+            parent: Optional(None),
+            holder: TaskId::new(2),
+            anchor: operator::Entry {
+                operator: TaskId::new(9),
+                target: operator::EntryTarget::Node(EntryId::new(0)),
+            },
+            scope: operator::Scope::Subtree,
+            ops: operator::Ops::BIND,
+            permit: Optional(Some(operator::Permit::Bound)),
+            source: Optional(source),
+            source_mark: Optional(source_mark),
+        };
+        complete(&grant);
+        let encoded = bytes(&grant);
+        assert_eq!(operator::GrantSpec::decode_exact(&encoded), Some(grant));
+        let mut zero = encoded;
+        zero[..8].fill(0);
+        assert!(operator::GrantSpec::decode_exact(&zero).is_none());
+    }
+}
+
 fn complete<C: Codec>(value: &C) {
     let mut encoded = bytes(value);
     assert!(C::decode_exact(&encoded).is_some());

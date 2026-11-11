@@ -64,6 +64,13 @@ wrapping. Kernel rights use the checked v9 Limits representation, including
 operation family, Modifiable, Distributable and relative range. Services must
 check live grants and permitted attenuation before acting on those values.
 
+Operator grants keep source Task and source Mark constraints independent.
+Delegation can introduce either restriction, and descendants must retain each
+restriction already present. A grant's optional parent identifies an issued
+parent grant; absence is accepted only at the controller's trusted root
+entrance. Root bootstrap has no synthetic `GrantId(0)`. Relocating an anchor
+checks remaining scope against canonical component boundaries and path bounds.
+
 Control grant mapping keeps Observe, Recover, Ruin and ordinary State distinct.
 Identity mutation retains the Install grant boundary. Trusted export has a
 separate service identifier and endpoint. Its receiver must authenticate the

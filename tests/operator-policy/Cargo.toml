@@ -1,0 +1,16 @@
+[package]
+name = "operator-policy-tests"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[lib]
+path = "lib.rs"
+doctest = false
+
+[dependencies]
+system-protocol = { package = "system-api", path = "../../api" }
+system-client = { path = "../../client" }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }

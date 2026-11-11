@@ -10,7 +10,7 @@ pub use kernel_api::model::wait::Wait;
 pub use system_api as api;
 
 macro_rules! service {
-    ($module:ident, $interface:path, $domain:literal) => {
+    ($module:ident, $interface:path, $domain:literal $(, { $($item:item)* })?) => {
         pub mod $module {
             use kernel_api::model::identity::{PendId, TaskId};
             use weave::Operation;
@@ -43,12 +43,16 @@ macro_rules! service {
                     self.0.begin::<O, $domain>(request, wait)
                 }
             }
+            $($($item)*)?
         }
     };
 }
 
 service!(control, system_api::control::operations::Interface, 1);
-service!(identity, system_api::identity::operations::Interface, 2);
+service!(identity, system_api::identity::operations::Interface, 2, {
+    mod query;
+    pub use query::{QueryError, TaskQuery};
+});
 service!(operator, system_api::operator::operations::Interface, 3);
 service!(loader, system_api::loader::operations::Interface, 4);
 service!(supply, system_api::supply::operations::Interface, 5);

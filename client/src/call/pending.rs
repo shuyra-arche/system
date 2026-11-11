@@ -114,4 +114,10 @@ impl<O: Operation> Pending<O> {
     pub fn is_finished(&self) -> bool {
         self.cleanup.is_finished()
     }
+
+    /// Abandon future receives and transfer every cleanup obligation to an
+    /// owner that can retain and retry it. This does not cancel submitted work.
+    pub fn into_cleanup(self) -> Cleanup {
+        self.cleanup
+    }
 }

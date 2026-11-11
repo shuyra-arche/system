@@ -9,7 +9,15 @@ mod waiting;
 
 mod actor;
 mod adjacency;
+mod authority_life;
+mod authority_query;
 mod fixture;
+#[allow(dead_code)]
+#[path = "../../../server/src/system/operator/authority.rs"]
+mod operator_authority;
+#[allow(dead_code)]
+#[path = "../../../server/src/system/operator/tree/gate.rs"]
+mod operator_gate;
 use identity_service::answer as identity_answer;
 #[allow(dead_code)]
 #[path = "../../../server/src/system/identity/book/mod.rs"]

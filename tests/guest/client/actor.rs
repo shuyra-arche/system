@@ -241,6 +241,9 @@ fn scenario(license: PendId, root: TaskId, mode: usize) {
                 ));
             }
             assert_eq!(epoch.current(), 4);
+            crate::authority_query::run(license, root, task, endpoint);
+            crate::authority_life::run(license, root, task);
+            assert_eq!(epoch.current(), 4);
             sign::trigger(shutdown).unwrap();
             until(|| DONE.load(Ordering::Acquire));
         }
