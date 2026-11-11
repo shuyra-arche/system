@@ -18,6 +18,9 @@ checksum = "bc36b9bc9f9fd011eb63c44cdba19d47c4e77f4759cddb0c448b1d23d27abc1e"
 name = "identity-state-tests"
 version = "0.0.0"
 dependencies = [
+ "erra",
+ "kernel-api",
+ "kernel-client",
  "system-api",
  "weave",
 ]
@@ -40,6 +43,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "kernel-client"
+version = "0.0.1"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=23dec6b30e1ec08f42d3701e2613acd8c562c459#23dec6b30e1ec08f42d3701e2613acd8c562c459"
+dependencies = [
+ "erra",
+ "kernel-api",
 ]
 
 [[package]]

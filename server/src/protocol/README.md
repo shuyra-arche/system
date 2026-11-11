@@ -21,7 +21,12 @@ the watch or delivery for retry. Returning the root is a separate action that
 withdraws clients' queue grants. Ingress does not infer resource reclamation
 from service completion or a successful send.
 
-This module is directly compiled and exercised by `tests/guest/client` during
-the migration. The old application service loops still require porting before
-the assembled Server can use it. `system-protocol` is the workspace API v2
-dependency name during that port; the old service code still pins API v1.
+Multiplexers using Poll must check `needs_retry` after NotReady: a retained
+payload with Open/Return Busy needs another receive attempt without a new queue
+event. No request handler has run for that pending receive.
+
+This module and the production Identity multi-endpoint loop are directly
+compiled and exercised by `tests/guest/client`. The other old application loops
+and supervisor wiring still require porting before assembled Server use.
+`system-protocol` is the workspace API v2 dependency name during that port;
+unmigrated service code still pins API v1.

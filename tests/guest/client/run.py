@@ -9,6 +9,11 @@ import tempfile
 
 PAGE = 4096
 PASS = b"PASS system-client typed=1 sender=1 poll=1 variant=1 decode=1 partial=1 timeout=1 late=1 backpressure=1 send-timeout=1 cleanup=1 ingress=1 route=1 shutdown=1 identity=1"
+REQUIRED = [
+    PASS,
+    b"PASS reply-adjacency local=1 creator=1 sibling-denied=1",
+    b"PASS identity-actor faces=20 fair=1 revision=1 coalesced=1 failed-reply=1 revoked=1 partial=1 shutdown=1",
+]
 
 
 def initrd(elf: bytes) -> bytes:
@@ -68,7 +73,7 @@ def main() -> None:
                 raise SystemExit(f"QEMU timed out with {harts} hart(s)") from error
             print(f"QEMU {harts} hart(s)\n{output.stdout.decode(errors='replace')}", flush=True)
             output.check_returncode()
-            if PASS not in output.stdout or b"FAIL system-client" in output.stdout:
+            if any(marker not in output.stdout for marker in REQUIRED) or b"FAIL system-client" in output.stdout:
                 raise SystemExit(f"guest assertions failed with {harts} hart(s)")
 
 

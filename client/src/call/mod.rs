@@ -100,7 +100,19 @@ impl Connection {
             cleanup.reply =
                 Some(Reply::create(self.license, incoming.len()).map_err(Error::CreateReply)?);
             let reply = cleanup.reply.as_mut().unwrap();
-            let route = reply.grant(self.peer).map_err(Error::Grant)?;
+            let route = loop {
+                match reply.grant(self.peer) {
+                    Ok(route) => break route,
+                    // ABI 9 Accord Busy is before registration.publish. Twine
+                    // leaves Reply Local, so retry the same root and recipient.
+                    Err(ReplyError::Accord(error)) if error.source.is_busy() => {
+                        check_wait(wait)?;
+                        room::yield_();
+                        check_wait(wait)?;
+                    }
+                    Err(error) => return Err(Error::Grant(error)),
+                }
+            };
             let source = reply.source();
             cleanup.incoming = Some(Watch::create(self.license).map_err(Error::CreateWatch)?);
             cleanup

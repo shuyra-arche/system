@@ -5,6 +5,35 @@ use system_api::{
 };
 use weave::{Code, Codec, Coded};
 
+#[test]
+fn published_grants_keep_stable_ids_names_and_namespace_admission() {
+    let mut names = std::collections::BTreeSet::new();
+    for (index, grant) in Grant::ALL.into_iter().enumerate() {
+        let mut bytes = [0; 1];
+        assert_eq!(Coded(grant).encode(&mut bytes), Some(1));
+        assert_eq!(bytes, [index as u8 + 1]);
+        assert!(Name::new(grant.name()).is_some());
+        assert!(names.insert(grant.name()));
+    }
+    for grant in [Grant::Bind, Grant::Unbind, Grant::Install] {
+        assert_eq!(grant.mount(), Mount::Installer);
+    }
+    for grant in [
+        Grant::Adopt,
+        Grant::Waive,
+        Grant::Restrict,
+        Grant::Derive,
+        Grant::Found,
+        Grant::Admit,
+        Grant::Expel,
+        Grant::Activate,
+    ] {
+        assert_eq!(grant.mount(), Mount::Bound);
+    }
+    assert_eq!(Grant::Reference.mount(), Mount::Public);
+    assert_eq!(Grant::Resolve.mount(), Mount::Public);
+}
+
 fn p(slot: u64) -> PrincipalId {
     PrincipalId {
         authority: TaskId::new(5),

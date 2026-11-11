@@ -40,10 +40,18 @@ python3 tests/guest/client/run.py /path/to/shuyra
 
 The guest uses a real ABI 9 Kernel, one and four Harts and the actual production
 SDK/ingress. It does not launch the assembled System policy/boot application.
-The production Identity book and request dispatcher are also ported and tested
-through this ingress. Their independent host state tests are documented in
-[tests/identity-state](tests/identity-state/README.md). The old actor loop and
-change notifications still require migration.
+The production Identity book, request dispatcher, multi-endpoint Task loop and
+revision notifications are ported and tested through this ingress. Independent
+host tests are documented in [tests/identity-state](tests/identity-state/README.md),
+and the [service lifecycle](server/src/system/identity/service/README.md) records
+its native ownership and cleanup rules. Supervisor wiring and the other service
+loops still need migration.
+
+Cross-Team service reply grants are a separate confirmed blocker under ABI 9.
+The guest verifies that a Unit may grant its creator a reply route, but cannot
+grant a sibling worker in the creator's Team. See
+[Kernel #140](https://github.com/shuyra-arche/kernel/issues/140). Passing the
+same-Team service tests does not establish ordinary-Unit RPC into these workers.
 
 Use `rust-toolchain.toml` (`nightly-2026-09-04`, RV64 target and Rust source).
 Run from this repository root; examples use a Linux x86-64 host.

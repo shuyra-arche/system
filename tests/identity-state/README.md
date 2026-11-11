@@ -27,5 +27,7 @@ mutation.
 through real Twine queues and service ingress, including installation,
 inspection, cancellation, retry, retirement and endpoint grant rejection. It
 observes the service Task's Kernel exit result and reclamation before deleting
-the Task. The full System actor loops, notifications and boot assembly still
-need migration; this fixture does not establish their integration.
+the Task. The native multi-endpoint loop and revision notifications are also
+tested there. Host revision coverage checks monotonic exhaustion without wrap.
+The supervisor wiring, other service loops and boot assembly still need
+migration; this fixture does not establish their integration.

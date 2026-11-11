@@ -149,7 +149,7 @@ pub fn until(mut done: impl FnMut() -> bool) {
 
 // This guest has a fixed memory budget. Allocation failures stay observable and
 // deallocation is intentionally unnecessary for its bounded number of calls.
-const HEAP_SIZE: usize = 128 * 1024;
+const HEAP_SIZE: usize = 512 * 1024;
 #[repr(align(4096))]
 struct Heap([u8; HEAP_SIZE]);
 static mut HEAP: Heap = Heap([0; HEAP_SIZE]);

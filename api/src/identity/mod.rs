@@ -572,6 +572,62 @@ pub enum Grant {
     Install = 19,
     Reference = 20,
 }
+
+/// Namespace admission for each independently published endpoint.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Mount {
+    Public,
+    Bound,
+    Installer,
+}
+
+impl Grant {
+    pub const ALL: [Self; 20] = [
+        Self::Resolve,
+        Self::Matches,
+        Self::Same,
+        Self::Sire,
+        Self::Heir,
+        Self::Amid,
+        Self::Members,
+        Self::Memberships,
+        Self::Adopt,
+        Self::Waive,
+        Self::Restrict,
+        Self::Derive,
+        Self::Found,
+        Self::Admit,
+        Self::Expel,
+        Self::Bind,
+        Self::Unbind,
+        Self::Activate,
+        Self::Install,
+        Self::Reference,
+    ];
+
+    pub const fn mount(self) -> Mount {
+        match self {
+            Self::Resolve
+            | Self::Matches
+            | Self::Same
+            | Self::Sire
+            | Self::Heir
+            | Self::Amid
+            | Self::Members
+            | Self::Memberships
+            | Self::Reference => Mount::Public,
+            Self::Adopt
+            | Self::Waive
+            | Self::Restrict
+            | Self::Derive
+            | Self::Found
+            | Self::Admit
+            | Self::Expel
+            | Self::Activate => Mount::Bound,
+            Self::Bind | Self::Unbind | Self::Install => Mount::Installer,
+        }
+    }
+}
 #[weave::interface(tag = u8)]
 pub mod operations {
     #[operation(code = 1, request = super::Task, response = super::Outcome<super::Optional<super::Binding>, super::Fail>)]

@@ -112,6 +112,7 @@ pub struct Endpoint<I: Contract, const DOMAIN: u16> {
     request: Vec<u8>,
     response: Vec<u8>,
     active: bool,
+    retry_delivery: bool,
     interface: PhantomData<fn() -> I>,
 }
 
@@ -141,6 +142,7 @@ impl<I: Contract, const DOMAIN: u16> Endpoint<I, DOMAIN> {
                 request,
                 response,
                 active: true,
+                retry_delivery: false,
                 interface: PhantomData,
             }),
             Err(error) => Err(BindFailure { error, cleanup }),
@@ -160,6 +162,7 @@ impl<I: Contract, const DOMAIN: u16> Endpoint<I, DOMAIN> {
         }
         let mut dispatch = Some(dispatch);
         loop {
+            self.retry_delivery = false;
             let caller = Cell::new(None);
             let result = server::serve_once::<Call<I, DOMAIN>, _, _, _, Infallible>(
                 self.cleanup.receiver.as_mut().ok_or(Error::Inactive)?,
@@ -196,6 +199,14 @@ impl<I: Contract, const DOMAIN: u16> Endpoint<I, DOMAIN> {
                 Err(ServeError::Receive(transport::ReceiveError::Transport(
                     ReceiveError::Open(error),
                 ))) if error.source.is_busy() => {
+                    self.retry_delivery = true;
+                    check_wait(wait)?;
+                    room::yield_();
+                }
+                Err(ServeError::Receive(transport::ReceiveError::Transport(
+                    ReceiveError::Return(error),
+                ))) if error.source.is_busy() => {
+                    self.retry_delivery = true;
                     check_wait(wait)?;
                     room::yield_();
                 }
@@ -213,6 +224,12 @@ impl<I: Contract, const DOMAIN: u16> Endpoint<I, DOMAIN> {
 
     pub fn is_finished(&self) -> bool {
         self.cleanup.is_finished()
+    }
+
+    /// Polling multiplexers must retry a retained payload without waiting for
+    /// another queue event. No handler has run for the pending receive.
+    pub fn needs_retry(&self) -> bool {
+        self.active && self.retry_delivery
     }
 }
 

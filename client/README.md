@@ -24,7 +24,8 @@ authority to the service before encoding the recipient-local reply Pend into
 the SYS2 envelope. Twine authenticates the reply's actual sender. Weave checks
 the exact frame, and the SDK accepts only the requested response variant.
 
-`begin` retries only a Clone Push Busy that submitted no frame. Sending and
+`begin` retries Accord Busy before grant publication and Clone Push Busy before
+submission. Accord retries retain the same local reply root. Sending and
 receiving share the original absolute deadline. After a successful submission,
 no timeout or receive failure resends the request. `Poll` attempts submission
 once. A pending response stays available through `Pending::poll`; a `Poll`
