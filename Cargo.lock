@@ -379,8 +379,9 @@ dependencies = [
  "system-api 0.2.0",
  "system-client",
  "system-support",
+ "talc",
  "twine",
- "unit 0.1.0 (git+https://github.com/shuyra-arche/unit.git?rev=a0e8138275dc277f7d202fedb74cf9fa88aee368)",
+ "unit 0.1.0 (git+https://github.com/shuyra-arche/unit.git?rev=aaa2b58c1ef0b40428dcc71d1321736156551109)",
  "unit 0.1.0 (git+https://github.com/shuyra-arche/unit.git?rev=ad50b803c3bd5cd2ef90010d80badf23551e88d5)",
  "weave",
  "wire 0.1.0 (git+https://github.com/shuyra-arche/wire.git?rev=0ff77dc4573fa2620d2fe995a18c01949d9c7e57)",
@@ -394,7 +395,7 @@ dependencies = [
  "fdt",
  "kernel-api",
  "kernel-client 0.0.1",
- "unit 0.1.0 (git+https://github.com/shuyra-arche/unit.git?rev=a0e8138275dc277f7d202fedb74cf9fa88aee368)",
+ "unit 0.1.0 (git+https://github.com/shuyra-arche/unit.git?rev=aaa2b58c1ef0b40428dcc71d1321736156551109)",
 ]
 
 [[package]]
@@ -456,7 +457,7 @@ dependencies = [
 [[package]]
 name = "unit"
 version = "0.1.0"
-source = "git+https://github.com/shuyra-arche/unit.git?rev=a0e8138275dc277f7d202fedb74cf9fa88aee368#a0e8138275dc277f7d202fedb74cf9fa88aee368"
+source = "git+https://github.com/shuyra-arche/unit.git?rev=aaa2b58c1ef0b40428dcc71d1321736156551109#aaa2b58c1ef0b40428dcc71d1321736156551109"
 dependencies = [
  "postcard",
  "serde",

@@ -10,7 +10,10 @@ pub enum Fail {
 }
 impl Fail {
     pub fn code(self) -> usize {
-        match self { Self::BootArgs => 1, Self::Machine => 5 }
+        match self {
+            Self::BootArgs => 1,
+            Self::Machine => 5,
+        }
     }
 }
 
@@ -32,12 +35,20 @@ pub unsafe fn take(words: &[usize]) -> Result<Boot, Fail> {
     let token = accounts.page(Page::Dtb).ok_or(Fail::Machine)?;
     let (address, span) = share_view::open(token).map_err(|_| Fail::Machine)?;
     let address: VirtAddr = address;
-    if address.get() == 0 || span < 40 || span > isize::MAX as usize || address.get().checked_add(span).is_none() {
+    if address.get() == 0
+        || span < 40
+        || span > isize::MAX as usize
+        || address.get().checked_add(span).is_none()
+    {
         return Err(Fail::Machine);
     }
     // SAFETY: this trusted boot page is immutable Kernel DTB storage, kept
     // mapped until Team exit. The bounded slice covers only its opened extent.
     let bytes = unsafe { core::slice::from_raw_parts(address.get() as *const u8, span) };
     let machine = Machine::of(bytes).map_err(|_| Fail::Machine)?;
-    Ok(Boot { accounts, machine, catalog })
+    Ok(Boot {
+        accounts,
+        machine,
+        catalog,
+    })
 }

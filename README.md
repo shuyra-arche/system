@@ -63,7 +63,9 @@ The guest verifies normal/partial startup, cancellation, both roles and cleanup.
 The [support package](support/README.md) is fully on Kernel 9 and the pure Unit
 bundle, including typed boot accounts and explicit Share/Sign dispatch pairs.
 The assembled app still has legacy supervisor/service callers; removal of those
-callers and a complete native entry/allocator remain outstanding.
+callers remain outstanding. The native entry/linker and growing, reclaiming heap
+are now implemented and tested separately with the real service bootstrap;
+complete supervisor integration is still required.
 
 The [native Loader](server/src/system/loader/README.md) now constructs real User
 Teams through generation-qualified Cell associations and publications. A
@@ -98,8 +100,9 @@ belong to [Vanllia](https://github.com/shuyra-arche/vanllia).
 ## Current limitations
 
 The support package passes its host tests and RV64 check on the pinned nightly.
-The assembled Server still cannot build; its entry/runtime and remaining service
-integration require migration. The old `test-support` scenarios still use declarations and
+The assembled Server still cannot build; Control/Assembly, the remaining service
+integration and the mixed shipping graph require migration. The native entry
+is verified with an explicit contract fixture, not the complete application. The old `test-support` scenarios still use declarations and
 Unit shapes from before dynamic selection and require repair; do not treat all
 historical fixtures as a passing current suite. Early owner death can prevent a
 requested Unit's Retired frame from being published; absent receipts must fail
@@ -112,3 +115,18 @@ also distinct from the local API workspace member. Keep lockfiles and actual
 resolved dependency identity aligned when updating either.
 
 See [contribution rules](CONTRIBUTING.md) and [source attribution](PROVENANCE.md).
+
+The [native entry/heap](server/src/runtime/README.md) keeps heap backing in the
+initial Task, so internal worker exit cannot invalidate live allocations. The
+[entry contract](tests/guest/entry/README.md) boots the exact production entry,
+ledger/DTB decoder and actual Operator/Identity startup on that heap. The
+[runtime guest](tests/guest/runtime/README.md) verifies concurrent allocations,
+worker exit, page reclamation and native Supply lease/window ownership on one
+and four Harts. Neither fixture is the complete application.
+
+System now owns a [schema-2 interpreter](server/src/system/declaration/README.md)
+using the merged pure Unit provider. Named rights are translated to checked
+Kernel limits; startup selection and cross-record policy are validated without
+old permission masks. The [Supply lease backend](server/src/system/supply/README.md)
+uses private native roots and retryable withdrawal. Legacy Control/Assembly,
+Supply RPC/provider collections and supervisor callers still need integration.

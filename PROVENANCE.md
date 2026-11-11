@@ -20,3 +20,9 @@ The protocol v2 guest runner, independent-Team RX mapping fixture and minimal li
 `17554b0e5fba149796c5696c3eca9f20cc125fc7`, adding a separate writable
 segment and System-specific lifecycle assertions. Both projects are part of
 Shuyra. This attribution does not add a license grant.
+
+The native System heap's Kernel page backing in `server/src/runtime/heap/pages.rs`
+adapts `rust/library/std/src/sys/pal/vanllia/broker/pages.rs` from Shuyra Toolchain
+at `cd6a6f0d3bcd180cbf835deda08aa07e9b9d4e97`. System owns its initial-supervisor
+servicing protocol; Toolchain remains the language runtime for ordinary std
+Units. This attribution adds no license grant.

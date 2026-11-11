@@ -32,6 +32,7 @@ pub(crate) fn supervise(
         let mut starting = Cursor::default();
         let mut cursor = Cursor::default();
         loop {
+            crate::runtime::heap::poll();
             startup
                 .advance(&mut starting, &resources)
                 .map_err(|error| {
@@ -59,7 +60,9 @@ pub(crate) fn supervise(
             .advance(&mut cursor, &resources)
             .map_err(|_| 9usize)?
             == Progress::Pending
-        {}
+        {
+            crate::runtime::heap::poll();
+        }
         Ok(())
     })();
     if result.is_err() {

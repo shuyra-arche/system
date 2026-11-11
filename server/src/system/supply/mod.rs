@@ -4,6 +4,7 @@ mod collection;
 mod derivation;
 mod lease;
 mod pole;
+pub(crate) mod native;
 
 use alloc::{boxed::Box, vec::Vec};
 use env::Wait;
