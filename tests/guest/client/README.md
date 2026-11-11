@@ -25,3 +25,13 @@ Loader code. Its linker exposes the immutable RX span at a reserved high VA for
 the Loader's target-side initializer. The ordinary image has independent low
 VAs and private DATA/BSS. This confirms component behavior, not full product
 boot, Toolchain `std`, hardware or a completely clean Server dependency closure.
+
+The adjacency probe now checks both direct-grant directions while the foreign
+User Task and sibling System worker are live. Creator C -> sibling S succeeds;
+User U -> creator C succeeds; U -> S and S -> U both return exact PendFail::Denied
+under ABI9. S stays alive until U completes; results 42/43 and reclaimed receipts
+are verified before deletion. The runner requires the additional
+`PASS grant-adjacency worker-to-unit-denied=1` marker on one/four Harts. This is
+also a normal Unit activation blocker for worker-issued grants, not solely a
+reply-queue issue. It does not establish a replacement admission contract for
+Kernel #140 or justify weakening recipient protection.

@@ -1,6 +1,10 @@
-//! Exercise the actual Unit -> sibling System worker reply-grant boundary.
+//! Exercise actual cross-Team grants in both System worker/Unit directions.
 use crate::fixture::{self, Console, addr, until};
-use core::{fmt::Write as _, ptr};
+use core::{
+    fmt::Write as _,
+    ptr,
+    sync::atomic::{AtomicBool, AtomicUsize, Ordering},
+};
 use kernel_api::{
     abi::call::pend::PendFail,
     address::{PAGE_SIZE, VirtAddr},
@@ -15,16 +19,21 @@ use kernel_api::{
         unit::{ControlId, ProgramKind, UnitCreate, UnitQuery, UnitTarget},
     },
 };
-use kernel_client::call::{cell, pend, share_view, unit};
+use kernel_client::call::{cell, pend, room, share_view, unit};
 use twine::view::clone::{Reply, ReplyError};
 
 unsafe extern "C" {
     static __code_start: u8;
     static __code_end: u8;
 }
+// The System sibling shares these ordinary synchronization words. The foreign
+// User Task receives only RX code and never reads these writable globals.
+static FOREIGN: AtomicUsize = AtomicUsize::new(0);
+static PROBED: AtomicBool = AtomicBool::new(false);
+static FINISH: AtomicBool = AtomicBool::new(false);
 
 pub fn run(license: PendId, creator: TaskId) {
-    let (sibling_target, sibling) = fixture::spawn(dormant);
+    let (sibling_target, sibling) = fixture::spawn(worker);
     let mut local = Reply::create(license, 64).unwrap();
     local.grant(sibling).unwrap();
     local.finish().unwrap();
@@ -117,6 +126,15 @@ pub fn run(license: PendId, creator: TaskId) {
         Operations::None(CreationRights::CLONE),
         Modifiable::No,
     );
+    fixture::grant(
+        license,
+        sibling,
+        Operations::None(CreationRights::CLONE),
+        Modifiable::No,
+    );
+    FOREIGN.store(task.get(), Ordering::Release);
+    unit::resume(sibling_target).unwrap();
+    until(|| PROBED.load(Ordering::Acquire));
     assert_ne!(
         fixture::inspect(UnitQuery::Caller).team,
         fixture::inspect(UnitQuery::Target(target)).team
@@ -130,18 +148,34 @@ pub fn run(license: PendId, creator: TaskId) {
     unit::delete(UnitTarget::Team(team)).unwrap();
     pend::return_(source).unwrap();
     cell::delete(addr(&CellObject::Slot(slot).to_bytes())).unwrap();
-    unit::stop(sibling_target).unwrap();
+    FINISH.store(true, Ordering::Release);
     until(|| fixture::inspect(UnitQuery::Target(sibling_target)).reclaimed);
+    assert_eq!(
+        fixture::inspect(UnitQuery::Target(sibling_target)).result,
+        Some(43)
+    );
     unit::delete(sibling_target).unwrap();
     writeln!(
         Console,
         "PASS reply-adjacency local=1 creator=1 sibling-denied=1"
     )
     .unwrap();
+    writeln!(Console, "PASS grant-adjacency worker-to-unit-denied=1").unwrap();
 }
 
-extern "C" fn dormant() -> ! {
-    fixture::exit(99)
+extern "C" fn worker() -> ! {
+    let target = TaskId::new(FOREIGN.load(Ordering::Acquire));
+    assert_ne!(target.get(), 0);
+    let mut grant = Reply::create(fixture::license(), 64).unwrap();
+    assert!(
+        matches!(grant.grant(target), Err(ReplyError::Accord(error)) if error.source == PendFail::Denied)
+    );
+    grant.finish().unwrap();
+    PROBED.store(true, Ordering::Release);
+    while !FINISH.load(Ordering::Acquire) {
+        room::yield_();
+    }
+    fixture::exit(43)
 }
 
 extern "C" fn foreign(arguments: usize, count: usize) -> ! {
