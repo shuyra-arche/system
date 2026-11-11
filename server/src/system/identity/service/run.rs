@@ -141,7 +141,12 @@ pub(super) fn step(service: &mut Service, wait: Wait) -> Result<Report, Error> {
     } else if wait != Wait::Poll {
         // Routed readiness remains level-triggered. A source event only wakes
         // the loop; all authority and actual readiness are checked next step.
-        sign::listen(service.mux.ok_or(Error::Inactive)?, wait).map_err(Error::Sign)?;
+        service
+            .waiting
+            .as_ref()
+            .ok_or(Error::Inactive)?
+            .await_(wait)
+            .map_err(Error::Waiting)?;
     }
     Ok(report)
 }

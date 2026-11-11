@@ -292,7 +292,10 @@ extern "C" fn worker(arguments: usize, count: usize) -> ! {
         }
         Err(mut failure) => {
             assert_eq!(mode, 2);
-            assert!(matches!(failure.error, Error::Sign(_)));
+            assert!(matches!(
+                failure.error,
+                Error::Waiting(crate::waiting::Error::Create(_))
+            ));
             failure.service.finish().unwrap();
             failure.service.finish().unwrap();
             assert!(failure.service.is_finished());

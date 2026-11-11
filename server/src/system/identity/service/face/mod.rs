@@ -1,18 +1,17 @@
 use erra::Error as KernelError;
 use kernel_api::{
-    abi::call::{clone_view::CloneFail, pend::PendFail, sign::SignFail},
+    abi::call::{clone_view::CloneFail, pend::PendFail},
     address::VirtAddr,
     model::{
-        clone_view::{CloneCondition, CloneLimits},
+        clone_view::CloneLimits,
         identity::{Mark, PendId, TaskId},
         modifiable::Modifiable,
         pend::{
             AccordRequest, AccordTarget, CloneRights, Distributable, Limits, Operations, PendRange,
         },
-        sign::SignSource,
     },
 };
-use kernel_client::call::{clone_view, pend, sign};
+use kernel_client::call::{clone_view, pend};
 use system_protocol::identity::Grant;
 use weave::{Codec, Contract};
 
@@ -27,7 +26,6 @@ pub struct Publication {
 pub enum Error {
     Queue(KernelError<CloneFail>),
     Bind(crate::protocol::Error),
-    Attach(KernelError<SignFail>),
     Grant(KernelError<PendFail>),
 }
 #[derive(Debug)]
@@ -53,12 +51,7 @@ impl Face {
             publication: None,
         }
     }
-    pub(super) fn initialize(
-        &mut self,
-        license: PendId,
-        controller: TaskId,
-        mux: PendId,
-    ) -> Result<(), Error> {
+    pub(super) fn initialize(&mut self, license: PendId, controller: TaskId) -> Result<(), Error> {
         type Request = <system_protocol::identity::Call as Contract>::Request;
         let max_len = Request::SIZE.maximum().expect("bounded Identity protocol");
         let root = clone_view::create(
@@ -79,15 +72,6 @@ impl Face {
                 return Err(Error::Bind(failure.error));
             }
         });
-        sign::attach(
-            mux,
-            SignSource::Clone {
-                token: root,
-                condition: CloneCondition::Pull,
-            },
-            0,
-        )
-        .map_err(Error::Attach)?;
         let request = AccordRequest {
             src: root,
             target: AccordTarget::Task(controller),

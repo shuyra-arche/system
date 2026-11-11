@@ -36,7 +36,7 @@ mod config;
 mod guard;
 pub(crate) mod supplies;
 
-mod waiting;
+pub(crate) mod waiting;
 
 #[derive(Debug)]
 pub(crate) enum Fault {

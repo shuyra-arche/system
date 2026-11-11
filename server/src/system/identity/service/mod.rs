@@ -17,10 +17,11 @@ use kernel_api::{
         wait::Wait,
     },
 };
-use kernel_client::call::{pend, sign, unit};
+use kernel_client::call::{pend, unit};
 use system_protocol::identity::Grant;
 
 pub use super::revision::Epoch;
+use crate::system::app::waiting::{Interest, Waiting};
 use crate::system::identity::book::IdentityBook;
 use face::Face;
 pub use face::Publication;
@@ -50,12 +51,13 @@ pub enum Error {
     Revision(revision::Error),
     Ingress(crate::protocol::Error),
     Cleanup(CleanupError),
+    Waiting(crate::system::app::waiting::Error),
     Inactive,
 }
 
 #[derive(Debug)]
 pub enum CleanupError {
-    Mux(KernelError<PendFail>),
+    Mux(crate::system::app::waiting::Error),
     Face(face::CleanupError),
 }
 
@@ -75,7 +77,7 @@ pub struct Service {
     task: TaskId,
     book: Option<IdentityBook>,
     faces: Vec<Face>,
-    mux: Option<PendId>,
+    waiting: Option<Waiting>,
     revision: revision::Publisher,
     cursor: usize,
 }
@@ -110,7 +112,7 @@ impl Service {
             task: TaskId::new(0),
             book: None,
             faces: Vec::new(),
-            mux: None,
+            waiting: None,
             revision,
             cursor: 0,
         };
@@ -165,31 +167,38 @@ impl Service {
         self.faces
             .try_reserve_exact(Grant::ALL.len())
             .map_err(|_| Error::Capacity)?;
-        let mux = sign::create(self.config.license).map_err(Error::Sign)?;
-        self.mux = Some(mux);
-        for source in [
-            SignSource::Sign {
-                token: self.config.shutdown,
-            },
-            SignSource::Inspect {
-                task,
-                token: self.config.shutdown,
-            },
-            SignSource::Inspect {
-                task,
-                token: self.config.dependency,
-            },
-        ] {
-            sign::attach(mux, source, 0).map_err(Error::Sign)?;
-        }
+        self.waiting = Some(Waiting::new(self.config.license).map_err(Error::Waiting)?);
         for grant in Grant::ALL {
             self.faces.push(Face::new(grant));
             self.faces
                 .last_mut()
                 .unwrap()
-                .initialize(self.config.license, self.config.controller, mux)
+                .initialize(self.config.license, self.config.controller)
                 .map_err(Error::Face)?;
         }
+        let mut reads = Vec::new();
+        reads
+            .try_reserve_exact(self.faces.len())
+            .map_err(|_| Error::Capacity)?;
+        reads.extend(self.faces.iter().map(|face| face.root.unwrap()));
+        let extra = [
+            Interest::new(SignSource::Sign {
+                token: self.config.shutdown,
+            }),
+            Interest::new(SignSource::Inspect {
+                task,
+                token: self.config.shutdown,
+            }),
+            Interest::new(SignSource::Inspect {
+                task,
+                token: self.config.dependency,
+            }),
+        ];
+        self.waiting
+            .as_mut()
+            .unwrap()
+            .apply(&reads, &[], &extra)
+            .map_err(Error::Waiting)?;
         Ok(())
     }
 
@@ -203,9 +212,9 @@ impl Service {
     /// A failed object stays owned at the same index for another finish call.
     pub fn finish(&mut self) -> Result<(), CleanupError> {
         self.phase = Phase::Closing;
-        if let Some(mux) = self.mux {
-            pend::return_(mux).map_err(CleanupError::Mux)?;
-            self.mux = None;
+        if let Some(waiting) = self.waiting.as_mut() {
+            waiting.finish().map_err(CleanupError::Mux)?;
+            self.waiting = None;
         }
         for face in &mut self.faces {
             face.finish().map_err(CleanupError::Face)?;

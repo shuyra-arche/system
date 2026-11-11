@@ -3,6 +3,7 @@
 `Service::create` runs in the actual serving Task. It creates 20 distinct Clone
 queues for the stable Identity grant set, binds protocol v2 ingress and routes
 readiness into one Sign wait group. Each queue admits at most 16 bounded frames.
+The group is owned by the migrated supervisor `app::waiting` implementation.
 Its controller receives narrowed Push/Peek authority with distribution enabled
 for namespace installation. Successful construction exposes the controller-local
 identifiers through `publications`; incomplete construction is never a ready

@@ -13,6 +13,7 @@ REQUIRED = [
     PASS,
     b"PASS reply-adjacency local=1 creator=1 sibling-denied=1",
     b"PASS identity-actor faces=20 fair=1 revision=1 coalesced=1 failed-reply=1 revoked=1 partial=1 shutdown=1",
+    b"PASS wait-group dedup=1 replace=1 partial=1 conflict=1 cleanup=1",
 ]
 
 
