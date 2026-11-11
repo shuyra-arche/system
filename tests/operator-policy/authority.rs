@@ -121,6 +121,11 @@ fn replay_is_scoped_and_parent_revoke_immediately_blocks_descendants() {
     assert!(auth.grant_at(pend(92), TaskId::new(3)).is_none());
     assert!(auth.by_id(child_key, TaskId::new(3)).is_none());
     assert!(auth.remote(child_key).is_none());
+    assert_eq!(
+        auth.status(reference(2, 91, 1)).unwrap().state.0,
+        GrantState::Revoking
+    );
+    assert_eq!(auth.status(reference(2, 91, 1)).unwrap().entrance.0, None);
     let plan = auth.revoke_plan(parent_ref).unwrap();
     assert_eq!(
         plan.iter().map(|item| item.key).collect::<Vec<_>>(),
@@ -139,6 +144,25 @@ fn replay_is_scoped_and_parent_revoke_immediately_blocks_descendants() {
         auth.closed(reference).unwrap();
     }
     assert_eq!(auth.inspect(parent_ref), Ok(GrantState::Closed));
+}
+
+#[test]
+fn delivery_receipt_publishes_only_the_actual_holder_coordinate() {
+    let mut auth = setup();
+    let (_, key) = submit(&mut auth, 1, 90, spec(1, 2, None), "svc").unwrap();
+    let reference = reference(1, 90, 1);
+    assert_eq!(auth.status(reference).unwrap().entrance.0, None);
+    deliver(&mut auth, key, reference, 91);
+    let receipt = auth.status(reference).unwrap();
+    assert_eq!(receipt.state.0, GrantState::Granted);
+    assert_eq!(receipt.entrance.0, Some(WirePend::new(191)));
+    assert_ne!(receipt.entrance.0, Some(WirePend::new(91)));
+    use weave::Codec;
+    let mut bytes = [0; 128];
+    let count = receipt.encode(&mut bytes).unwrap();
+    assert_eq!(GrantStatus::decode_exact(&bytes[..count]), Some(receipt));
+    auth.revoke(reference).unwrap();
+    assert_eq!(auth.status(reference).unwrap().entrance.0, None);
 }
 
 #[test]
@@ -192,6 +216,11 @@ fn cancel_before_delivery_retains_owner_and_prevents_activation() {
 #[test]
 fn unseen_cancel_watermarks_cannot_cross_an_entrance() {
     let mut auth = setup();
+    assert_eq!(
+        auth.revoke(reference(99, 90, 5)),
+        Err(AuthorityError::Denied)
+    );
+    assert!(auth.watermarks.is_empty());
     for (number, entrance) in [(1, 91), (2, 92)] {
         let (_, key) = submit(&mut auth, 1, 90, spec(number, 2, None), "svc").unwrap();
         deliver(&mut auth, key, reference(1, 90, number), entrance);

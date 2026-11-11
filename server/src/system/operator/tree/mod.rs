@@ -1438,12 +1438,3 @@ impl Operator {
         None
     }
 }
-
-// 真正的对照表只有一份（system_api::operator::frame）；`gate` 为了"不带载体"自己
-// 看得见 `gate` 与 `frame`。
-const _: () = {
-    use system_api::operator::frame;
-    assert!(gate::WIRE_OK == frame::OK);
-    assert!(gate::WIRE_DENIED == frame::DENIED);
-    assert!(gate::WIRE_UNJUDGED == frame::UNJUDGED);
-};

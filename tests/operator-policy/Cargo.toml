@@ -14,3 +14,4 @@ doctest = false
 system-protocol = { package = "system-api", path = "../../api" }
 system-client = { path = "../../client" }
 kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }
+weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }

@@ -50,6 +50,7 @@ dependencies = [
  "kernel-api",
  "system-api",
  "system-client",
+ "weave",
 ]
 
 [[package]]

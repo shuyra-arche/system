@@ -88,9 +88,13 @@ pub fn run(license: PendId, root: TaskId, holder: TaskId) {
     authority
         .delivered(reference, remote.unwrap().into())
         .unwrap();
+    let receipt = authority.status(reference).unwrap();
+    assert_eq!(receipt.entrance.0, Some(remote.unwrap().into()));
+    assert_eq!(receipt.state.0, api::operator::GrantState::Granted);
     assert!(authority.live(key));
     assert!(authority.grant_at(entrance, holder.into()).is_some());
     authority.revoke(reference).unwrap();
+    assert_eq!(authority.status(reference).unwrap().entrance.0, None);
     assert!(authority.grant_at(entrance, holder.into()).is_none());
     for item in authority.revoke_plan(reference).unwrap() {
         waiting.apply(&[], &[], &[]).unwrap();

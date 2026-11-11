@@ -42,6 +42,37 @@ fn operator_grant_keeps_independent_source_constraints_and_nonzero_identity() {
     }
 }
 
+#[test]
+fn namespace_association_and_delivered_grant_have_distinct_complete_contracts() {
+    let association = operator::Association {
+        mark: Mark::new(kernel_api::model::identity::Mark::of("service").get()),
+        name: Name::new("service").unwrap(),
+        entry: operator::Entry {
+            operator: TaskId::new(9),
+            target: operator::EntryTarget::Root,
+        },
+    };
+    let request = operator::authority::operations::Request::Associate(association.clone());
+    complete(&request);
+    assert!(
+        matches!(operator::authority::operations::Request::decode_exact(&bytes(&request)), Some(operator::authority::operations::DecodedRequest::Associate(actual)) if actual == association)
+    );
+    complete(&operator::authority::operations::Response::Associate(
+        Outcome::Success(()),
+    ));
+    let delivered = operator::GrantStatus {
+        state: weave::Coded(operator::GrantState::Granted),
+        grant: operator::GrantId::new(1).unwrap(),
+        entrance: Optional(Some(PendId::new(u64::MAX))),
+        binding: Optional(None),
+    };
+    complete(&delivered);
+    assert_eq!(
+        operator::GrantStatus::decode_exact(&bytes(&delivered)),
+        Some(delivered)
+    );
+}
+
 fn complete<C: Codec>(value: &C) {
     let mut encoded = bytes(value);
     assert!(C::decode_exact(&encoded).is_some());

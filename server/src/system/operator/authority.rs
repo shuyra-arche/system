@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 use kernel_api::model::identity::PendId;
-use system_protocol::operator::{EntryTarget, GrantId, GrantSpec, GrantState, Ops};
+use system_protocol::operator::{EntryTarget, GrantId, GrantSpec, GrantState, GrantStatus, Ops};
+use system_protocol::value::Optional;
 use system_protocol::{Path, TaskId};
 
 const LIMIT: usize = 256;
@@ -131,6 +132,7 @@ impl Authority {
             || root.operator != self.operator
             || self.root == TaskId::NONE
             || self.operator == TaskId::NONE
+            || root.entrance == PendId::NONE
         {
             return Err(AuthorityError::Denied);
         }
@@ -306,7 +308,11 @@ impl Authority {
                 && r.grant.spec.id == key.id
                 && r.identity.issuer == key.caller
         }) {
-            return Ok(r.grant.state);
+            return Ok(if !self.ancestors_live(r.identity.key) {
+                GrantState::Revoking
+            } else {
+                r.grant.state
+            });
         }
         let high_water = self
             .watermarks
@@ -320,6 +326,30 @@ impl Authority {
         }
     }
 
+    /// A delivery receipt describes a coordinate in the holder's table. It
+    /// does not grant the observing issuer any local authority to that token.
+    pub fn status(&self, key: GrantRef) -> Result<GrantStatus, AuthorityError> {
+        let state = self.inspect(key)?;
+        let entrance = if state == GrantState::Granted {
+            self.records
+                .iter()
+                .find(|r| {
+                    r.identity.via == key.via
+                        && r.identity.issuer == key.caller
+                        && r.grant.spec.id == key.id
+                })
+                .and_then(|r| r.cleanup.remote)
+        } else {
+            None
+        };
+        Ok(GrantStatus {
+            state: weave::Coded(state),
+            grant: key.id,
+            entrance: Optional(entrance),
+            binding: Optional(None),
+        })
+    }
+
     pub fn revoke(&mut self, key: GrantRef) -> Result<GrantState, AuthorityError> {
         if let Some(r) = self.records.iter_mut().find(|r| {
             r.identity.via == key.via
@@ -331,6 +361,11 @@ impl Authority {
             }
             r.grant.state = GrantState::Revoking;
             return Ok(GrantState::Revoking);
+        }
+        // Unseen cancellation allocates a durable replay fence. Only a live
+        // admitted caller may create one in this entrance's history.
+        if self.grant_at(key.via, key.caller).is_none() {
+            return Err(AuthorityError::Denied);
         }
         let at = self
             .watermarks
@@ -452,6 +487,9 @@ impl Authority {
     }
 
     pub fn set_entrance(&mut self, key: GrantRef, entrance: PendId) -> Result<(), AuthorityError> {
+        if entrance == PendId::NONE {
+            return Err(AuthorityError::Denied);
+        }
         if self.entrance == Some(entrance)
             || self.records.iter().any(|r| {
                 r.cleanup.entrance == Some(entrance)

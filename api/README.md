@@ -70,6 +70,10 @@ restriction already present. A grant's optional parent identifies an issued
 parent grant; absence is accepted only at the controller's trusted root
 entrance. Root bootstrap has no synthetic `GrantId(0)`. Relocating an anchor
 checks remaining scope against canonical component boundaries and path bounds.
+Namespace Associate carries Mark, Name and Entry and returns a unit receipt;
+it is distinct from importing a resource through Bind. A delivered GrantStatus
+carries its entrance coordinate in the declared holder's table. The requester
+must not interpret it as a local authorization handle.
 
 Control grant mapping keeps Observe, Recover, Ruin and ordinary State distinct.
 Identity mutation retains the Install grant boundary. Trusted export has a

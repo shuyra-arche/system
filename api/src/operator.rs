@@ -240,6 +240,14 @@ pub struct Resolve {
     pub name: Name,
 }
 
+/// Trusted namespace association. It names a pane, not an imported resource.
+#[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
+pub struct Association {
+    pub mark: Mark,
+    pub name: Name,
+    pub entry: Entry,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
 pub struct Watch {
     pub base: Entry,
@@ -300,6 +308,9 @@ pub enum OperationState {
 pub struct GrantStatus {
     pub state: weave::Coded<GrantState>,
     pub grant: GrantId,
+    /// Coordinate in the declared holder's table, never the issuer's table.
+    /// Present only after the native entrance grant has been delivered.
+    pub entrance: Optional<PendId>,
     pub binding: Optional<Binding>,
 }
 
@@ -385,7 +396,7 @@ pub mod authority {
         pub struct Cancel;
         #[operation(code = 12, request = super::OperationId, response = super::Outcome<super::MutationStatus, super::Fail>)]
         pub struct InspectOperation;
-        #[operation(code = 13, request = super::Bind, response = super::Outcome<super::Binding, super::Fail>)]
+        #[operation(code = 13, request = super::Association, response = super::Outcome<(), super::Fail>)]
         pub struct Associate;
         #[operation(code = 14, request = super::Resolve, response = super::Outcome<super::Entry, super::Fail>)]
         pub struct ResolveNamespace;
