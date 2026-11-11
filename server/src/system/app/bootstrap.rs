@@ -31,13 +31,13 @@ pub struct Boot {
     pub catalog: Catalog<'static>,
 }
 
-pub fn take(plic_class: &'static str) -> Result<Boot, Fail> {
+pub fn take() -> Result<Boot, Fail> {
     // 两块账：启动参数指的两区（读不出就没得装配）。自述一行：按判别号数它有什么。
     let accounts = Accounts::take().ok_or(Fail::BootArgs)?;
     accounts.report();
     // 清单：账里那整块字节（头已在 `take` 里验过）。
     let catalog = Catalog::of_boot(&accounts).ok_or(Fail::BootArgs)?;
-    let machine = take_machine(&accounts, plic_class).ok_or(Fail::Machine)?;
+    let machine = take_machine(&accounts).ok_or(Fail::Machine)?;
     Ok(Boot {
         accounts,
         machine,
@@ -45,8 +45,8 @@ pub fn take(plic_class: &'static str) -> Result<Boot, Fail> {
     })
 }
 
-fn take_machine(accounts: &Accounts, plic_class: &'static str) -> Option<Machine> {
+fn take_machine(accounts: &Accounts) -> Option<Machine> {
     let token = accounts.token(env::Name::Page(env::Page::Dtb))?;
     let dock = Dock::open(token).ok()?;
-    Machine::of(dock.view(), plic_class).ok()
+    Machine::of(dock.view()).ok()
 }

@@ -23,21 +23,20 @@ pub struct Device {
 #[derive(Clone, Copy)]
 pub struct Machine {
     fdt: fdt::Fdt<'static>,
-    plic_class: &'static str,
 }
 
 impl Machine {
     /// 把一段**已借映的只读区**解释成设备树
     /// 前置：`view` 指向终身存活、只读、形状合法的 FDT（`Name::Page(Page::Dtb)` 那一枚门闩的视图）
-    pub fn of(view: View, plic_class: &'static str) -> Result<Machine, &'static str> {
+    pub fn of(view: View) -> Result<Machine, &'static str> {
         let fdt = unsafe { fdt::Fdt::from_ptr(view.base() as *const u8) }
             .map_err(|_| "system: tree parse")?;
-        Ok(Machine { fdt, plic_class })
+        Ok(Machine { fdt })
     }
 
     /// 按区域起址排列，选择每个设备的首段有效区域。
     pub fn devices(&self) -> Option<Vec<Device>> {
-        let plic = Plic::of(&self.fdt, self.plic_class);
+        let plic = Plic::of(&self.fdt);
         let mut out: Vec<Device> = Vec::new();
         for node in self.fdt.all_nodes() {
             if exempt(node.name) || platform_window(node) {
@@ -129,11 +128,11 @@ struct Plic {
 }
 
 impl Plic {
-    fn of(fdt: &fdt::Fdt, plic_class: &'static str) -> Option<Plic> {
+    fn of(fdt: &fdt::Fdt) -> Option<Plic> {
         let node = fdt.all_nodes().find(|n| {
             n.property("interrupt-controller").is_some()
                 && n.compatible()
-                    .is_some_and(|c| c.all().any(|s| s == plic_class))
+                    .is_some_and(|c| c.all().any(|s| s == "sifive,plic-1.0.0"))
         })?;
         Some(Plic {
             phandle: node.property("phandle").and_then(|p| p.as_usize())?,
