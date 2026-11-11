@@ -1,7 +1,6 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use env::ledger::capsule::PAGE;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
@@ -30,6 +29,27 @@ pub struct Plan {
     pub regions: Vec<Region>,
 }
 
+#[derive(Clone, Copy)]
+pub struct Target {
+    machine: usize,
+    instruction_bytes: usize,
+}
+
+impl Target {
+    pub const RV64GC: Self = Self {
+        machine: 243,
+        instruction_bytes: 2,
+    };
+
+    pub const fn native() -> Option<Self> {
+        if cfg!(all(target_arch = "riscv64", target_feature = "c")) {
+            Some(Self::RV64GC)
+        } else {
+            None
+        }
+    }
+}
+
 fn number(bytes: &[u8], offset: usize, width: usize) -> Result<usize, Error> {
     let mut raw = [0u8; 8];
     raw[..width].copy_from_slice(
@@ -40,13 +60,14 @@ fn number(bytes: &[u8], offset: usize, width: usize) -> Result<usize, Error> {
     usize::try_from(u64::from_le_bytes(raw)).map_err(|_| Error::Range)
 }
 
-pub fn parse(bytes: &[u8]) -> Result<Plan, Error> {
+pub fn parse<const PAGE: usize>(bytes: &[u8], target: Target) -> Result<Plan, Error> {
+    const { assert!(PAGE.is_power_of_two()) };
     if bytes.len() < 64 || bytes[..6] != [0x7f, b'E', b'L', b'F', 2, 1] {
         return Err(Error::Format);
     }
     if bytes[6] != 1
         || number(bytes, 16, 2)? != 2
-        || number(bytes, 18, 2)? != 243
+        || number(bytes, 18, 2)? != target.machine
         || number(bytes, 20, 4)? != 1
         || number(bytes, 52, 2)? != 64
     {
@@ -106,7 +127,7 @@ pub fn parse(bytes: &[u8]) -> Result<Plan, Error> {
         if flags & 8 != 0
             && entry >= address
             && entry
-                .checked_add(2)
+                .checked_add(target.instruction_bytes)
                 .is_some_and(|end| end <= address + file_size)
         {
             valid_entry = true;
@@ -142,7 +163,7 @@ pub fn parse(bytes: &[u8]) -> Result<Plan, Error> {
             prefix,
         });
     }
-    if !valid_entry || !entry.is_multiple_of(2) {
+    if !valid_entry || !entry.is_multiple_of(target.instruction_bytes) {
         return Err(Error::Entry);
     }
     Ok(Plan { entry, regions })
