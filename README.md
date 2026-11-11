@@ -65,6 +65,14 @@ bundle, including typed boot accounts and explicit Share/Sign dispatch pairs.
 The assembled app still has legacy supervisor/service callers; removal of those
 callers and a complete native entry/allocator remain outstanding.
 
+The [native Loader](server/src/system/loader/README.md) now constructs real User
+Teams through generation-qualified Cell associations and publications. A
+receiving-Task initializer installs private RW mappings under v9, then jumps to
+the image with copied arguments. RX cache eviction retains live Unit sources;
+DATA/BSS isolation, partial cancellation, native exit and reclamation are tested
+on one/four Harts. RPC admission and the remaining application wiring are still
+being migrated. See the [guest workflow](tests/guest/client/README.md).
+
 Cross-Team service reply grants are a separate confirmed blocker under ABI 9.
 The guest verifies that a Unit may grant its creator a reply route, but cannot
 grant a sibling worker in the creator's Team. See

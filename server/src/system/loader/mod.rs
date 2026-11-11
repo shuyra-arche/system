@@ -1,65 +1,81 @@
-mod build;
+//! Native ELF construction. Policy and RPC admission belong to System control.
+mod bootstrap;
 mod cache;
-mod cached;
 mod image;
-mod mapping;
-mod service;
+pub(crate) mod memory;
 mod source;
-mod spawn;
 mod task;
-
-pub(crate) use build::{Source, snapshot};
-pub(crate) use image::Image;
-pub(crate) use service::release_image;
-pub(crate) use service::{entry, faces, frame, install, shutdown, watch};
-pub(crate) use spawn::Spawn;
-pub(crate) use task::Unit;
-
 use cache::Cache;
-use env::UnitResult;
-
-const CACHE_PAGES: usize = 256;
-
-pub(crate) struct Loader {
-    cache: Cache,
+pub(crate) use image::Image;
+use kernel_api::{
+    abi::call::{
+        cell::CellFail, pend::PendFail, share_view::ShareFail, sign::SignFail, unit::UnitFail,
+    },
+    model::identity::PendId,
+};
+pub(crate) use task::{Job, Phase, Spawn};
+#[derive(Debug)]
+pub(crate) enum Error {
+    Invalid,
+    Sign(erra::Error<SignFail>),
+    Capacity,
+    Image(image::elf::Error),
+    Mapping(memory::Error),
+    Cell(erra::Error<CellFail>),
+    Share(erra::Error<ShareFail>),
+    Pend(erra::Error<PendFail>),
+    Unit(erra::Error<UnitFail>),
 }
-
-pub(super) fn fail(source: env::UnitFail) -> erra::Error<env::UnitFail> {
-    erra::Error::new("constructing ELF image", source)
-}
-
-impl Loader {
-    pub(crate) fn new() -> Self {
-        Self {
-            cache: Cache::new(CACHE_PAGES),
+impl Error {
+    pub fn busy(&self) -> bool {
+        match self {
+            Self::Sign(error) => error.source.is_busy(),
+            Self::Mapping(error) => error.busy(),
+            Self::Cell(error) => error.source.is_busy(),
+            Self::Share(error) => error.source.is_busy(),
+            Self::Pend(error) => error.source.is_busy(),
+            Self::Unit(error) => error.source.is_busy(),
+            _ => false,
         }
     }
-
-    pub(crate) fn clear_images(&mut self) {
-        self.cache.clear();
+}
+pub(crate) struct Loader {
+    license: PendId,
+    cache: Cache,
+}
+impl Loader {
+    pub fn new(license: PendId) -> Result<Self, Error> {
+        Ok(Self {
+            license,
+            cache: Cache::new(256)?,
+        })
     }
-
-    pub(crate) fn cached_entries(&self) -> usize {
-        self.cache.entry_count()
+    pub fn prepare(&mut self, image: Image<'_>, spawn: Spawn<'_>) -> Result<Job, Error> {
+        Job::new(image, spawn)
     }
-
-    pub(crate) fn build(&mut self, image: Image<'_>) -> UnitResult<Unit> {
-        build::load(self, image, env::unit::self_id())
+    pub fn cached_entries(&self) -> usize {
+        self.cache.count()
     }
-
-    pub(crate) fn construct(
-        &mut self,
-        image: Image<'_>,
-        spawn: Spawn<'_>,
-    ) -> Result<system_api::loader::Built, system_api::loader::Fail> {
-        build::construct(self, image, spawn)
+    pub fn clear_images(&mut self) -> Result<bool, Error> {
+        self.cache.clear()
+    }
+    pub fn advance(&mut self) -> Result<bool, Error> {
+        self.cache.sweep()
     }
 }
 
-impl Default for Loader {
-    fn default() -> Self {
-        Self::new()
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Sign(error) => write!(f, "image Sign: {error}"),
+            Self::Invalid => f.write_str("invalid native image construction state"),
+            Self::Capacity => f.write_str("image construction capacity exhausted"),
+            Self::Image(error) => write!(f, "ELF: {error:?}"),
+            Self::Mapping(error) => write!(f, "image Memo: {error:?}"),
+            Self::Cell(error) => write!(f, "image Cell: {error}"),
+            Self::Share(error) => write!(f, "image Share: {error}"),
+            Self::Pend(error) => write!(f, "image Pend: {error}"),
+            Self::Unit(error) => write!(f, "image Unit: {error}"),
+        }
     }
 }
-
-pub(crate) use service::EndpointState;

@@ -10,6 +10,8 @@ import tempfile
 PAGE = 4096
 PASS = b"PASS system-client typed=1 sender=1 poll=1 variant=1 decode=1 partial=1 timeout=1 late=1 backpressure=1 send-timeout=1 cleanup=1 ingress=1 route=1 shutdown=1 identity=1"
 REQUIRED = [
+    b"PASS loader-elf native=1 user=1 arguments=1 private=1 cache=1 eviction=1 cancel=1 reclaim=1",
+    b"PASS loader-memory native=1 insert=1 publish=1 share=1 partial=1 cleanup=1",
     b"PASS supervisor-bootstrap native=1 roles=2 root=1 wired=1 revision=1 partial=1 cleanup=1",
     b"PASS supervisor-worker native=1 dormant=1 arguments=1 exit=1 cancel=1 reclaim=1",
     b"PASS operator-service native=1 namespace=1 scope=1 source=1 unbind=1 revoke=1 replay=1 watch=1 cleanup=1",
@@ -57,11 +59,19 @@ def main() -> None:
         target = Path(directory)
         triple = "riscv64gc-unknown-none-elf"
         subprocess.run(
+            ["cargo", "build", "--locked", "--release", "--target", triple,
+             "--manifest-path", guest / "image/Cargo.toml", "--target-dir", target],
+            cwd=guest, check=True,
+        )
+        guest_env = os.environ.copy()
+        guest_env["SYSTEM_LOADER_IMAGE"] = str(target / triple / "release/system-loader-image")
+        subprocess.run(
             [
                 "cargo", "build", "--locked", "--release", "--target", triple,
                 "--manifest-path", guest / "Cargo.toml", "--target-dir", target,
             ],
             cwd=guest,
+            env=guest_env,
             check=True,
         )
         image = target / "initrd"

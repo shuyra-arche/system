@@ -4,6 +4,11 @@
 extern crate alloc;
 
 mod bootstrap;
+mod loader;
+use native_loader::memory as loader_memory;
+mod memory;
+#[path = "../../../server/src/system/loader/mod.rs"]
+mod native_loader;
 #[path = "../../../server/src/system/app/boot/mod.rs"]
 mod supervisor_boot;
 mod wait_group;
@@ -120,6 +125,8 @@ extern "C" fn start() -> ! {
     let license = fixture::license();
     workers::run();
     bootstrap::run(license);
+    memory::run(license);
+    loader::run(license);
     let UnitTarget::Task(root) = fixture::inspect(UnitQuery::Caller).target else {
         unreachable!()
     };

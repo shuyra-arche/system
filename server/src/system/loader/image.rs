@@ -1,6 +1,6 @@
 pub(super) mod elf;
 
-use env::ProgramKind;
+use kernel_api::model::unit::ProgramKind;
 
 pub struct Image<'a> {
     pub bytes: &'a [u8],
