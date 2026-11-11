@@ -4,9 +4,19 @@
 extern crate alloc;
 
 mod fixture;
+#[path = "../../../server/src/system/identity/service/answer.rs"]
+mod identity_answer;
+#[allow(dead_code)]
+#[path = "../../../server/src/system/identity/book/mod.rs"]
+pub mod identity_book;
 #[allow(dead_code)]
 #[path = "../../../server/src/protocol/mod.rs"]
 mod protocol;
+pub mod system {
+    pub mod identity {
+        pub use crate::identity_book as book;
+    }
+}
 
 use core::{
     fmt::Write as _,
@@ -215,7 +225,8 @@ extern "C" fn start() -> ! {
     until(|| fixture::inspect(UnitQuery::Target(target)).reclaimed);
     unit::delete(target).unwrap();
     ingress(license, root);
-    writeln!(Console, "PASS system-client typed=1 sender=1 poll=1 variant=1 decode=1 partial=1 timeout=1 late=1 backpressure=1 send-timeout=1 cleanup=1 ingress=1 route=1 shutdown=1").unwrap();
+    identity(license, root);
+    writeln!(Console, "PASS system-client typed=1 sender=1 poll=1 variant=1 decode=1 partial=1 timeout=1 late=1 backpressure=1 send-timeout=1 cleanup=1 ingress=1 route=1 shutdown=1 identity=1").unwrap();
     exit(0)
 }
 
@@ -421,5 +432,157 @@ extern "C" fn ingress_server() -> ! {
     ));
     pend::return_(queue).unwrap();
     INGRESS_DONE.store(true, Ordering::Release);
+    exit(0)
+}
+
+fn identity(license: PendId, root: TaskId) {
+    use api::identity::{self as id, operations as op};
+    ENTRY.store(0, Ordering::Release);
+    let (target, service) = fixture::spawn(identity_server);
+    fixture::grant(
+        license,
+        service,
+        Operations::None(CreationRights::CLONE | CreationRights::SIGN),
+        Modifiable::No,
+    );
+    unit::resume(target).unwrap();
+    until(|| ENTRY.load(Ordering::Acquire) != 0);
+    let entry = PendId::from_bytes(&(ENTRY.load(Ordering::Acquire) as u64).to_le_bytes()).unwrap();
+    let mut client = system_client::identity::Client::bind(entry, service, license).unwrap();
+    let subject = id::Subject::new(
+        id::PrincipalId {
+            authority: service.into(),
+            slot: 0,
+        },
+        &[],
+    )
+    .unwrap();
+    let id = id::InstallId::new(1).unwrap();
+    macro_rules! call {
+        ($op:ty, $body:expr) => {{
+            let mut pending = client.begin::<$op>($body, Wait::At(deadline())).unwrap();
+            let response = pending.wait().unwrap();
+            assert_eq!(response.metadata, service);
+            pending.finish().unwrap();
+            response.value
+        }};
+    }
+    let apply = |id| id::InstallRequest {
+        id,
+        task: root.into(),
+        install: id::Install::Authorized(subject.clone()),
+    };
+    assert!(matches!(
+        call!(op::Install, apply(id)),
+        Outcome::Success(id::InstallStatus {
+            state: weave::Coded(id::InstallState::Installed),
+            ..
+        })
+    ));
+    assert!(matches!(
+        call!(op::Inspect, id),
+        Outcome::Success(id::InstallStatus {
+            state: weave::Coded(id::InstallState::Installed),
+            ..
+        })
+    ));
+    assert!(matches!(
+        call!(op::Cancel, id),
+        Outcome::Success(id::InstallStatus {
+            state: weave::Coded(id::InstallState::Cancelled),
+            ..
+        })
+    ));
+    assert!(matches!(
+        call!(op::Inspect, id),
+        Outcome::Success(id::InstallStatus {
+            state: weave::Coded(id::InstallState::Cancelled),
+            ..
+        })
+    ));
+    assert!(matches!(
+        call!(op::Install, apply(id)),
+        Outcome::Success(id::InstallStatus {
+            state: weave::Coded(id::InstallState::Cancelled),
+            binding: api::value::Optional(None),
+            ..
+        })
+    ));
+    let second = id::InstallId::new(2).unwrap();
+    assert!(matches!(
+        call!(op::Install, apply(second)),
+        Outcome::Success(id::InstallStatus {
+            state: weave::Coded(id::InstallState::Installed),
+            ..
+        })
+    ));
+    assert!(matches!(
+        call!(op::Retire, second),
+        Outcome::Success(id::InstallStatus {
+            state: weave::Coded(id::InstallState::Retired),
+            binding: api::value::Optional(None),
+            ..
+        })
+    ));
+    assert!(matches!(
+        call!(
+            op::Same,
+            id::Same {
+                left: root.into(),
+                right: root.into()
+            }
+        ),
+        Outcome::Failure(id::Fail::Denied)
+    ));
+    until(|| fixture::inspect(UnitQuery::Target(target)).reclaimed);
+    assert_eq!(fixture::inspect(UnitQuery::Target(target)).result, Some(0));
+    unit::delete(target).unwrap();
+}
+
+extern "C" fn identity_server() -> ! {
+    let license = fixture::license();
+    let UnitTarget::Task(task) = fixture::inspect(UnitQuery::Caller).target else {
+        unreachable!()
+    };
+    let root = TaskId::new(ROOT.load(Ordering::Acquire));
+    let mut book = identity_book::IdentityBook::new(task.into(), root.into()).unwrap();
+    let queue = clone_view::create(
+        license,
+        Mark::NONE,
+        CloneLimits {
+            max_len: 4096,
+            max_messages: 1,
+            max_bytes: 4096,
+        },
+    )
+    .unwrap();
+    let mut endpoint = match protocol::Identity::bind(queue, license) {
+        Ok(endpoint) => endpoint,
+        Err(error) => panic!("identity bind {error:?}"),
+    };
+    let grant = fixture::grant(
+        queue,
+        root,
+        Operations::Clone(CloneRights::PUSH | CloneRights::PEEK),
+        Modifiable::Yes,
+    );
+    ENTRY.store(grant.get(), Ordering::Release);
+    for _ in 0..8 {
+        endpoint
+            .serve_once(Wait::At(deadline()), |caller, request| {
+                identity_answer::answer(
+                    &mut book,
+                    identity_answer::Context {
+                        from: caller.into(),
+                        endpoint: queue.into(),
+                        grant: api::identity::Grant::Install,
+                    },
+                    request,
+                )
+            })
+            .unwrap();
+    }
+    endpoint.finish().unwrap();
+    pend::return_(queue).unwrap();
     exit(0)
 }

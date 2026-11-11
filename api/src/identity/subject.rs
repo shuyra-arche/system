@@ -201,6 +201,10 @@ impl Subject {
     pub fn coalitions(&self) -> &[CoalitionId] {
         self.0.coalitions.as_slice()
     }
+    /// Remove selections without changing their authority or canonical order.
+    pub fn retain_coalitions(&mut self, keep: impl FnMut(CoalitionId) -> bool) {
+        self.0.coalitions.retain(keep);
+    }
 }
 impl Codec for Subject {
     type Decoded = Self;

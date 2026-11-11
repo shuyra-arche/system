@@ -210,7 +210,9 @@ fn replies_preserve_zero_slots_installation_state_and_optional_bindings() {
         R::Sire(Outcome::Success(Optional(Some(p(0))))),
         R::Found(Outcome::Success(c(0))),
         R::Heir(Outcome::Success(true)),
-        R::Same(Outcome::Success(false)),
+        R::Same(Outcome::Success(MatchReply {
+            value: Coded(Match::Unbound),
+        })),
         R::Members(Outcome::Success(
             PrincipalPage::new(
                 &[p(0)],

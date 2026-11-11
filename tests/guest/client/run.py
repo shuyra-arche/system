@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 
 PAGE = 4096
-PASS = b"PASS system-client typed=1 sender=1 poll=1 variant=1 decode=1 partial=1 timeout=1 late=1 backpressure=1 send-timeout=1 cleanup=1 ingress=1 route=1 shutdown=1"
+PASS = b"PASS system-client typed=1 sender=1 poll=1 variant=1 decode=1 partial=1 timeout=1 late=1 backpressure=1 send-timeout=1 cleanup=1 ingress=1 route=1 shutdown=1 identity=1"
 
 
 def initrd(elf: bytes) -> bytes:

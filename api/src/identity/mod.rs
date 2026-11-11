@@ -578,7 +578,7 @@ pub mod operations {
     pub struct Resolve;
     #[operation(code = 2, request = super::Matches, response = super::Outcome<super::MatchReply, super::Fail>)]
     pub struct Matches;
-    #[operation(code = 3, request = super::Same, response = super::Outcome<bool, super::Fail>)]
+    #[operation(code = 3, request = super::Same, response = super::Outcome<super::MatchReply, super::Fail>)]
     pub struct Same;
     #[operation(code = 4, request = super::PrincipalId, response = super::Outcome<super::Optional<super::PrincipalId>, super::Fail>)]
     pub struct Sire;

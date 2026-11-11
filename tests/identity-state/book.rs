@@ -1,18 +1,15 @@
 use super::*;
-use system_api::identity::CoalitionSet;
-use system_api::identity::Cursor;
-use system_api::identity::FoundId;
-use system_api::identity::Install;
-use system_api::identity::Match;
-use system_api::identity::PageTarget;
-use system_api::identity::Selector;
-use system_api::identity::Subject;
+use system_protocol::identity::CoalitionSet;
+use system_protocol::identity::Cursor;
+use system_protocol::identity::FoundId;
+use system_protocol::identity::Install;
+use system_protocol::identity::Match;
+use system_protocol::identity::PageTarget;
+use system_protocol::identity::Selector;
+use system_protocol::identity::Subject;
 
 fn subject(p: PrincipalId, coalitions: &[CoalitionId]) -> Subject {
-    Subject {
-        principal: p,
-        coalitions: CoalitionSet::new(coalitions).unwrap(),
-    }
+    Subject::new(p, coalitions).unwrap()
 }
 
 fn setup() -> (IdentityBook, TaskId, TaskId, PrincipalId) {
@@ -34,8 +31,8 @@ fn setup() -> (IdentityBook, TaskId, TaskId, PrincipalId) {
 #[test]
 fn found_retries_the_native_caller_request_without_creating_another_node() {
     let (mut book, installer, task, p) = setup();
-    let id = FoundId { value: 7 };
-    assert_eq!(book.found(task, FoundId { value: 0 }), Err(Fail::Bad));
+    let id = FoundId::new(7).unwrap();
+    assert!(FoundId::new(0).is_none());
     assert!(book.coalitions.is_empty());
     let coalition = book.found(task, id).unwrap();
     for _ in 0..8 {
@@ -43,12 +40,19 @@ fn found_retries_the_native_caller_request_without_creating_another_node() {
     }
     assert_eq!(book.coalitions.len(), 1);
     let other = TaskId::new(4);
-    book.bind(installer, BindingRequest {
-        task: other,
-        install: Install::Authorized(subject(p, &[])),
-    }).unwrap();
+    book.bind(
+        installer,
+        BindingRequest {
+            task: other,
+            install: Install::Authorized(subject(p, &[])),
+        },
+    )
+    .unwrap();
     assert_ne!(book.found(other, id).unwrap(), coalition);
-    assert_ne!(book.found(task, FoundId { value: 8 }).unwrap(), coalition);
+    assert_ne!(
+        book.found(task, FoundId::new(8).unwrap()).unwrap(),
+        coalition
+    );
     assert_eq!(book.coalitions.len(), 3);
     book.unbind(installer, task).unwrap();
     assert_eq!(book.found(task, id), Err(Fail::Denied));
@@ -58,17 +62,24 @@ fn found_retries_the_native_caller_request_without_creating_another_node() {
 #[test]
 fn found_does_not_reassign_a_creation_after_the_caller_changes_principal() {
     let (mut book, _, task, p) = setup();
-    let id = FoundId { value: 1 };
+    let id = FoundId::new(1).unwrap();
     let coalition = book.found(task, id).unwrap();
     let child = book.derive(task, p).unwrap();
-    book.narrow_own(task, Selection {
-        subject: subject(child, &[]),
-        anchor: Anchor::Move,
-    }).unwrap();
+    book.narrow_own(
+        task,
+        Selection {
+            subject: subject(child, &[]),
+            anchor: Anchor::Move,
+        },
+    )
+    .unwrap();
     assert_eq!(book.found(task, id), Err(Fail::Changed));
     assert_eq!(book.coalitions.len(), 1);
     assert_eq!(book.coalitions[coalition.slot as usize].manager, p);
-    assert_ne!(book.found(task, FoundId { value: 2 }).unwrap(), coalition);
+    assert_ne!(
+        book.found(task, FoundId::new(2).unwrap()).unwrap(),
+        coalition
+    );
 }
 
 #[test]
@@ -88,13 +99,13 @@ fn inheritance_uses_current_and_restriction_is_permanent() {
         installer,
         super::BindingRequest {
             task: child,
-            install: Install::Inherit { parent: task },
+            install: Install::Inherit(system_protocol::identity::Task { task }),
         },
     )
     .unwrap();
-    assert_eq!(book.resolve(child).unwrap().origin.principal, q);
+    assert_eq!(book.resolve(child).unwrap().origin.principal(), &q);
     book.waive(task).unwrap();
-    assert_eq!(book.resolve(task).unwrap().current.principal, p);
+    assert_eq!(book.resolve(task).unwrap().current.principal(), &p);
     assert_eq!(
         book.narrow_own(
             child,
@@ -114,13 +125,13 @@ fn inheritance_uses_current_and_restriction_is_permanent() {
     )
     .unwrap();
     book.waive(task).unwrap();
-    assert_eq!(book.resolve(task).unwrap().current.principal, q);
+    assert_eq!(book.resolve(task).unwrap().current.principal(), &q);
 }
 
 #[test]
 fn eligibility_is_not_active_and_revocation_does_not_reactivate() {
     let (mut book, installer, task, p) = setup();
-    let c = book.found(task, FoundId { value: 1 }).unwrap();
+    let c = book.found(task, FoundId::new(1).unwrap()).unwrap();
     book.admit(
         task,
         super::Membership {
@@ -157,14 +168,7 @@ fn eligibility_is_not_active_and_revocation_does_not_reactivate() {
     .unwrap();
     book.waive(task).unwrap();
     assert_eq!(book.matches(task, Selector::MemberOf(c)), Ok(Match::No));
-    assert!(
-        book.resolve(task)
-            .unwrap()
-            .origin
-            .coalitions
-            .as_slice()
-            .is_empty()
-    );
+    assert!(book.resolve(task).unwrap().origin.coalitions().is_empty());
 }
 
 #[test]
@@ -181,7 +185,7 @@ fn install_is_sender_anchored_and_failures_leave_binding_unchanged() {
         ),
         Err(Fail::Denied)
     );
-    let c = book.found(task, FoundId { value: 1 }).unwrap();
+    let c = book.found(task, FoundId::new(1).unwrap()).unwrap();
     assert_eq!(
         book.bind(
             installer,
@@ -203,7 +207,7 @@ fn install_is_sender_anchored_and_failures_leave_binding_unchanged() {
 #[test]
 fn managers_are_exact_and_can_manage_offline_principals() {
     let (mut book, installer, task, p) = setup();
-    let c = book.found(task, FoundId { value: 1 }).unwrap();
+    let c = book.found(task, FoundId::new(1).unwrap()).unwrap();
     let descendant = book.derive(task, p).unwrap();
     let offline = book.derive(installer, book.root()).unwrap();
     book.admit(
@@ -247,7 +251,7 @@ fn managers_are_exact_and_can_manage_offline_principals() {
 #[test]
 fn authority_and_cursor_revision_are_checked_before_results() {
     let (mut book, installer, task, p) = setup();
-    let c = book.found(task, FoundId { value: 1 }).unwrap();
+    let c = book.found(task, FoundId::new(1).unwrap()).unwrap();
     let cursor = Cursor {
         target: PageTarget::Members(c),
         revision: book.revision,
@@ -265,7 +269,10 @@ fn authority_and_cursor_revision_are_checked_before_results() {
         book.page::<PrincipalId>(PageTarget::Members(c), Some(cursor)),
         Err(Fail::Changed)
     ));
-    let alien = PrincipalId::new(installer, p.slot);
+    let alien = PrincipalId {
+        authority: installer,
+        slot: p.slot,
+    };
     assert_eq!(
         book.matches(TaskId::new(999), Selector::Exact(alien)),
         Err(Fail::WrongAuthority)
@@ -293,7 +300,7 @@ fn authority_and_cursor_revision_are_checked_before_results() {
 #[test]
 fn revocation_of_origin_intersects_descendant_current_but_current_revocation_can_waive() {
     let (mut book, installer, task, p) = setup();
-    let c = book.found(task, FoundId { value: 1 }).unwrap();
+    let c = book.found(task, FoundId::new(1).unwrap()).unwrap();
     let q = book.derive(task, p).unwrap();
     book.admit(
         task,
@@ -362,14 +369,7 @@ fn revocation_of_origin_intersects_descendant_current_but_current_revocation_can
         },
     )
     .unwrap();
-    assert!(
-        book.resolve(task)
-            .unwrap()
-            .current
-            .coalitions
-            .as_slice()
-            .is_empty()
-    );
+    assert!(book.resolve(task).unwrap().current.coalitions().is_empty());
     assert_eq!(book.amid(q, c), Ok(true));
     book.admit(
         installer,
@@ -386,7 +386,7 @@ fn revocation_of_origin_intersects_descendant_current_but_current_revocation_can
 #[test]
 fn pages_include_slot_zero_and_sort_with_explicit_continuations() {
     let (mut book, installer, task, p) = setup();
-    let c = book.found(task, FoundId { value: 1 }).unwrap();
+    let c = book.found(task, FoundId::new(1).unwrap()).unwrap();
     let root = book.root();
     book.admit(
         installer,
@@ -419,7 +419,7 @@ fn pages_include_slot_zero_and_sort_with_explicit_continuations() {
     assert_eq!(first.as_slice()[0], root);
     assert!(first.as_slice().windows(2).all(|w| w[0].slot < w[1].slot));
     let second = book
-        .page::<PrincipalId>(PageTarget::Members(c), first.next())
+        .page::<PrincipalId>(PageTarget::Members(c), first.next().cloned())
         .unwrap();
     assert!(second.as_slice()[0].slot > first.as_slice().last().unwrap().slot);
     assert!(second.next().is_none());
@@ -435,12 +435,15 @@ fn creation_quotas_fail_without_partial_nodes() {
     assert_eq!(book.derive(installer, p), Err(Fail::Full));
     assert_eq!(book.principals.len(), before);
     for value in 1..=limits::MAX_CREATED_PER_PRINCIPAL as u64 {
-        book.found(task, FoundId { value }).unwrap();
+        book.found(task, FoundId::new(value).unwrap()).unwrap();
     }
     let before = book.coalitions.len();
-    assert_eq!(book.found(task, FoundId { value: before as u64 + 1 }), Err(Fail::Full));
+    assert_eq!(
+        book.found(task, FoundId::new(before as u64 + 1).unwrap()),
+        Err(Fail::Full)
+    );
     assert_eq!(book.coalitions.len(), before);
-    assert_eq!(book.found(task, FoundId { value: 1 }).unwrap().slot, 0);
+    assert_eq!(book.found(task, FoundId::new(1).unwrap()).unwrap().slot, 0);
     assert_eq!(book.coalitions.len(), before);
 }
 
@@ -456,8 +459,8 @@ fn activation_checks_all_grants_before_mutation_and_preserves_attenuation() {
         },
     )
     .unwrap();
-    let c = book.found(manager, FoundId { value: 1 }).unwrap();
-    let other = book.found(manager, FoundId { value: 2 }).unwrap();
+    let c = book.found(manager, FoundId::new(1).unwrap()).unwrap();
+    let other = book.found(manager, FoundId::new(2).unwrap()).unwrap();
     book.admit(
         manager,
         Membership {
@@ -472,7 +475,10 @@ fn activation_checks_all_grants_before_mutation_and_preserves_attenuation() {
         Err(Fail::NotEligible)
     );
     assert_eq!(book.resolve(target), before);
-    let stale = CoalitionId::new(TaskId::new(99), c.slot);
+    let stale = CoalitionId {
+        authority: TaskId::new(99),
+        slot: c.slot,
+    };
     assert_eq!(
         book.activate(manager, (target, CoalitionSet::new(&[stale]).unwrap())),
         Err(Fail::WrongAuthority)
@@ -498,7 +504,7 @@ fn activation_checks_all_grants_before_mutation_and_preserves_attenuation() {
 #[test]
 fn activation_requires_the_actual_coalition_manager() {
     let (mut book, installer, manager, p) = setup();
-    let c = book.found(manager, FoundId { value: 1 }).unwrap();
+    let c = book.found(manager, FoundId::new(1).unwrap()).unwrap();
     book.admit(
         manager,
         Membership {
@@ -521,5 +527,11 @@ fn activation_requires_the_actual_coalition_manager() {
         book.activate(stranger, (manager, CoalitionSet::new(&[c]).unwrap())),
         Err(Fail::NotManager)
     );
-    assert!(book.resolve(manager).unwrap().current.coalitions.is_empty());
+    assert!(
+        book.resolve(manager)
+            .unwrap()
+            .current
+            .coalitions()
+            .is_empty()
+    );
 }

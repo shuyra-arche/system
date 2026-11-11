@@ -34,11 +34,16 @@ The new components are checked with nightly `ac8310ba643a3796cbe77d2e06944d7c851
 ```sh
 cargo +nightly test --locked -p system-api --tests --target x86_64-unknown-linux-gnu
 cargo +nightly clippy --locked -p system-client --all-targets --target riscv64gc-unknown-none-elf -- -D warnings
+cargo +nightly test --locked --manifest-path tests/identity-state/Cargo.toml --target x86_64-unknown-linux-gnu
 python3 tests/guest/client/run.py /path/to/shuyra
 ```
 
 The guest uses a real ABI 9 Kernel, one and four Harts and the actual production
 SDK/ingress. It does not launch the assembled System policy/boot application.
+The production Identity book and request dispatcher are also ported and tested
+through this ingress. Their independent host state tests are documented in
+[tests/identity-state](tests/identity-state/README.md). The old actor loop and
+change notifications still require migration.
 
 Use `rust-toolchain.toml` (`nightly-2026-09-04`, RV64 target and Rust source).
 Run from this repository root; examples use a Linux x86-64 host.

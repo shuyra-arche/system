@@ -8,11 +8,11 @@ Trusted Identity export has a separate client from ordinary Identity calls.
 use system_client::{control::Client, api::control::{Named, operations::State}, Wait};
 
 let mut client = Client::bind(entry, service_task, creation_license)?;
+// On a failed begin, retain Failure and finish failure.cleanup explicitly.
 let mut pending = client.begin::<State>(Named { name }, Wait::At(deadline))?;
 let result = pending.wait();
-// Finish after both success and failure. Retain pending and retry if this fails.
-pending.finish()?;
-let response = result?;
+// Inspect both outcomes. If cleanup fails, retain pending and retry finish.
+let cleanup = pending.finish();
 ```
 
 `entry` borrows a Clone grant owned by the expected serving Task, with PUSH,
@@ -53,6 +53,9 @@ The guest runs the actual SDK and production `server/src/protocol` ingress on
 one and four Harts. It checks source identity, operation mismatch, malformed
 frames, Poll, partial initialization cleanup, absolute send/receive deadlines,
 late replies, backpressure, route validation before dispatch and shutdown.
+It also runs the production Identity state and dispatcher through real calls
+for installation, inspection, cancellation, retry and retirement, then observes
+the service Task's Kernel exit result and reclamation.
 QEMU and OpenSBI can be selected with `QEMU_RISCV64` and `QEMU_OPENSBI`.
 
 The legacy Server's policy and boot paths are still being ported. A passing
