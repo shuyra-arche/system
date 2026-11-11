@@ -55,6 +55,16 @@ source checks, reply-failure replay, consumer grants and cleanup. Legacy Operato
 session, handshake and Schedule paths are removed; supervisor callers still need
 their native bootstrap migration.
 
+Native [internal-service bootstrap](server/src/system/app/boot/README.md) now
+creates both Tasks, explicitly grants their startup resources and connects
+Root/Wired without the old Schedule/closure bootstrap. Its production worker
+owner keeps execution exit, Kernel reclamation and record deletion separate.
+The guest verifies normal/partial startup, cancellation, both roles and cleanup.
+The [support package](support/README.md) is fully on Kernel 9 and the pure Unit
+bundle, including typed boot accounts and explicit Share/Sign dispatch pairs.
+The assembled app still has legacy supervisor/service callers; removal of those
+callers and a complete native entry/allocator remain outstanding.
+
 Cross-Team service reply grants are a separate confirmed blocker under ABI 9.
 The guest verifies that a Unit may grant its creator a reply route, but cannot
 grant a sibling worker in the creator's Team. See
@@ -79,8 +89,9 @@ belong to [Vanllia](https://github.com/shuyra-arche/vanllia).
 
 ## Current limitations
 
-The pinned nightly needs fresh verification: previous executable checks used
-`nightly-2026-10-09`. The old `test-support` scenarios still use declarations and
+The support package passes its host tests and RV64 check on the pinned nightly.
+The assembled Server still cannot build; its entry/runtime and remaining service
+integration require migration. The old `test-support` scenarios still use declarations and
 Unit shapes from before dynamic selection and require repair; do not treat all
 historical fixtures as a passing current suite. Early owner death can prevent a
 requested Unit's Retired frame from being published; absent receipts must fail

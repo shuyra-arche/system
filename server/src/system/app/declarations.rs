@@ -32,8 +32,8 @@ impl Declarations {
                 .find(document.loader.image)
                 .ok_or("Unit image missing")?;
             let expected = match document.loader.space {
-                unit::document::Space::User => initrd::ledger::bundle::Kind::User,
-                unit::document::Space::Supervisor => initrd::ledger::bundle::Kind::Supervisor,
+                unit::document::Space::User => unit_contract::bundle::Kind::User,
+                unit::document::Space::Supervisor => unit_contract::bundle::Kind::Supervisor,
             };
             if image.kind != expected {
                 return Err("Unit image execution space mismatch");

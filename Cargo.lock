@@ -51,14 +51,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "env-initrd"
-version = "0.1.0"
-source = "git+https://github.com/shuyra-arche/env.git?rev=f54f9a1ab3f0df3631fb80ff2bf5d0cfaecbe927#f54f9a1ab3f0df3631fb80ff2bf5d0cfaecbe927"
-dependencies = [
- "kernel-api-env",
-]
-
-[[package]]
 name = "erra"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -372,7 +364,6 @@ name = "system-server"
 version = "0.1.0"
 dependencies = [
  "env 0.1.0 (git+https://github.com/shuyra-arche/env.git?rev=d3000253cd5d13d466e91fafd4dbb27a5ec5aaae)",
- "env-initrd",
  "erra",
  "execution",
  "hub-api",
@@ -389,6 +380,7 @@ dependencies = [
  "system-client",
  "system-support",
  "twine",
+ "unit 0.1.0 (git+https://github.com/shuyra-arche/unit.git?rev=a0e8138275dc277f7d202fedb74cf9fa88aee368)",
  "unit 0.1.0 (git+https://github.com/shuyra-arche/unit.git?rev=ad50b803c3bd5cd2ef90010d80badf23551e88d5)",
  "weave",
  "wire 0.1.0 (git+https://github.com/shuyra-arche/wire.git?rev=0ff77dc4573fa2620d2fe995a18c01949d9c7e57)",
@@ -398,12 +390,11 @@ dependencies = [
 name = "system-support"
 version = "0.1.0"
 dependencies = [
- "env 0.1.0 (git+https://github.com/shuyra-arche/env.git?rev=d3000253cd5d13d466e91fafd4dbb27a5ec5aaae)",
- "env-initrd",
- "execution",
+ "erra",
  "fdt",
- "hub-api",
- "resource",
+ "kernel-api",
+ "kernel-client 0.0.1",
+ "unit 0.1.0 (git+https://github.com/shuyra-arche/unit.git?rev=a0e8138275dc277f7d202fedb74cf9fa88aee368)",
 ]
 
 [[package]]
@@ -460,6 +451,15 @@ source = "git+https://github.com/shuyra-arche/unit.git?rev=90396f0fda376e0693fb1
 dependencies = [
  "env 0.1.0 (git+https://github.com/shuyra-arche/env.git?rev=d3000253cd5d13d466e91fafd4dbb27a5ec5aaae)",
  "system-api 0.1.0",
+]
+
+[[package]]
+name = "unit"
+version = "0.1.0"
+source = "git+https://github.com/shuyra-arche/unit.git?rev=a0e8138275dc277f7d202fedb74cf9fa88aee368#a0e8138275dc277f7d202fedb74cf9fa88aee368"
+dependencies = [
+ "postcard",
+ "serde",
 ]
 
 [[package]]

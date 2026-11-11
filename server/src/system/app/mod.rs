@@ -101,3 +101,5 @@ impl From<alloc::collections::TryReserveError> for Fault {
         Self::Room
     }
 }
+
+pub(crate) mod worker;

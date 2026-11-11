@@ -10,9 +10,9 @@ bench = false
 doctest = false
 
 [dependencies]
-initrd = { package = "env-initrd", git = "https://github.com/shuyra-arche/env.git", rev = "f54f9a1ab3f0df3631fb80ff2bf5d0cfaecbe927" }
-env = { git = "https://github.com/shuyra-arche/env.git", rev = "d3000253cd5d13d466e91fafd4dbb27a5ec5aaae" }
-resource = { git = "https://github.com/shuyra-arche/resource.git", rev = "dbc96834f50f094b5c386e54a0a2ae5560dcd7f8" }
-execution = { git = "https://github.com/shuyra-arche/execution.git", rev = "ea49192e5df8bf744e083ced23ff0908b5bab3a3" }
-hub-api = { git = "https://github.com/shuyra-arche/hub.git", rev = "cccef3f325198c8390007ae88b064bae0f21f93e" }
 fdt = { version = "0.1.5", default-features = false }
+
+unit-contract = { package = "unit", git = "https://github.com/shuyra-arche/unit.git", rev = "a0e8138275dc277f7d202fedb74cf9fa88aee368", default-features = false }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }
+kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }
+erra = { version = "0.2.0", default-features = false }

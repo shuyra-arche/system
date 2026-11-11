@@ -10,6 +10,8 @@ import tempfile
 PAGE = 4096
 PASS = b"PASS system-client typed=1 sender=1 poll=1 variant=1 decode=1 partial=1 timeout=1 late=1 backpressure=1 send-timeout=1 cleanup=1 ingress=1 route=1 shutdown=1 identity=1"
 REQUIRED = [
+    b"PASS supervisor-bootstrap native=1 roles=2 root=1 wired=1 revision=1 partial=1 cleanup=1",
+    b"PASS supervisor-worker native=1 dormant=1 arguments=1 exit=1 cancel=1 reclaim=1",
     b"PASS operator-service native=1 namespace=1 scope=1 source=1 unbind=1 revoke=1 replay=1 watch=1 cleanup=1",
     PASS,
     b"PASS reply-adjacency local=1 creator=1 sibling-denied=1",

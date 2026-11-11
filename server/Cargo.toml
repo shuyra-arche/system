@@ -24,7 +24,6 @@ doctest = false
 test-support = ["dep:kernel-test-api", "dep:iommu-api"]
 
 [dependencies]
-initrd = { package = "env-initrd", git = "https://github.com/shuyra-arche/env.git", rev = "f54f9a1ab3f0df3631fb80ff2bf5d0cfaecbe927" }
 mold = { git = "https://github.com/shuyra-arche/mold.git", rev = "f52501f4c91b686eded8b4bcd743b4e96084b7f9" }
 env = { git = "https://github.com/shuyra-arche/env.git", rev = "d3000253cd5d13d466e91fafd4dbb27a5ec5aaae" }
 wire = { git = "https://github.com/shuyra-arche/wire.git", rev = "0ff77dc4573fa2620d2fe995a18c01949d9c7e57" }
@@ -47,3 +46,5 @@ kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6
 kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }
 twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "8144be4286c36a6d20271aac9e44ca56049a2430" }
 weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }
+
+unit-contract = { package = "unit", git = "https://github.com/shuyra-arche/unit.git", rev = "a0e8138275dc277f7d202fedb74cf9fa88aee368", default-features = false }

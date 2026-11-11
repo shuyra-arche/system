@@ -1,5 +1,5 @@
 pub(crate) mod book;
-mod service;
+pub(crate) mod service;
 pub(crate) use service::run::serve as run;
 pub mod export;
 pub(crate) mod namespace;

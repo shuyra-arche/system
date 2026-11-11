@@ -3,9 +3,15 @@
 
 extern crate alloc;
 
+mod bootstrap;
+#[path = "../../../server/src/system/app/boot/mod.rs"]
+mod supervisor_boot;
 mod wait_group;
 #[path = "../../../server/src/system/app/waiting/mod.rs"]
 mod waiting;
+#[path = "../../../server/src/system/app/worker/mod.rs"]
+mod worker;
+mod workers;
 
 mod actor;
 mod adjacency;
@@ -42,10 +48,10 @@ pub mod system {
         };
     }
     pub(crate) mod app {
-        pub(crate) use crate::waiting;
+        pub(crate) use crate::{waiting, worker};
     }
     pub mod identity {
-        pub use crate::identity_book as book;
+        pub use crate::{identity_book as book, identity_service as service, revision};
     }
 }
 
@@ -112,6 +118,8 @@ fn request(name: &str) -> control::Named {
 extern "C" fn start() -> ! {
     writeln!(Console, "system-client start").unwrap();
     let license = fixture::license();
+    workers::run();
+    bootstrap::run(license);
     let UnitTarget::Task(root) = fixture::inspect(UnitQuery::Caller).target else {
         unreachable!()
     };
