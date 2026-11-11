@@ -47,7 +47,7 @@ version = "0.1.0"
 source = "git+https://github.com/shuyra-arche/env.git?rev=f54f9a1ab3f0df3631fb80ff2bf5d0cfaecbe927#f54f9a1ab3f0df3631fb80ff2bf5d0cfaecbe927"
 dependencies = [
  "kernel-api-env",
- "kernel-client",
+ "kernel-client 0.1.0",
 ]
 
 [[package]]
@@ -69,7 +69,7 @@ name = "execution"
 version = "0.1.0"
 source = "git+https://github.com/shuyra-arche/execution.git?rev=ea49192e5df8bf744e083ced23ff0908b5bab3a3#ea49192e5df8bf744e083ced23ff0908b5bab3a3"
 dependencies = [
- "kernel-client",
+ "kernel-client 0.1.0",
 ]
 
 [[package]]
@@ -166,6 +166,15 @@ dependencies = [
 name = "kernel-api-wire"
 version = "0.1.0"
 source = "git+https://github.com/shuyra-arche/kernel.git?rev=90d43dbf3ee43fd146f487718eb39e88f2507c05#90d43dbf3ee43fd146f487718eb39e88f2507c05"
+
+[[package]]
+name = "kernel-client"
+version = "0.0.1"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=23dec6b30e1ec08f42d3701e2613acd8c562c459#23dec6b30e1ec08f42d3701e2613acd8c562c459"
+dependencies = [
+ "erra",
+ "kernel-api",
+]
 
 [[package]]
 name = "kernel-client"
@@ -348,14 +357,14 @@ dependencies = [
 
 [[package]]
 name = "system-client"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
- "env 0.1.0 (git+https://github.com/shuyra-arche/env.git?rev=d3000253cd5d13d466e91fafd4dbb27a5ec5aaae)",
- "execution",
- "ipc",
- "resource",
- "system-api 0.1.0",
- "wire 0.1.0 (git+https://github.com/shuyra-arche/wire.git?rev=0ff77dc4573fa2620d2fe995a18c01949d9c7e57)",
+ "erra",
+ "kernel-api",
+ "kernel-client 0.0.1",
+ "system-api 0.2.0",
+ "twine",
+ "weave",
 ]
 
 [[package]]
@@ -369,14 +378,19 @@ dependencies = [
  "hub-api",
  "iommu-api",
  "ipc",
+ "kernel-api",
+ "kernel-client 0.0.1",
  "kernel-test-api",
  "mold 0.1.0 (git+https://github.com/shuyra-arche/mold.git?rev=f52501f4c91b686eded8b4bcd743b4e96084b7f9)",
  "resource",
  "schedule",
  "system-api 0.1.0",
+ "system-api 0.2.0",
  "system-client",
  "system-support",
+ "twine",
  "unit 0.1.0 (git+https://github.com/shuyra-arche/unit.git?rev=ad50b803c3bd5cd2ef90010d80badf23551e88d5)",
+ "weave",
  "wire 0.1.0 (git+https://github.com/shuyra-arche/wire.git?rev=0ff77dc4573fa2620d2fe995a18c01949d9c7e57)",
 ]
 
@@ -420,6 +434,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
+]
+
+[[package]]
+name = "twine"
+version = "0.2.0"
+source = "git+https://github.com/shuyra-arche/twine.git?rev=8144be4286c36a6d20271aac9e44ca56049a2430#8144be4286c36a6d20271aac9e44ca56049a2430"
+dependencies = [
+ "erra",
+ "kernel-api",
+ "kernel-client 0.0.1",
+ "weave",
 ]
 
 [[package]]

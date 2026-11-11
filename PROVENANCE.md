@@ -14,3 +14,9 @@ Author identities recorded in the original history include:
 Those source checkpoints declared no license and tracked no project LICENSE,
 COPYING or NOTICE. This repository adds no license grant; publication alone
 does not grant a license. Preserve third-party notices with their code.
+
+The protocol v2 guest runner and minimal linker/build setup in
+`tests/guest/client` were adapted from the Twine Share guest at
+`17554b0e5fba149796c5696c3eca9f20cc125fc7`, adding a separate writable
+segment and System-specific lifecycle assertions. Both projects are part of
+Shuyra. This attribution does not add a license grant.

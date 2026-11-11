@@ -22,6 +22,24 @@ server/client dependency. See [runtime contracts](docs/runtime-contracts.md).
 
 ## Build and verify
 
+The protocol v2 migration branch has API and Client on Kernel ABI 9, Twine and
+Weave. `server/src/protocol` supplies the new ingress and is exercised directly
+by `tests/guest/client`. The legacy Server application still uses API v1 and
+removed Client facades; its full build currently fails until those services
+are ported. This branch remains draft. See [Client lifecycle](client/README.md)
+and [ingress boundaries](server/src/protocol/README.md).
+
+The new components are checked with nightly `ac8310ba643a3796cbe77d2e06944d7c8513999f`:
+
+```sh
+cargo +nightly test --locked -p system-api --tests --target x86_64-unknown-linux-gnu
+cargo +nightly clippy --locked -p system-client --all-targets --target riscv64gc-unknown-none-elf -- -D warnings
+python3 tests/guest/client/run.py /path/to/shuyra
+```
+
+The guest uses a real ABI 9 Kernel, one and four Harts and the actual production
+SDK/ingress. It does not launch the assembled System policy/boot application.
+
 Use `rust-toolchain.toml` (`nightly-2026-09-04`, RV64 target and Rust source).
 Run from this repository root; examples use a Linux x86-64 host.
 

@@ -40,3 +40,10 @@ system-support = { path = "../support" }
 kernel-test-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "3aa0a155f825fbf377fc8d04009472ca67cbbf8c", optional = true }
 iommu-api = { git = "https://github.com/shuyra-arche/iommu.git", rev = "5d2038033efcbd55de77534b35e611729d4bd9bd", optional = true }
 erra = { version = "0.2.0", default-features = false }
+
+# Protocol v2 ingress is staged while the legacy service state is ported.
+system-protocol = { package = "system-api", path = "../api" }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }
+kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }
+twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "8144be4286c36a6d20271aac9e44ca56049a2430" }
+weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }
