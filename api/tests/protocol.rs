@@ -102,7 +102,7 @@ fn subject() -> identity::Subject {
 #[test]
 fn all_service_families_have_bounded_complete_frames() {
     complete(&bootstrap::Frame {
-        version: 2,
+        version: system_api::VERSION,
         provider: TaskId::new(1),
         system: TaskId::new(1),
     });
@@ -171,7 +171,7 @@ fn unknown_operations_and_failure_codes_do_not_decode_as_success() {
 #[test]
 fn bootstrap_requires_the_transport_authenticated_creator() {
     let frame = bootstrap::Frame {
-        version: 2,
+        version: system_api::VERSION,
         provider: TaskId::new(8),
         system: TaskId::new(1),
     };
@@ -285,15 +285,17 @@ fn explicit_root_is_distinct_from_entry_zero() {
 fn kernel_rights_use_current_checked_permission_families() {
     use kernel_api::model::{
         modifiable::Modifiable,
-        pend::{Distributable, Limits, Operations, PendRange, ShareRights},
+        pend::{Distributable, Limits, Operations, PendRange, PendScope, ShareRights},
     };
     let rights = Rights(Limits {
         operations: Operations::Share(ShareRights::OPEN),
         modifiable: Modifiable::No,
         distributable: Distributable::No,
-        range: PendRange::Inherit,
+        scope: PendScope::Pages(PendRange::Inherit),
     });
     complete(&rights);
+    assert_eq!(bytes(&rights).len(), 72);
+    assert!(Rights::decode_exact(&bytes(&rights)[..56]).is_none());
     let mut invalid = bytes(&rights);
     invalid[..8].copy_from_slice(&5u64.to_le_bytes());
     assert!(Rights::decode_exact(&invalid).is_none());

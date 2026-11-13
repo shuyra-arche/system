@@ -1,7 +1,7 @@
-# System API v2
+# System API v3
 
 This crate owns System service payloads and their bounded Weave codecs. The
-production dependency graph contains Weave and Kernel API v9. Kernel Client
+production dependency graph contains Weave and Kernel API v10. Kernel Client
 calls, endpoint lifetime and authorization decisions belong to consumers.
 
 ## Requests and replies
@@ -12,7 +12,7 @@ response. The request header is little-endian and precedes the operation code.
 | Bytes | Field |
 | --- | --- |
 | 0–3 | ASCII SYS2 |
-| 4–5 | Protocol version 2 |
+| 4–5 | Protocol version 3 |
 | 6–7 | Service identifier |
 | 8–15 | Recipient-local one-shot reply Pend |
 | 16 onward | Weave operation tag and typed payload |
@@ -60,8 +60,8 @@ cursors identify the target and revision, and their threshold must equal the
 last returned slot. Root namespace references and entry zero are distinct.
 
 Transaction IDs reserve zero. Supply lease allocation advances without
-wrapping. Kernel rights use the checked v9 Limits representation, including
-operation family, Modifiable, Distributable and relative range. Services must
+wrapping. Kernel rights use the checked v10 Limits representation, including
+operation family, Modifiable, Distributable and typed scope (72 bytes / nine words). Protocol v3 rejects v2 frames; Kernel v10 requires rebuilding Capsules (format 2, ABI 10) and Ledger 10. Services must
 check live grants and permitted attenuation before acting on those values.
 
 Operator grants keep source Task and source Mark constraints independent.
@@ -90,7 +90,7 @@ its own reclamation conditions.
 
 ## Migration and verification
 
-Version 0.2 replaces the old API's serialization and endpoint metadata
+Version 0.3 replaces the old API's serialization and endpoint metadata
 generation. Its bytes and Rust API require coordinated Client and Server
 migration. Existing Unit schema 1 permissions require explicit translation
 into current Kernel rights. The old System runtime remains pinned to its

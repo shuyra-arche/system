@@ -474,4 +474,4 @@ pub mod setup {
 }
 
 pub const NAME: &str = "operator";
-pub const INTERFACE_ID: &str = "shuyra.system.operator.v2";
+pub const INTERFACE_ID: &str = "shuyra.system.operator.v3";

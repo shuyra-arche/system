@@ -17,4 +17,4 @@ impl Frame {
 }
 
 pub const NAME: &str = "bootstrap";
-pub const INTERFACE_ID: &str = "shuyra.system.bootstrap.v2";
+pub const INTERFACE_ID: &str = "shuyra.system.bootstrap.v3";

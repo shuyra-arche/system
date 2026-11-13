@@ -12,8 +12,8 @@ use kernel_api::model::{
     identity::{Mark, PendId},
     modifiable::Modifiable,
     pend::{
-        AccordRequest, AccordTarget, CreationRights, Distributable, Limits, Operations, PendRange,
-        ShareRights,
+        AccordRequest, AccordTarget, CreationRights, Distributable, Limits, NestRights, NestScope,
+        Operations, PendRange, PendScope, ShareRights,
     },
     sign::SignRights,
     wait::Wait,
@@ -21,9 +21,9 @@ use kernel_api::model::{
 use kernel_api::{
     address::{PAGE_SIZE, VirtAddr},
     model::{
-        cell::{CellSource, Placement},
+        cell::{CellObject, CellPosition, Placement},
         identity::{TaskId, TeamId},
-        unit::{ControlId, UnitCreate, UnitInfo, UnitQuery, UnitState, UnitTarget},
+        unit::{ControlId, CreatedUnit, UnitCreate, UnitInfo, UnitQuery, UnitState, UnitTarget},
     },
 };
 use kernel_client::call::{pend, sign, unit};
@@ -62,10 +62,11 @@ pub(crate) struct Job {
     ready: Option<PendId>,
     child_ready: Option<usize>,
     child_license: Option<usize>,
+    nest: Option<PendId>,
+    child_space: Option<PendId>,
     metadata: Option<Source>,
     metadata_granted: bool,
     initialized: bool,
-    kind: kernel_api::model::unit::ProgramKind,
     entry: usize,
     args: Vec<usize>,
     stack: usize,
@@ -82,6 +83,7 @@ pub(crate) struct Job {
 impl Job {
     pub(super) fn new(image: Image<'_>, spawn: Spawn<'_>) -> Result<Self, Error> {
         if image.bytes.len() > system_protocol::loader::MAX_IMAGE
+            || image.kind != super::ProgramKind::User
             || spawn.args.len() > system_protocol::loader::MAX_ARGS
             || spawn.stack > 1 << 20
         {
@@ -179,10 +181,11 @@ impl Job {
             ready: None,
             child_ready: None,
             child_license: None,
+            nest: None,
+            child_space: None,
             metadata: None,
             metadata_granted: false,
             initialized: false,
-            kind: image.kind,
             entry: plan.entry,
             args,
             stack: spawn.stack,
@@ -225,16 +228,18 @@ impl Job {
         }
         if self.team.is_none() {
             let request = UnitCreate::Team {
-                kind: self.kind,
                 guard: self.guard,
                 nest: None,
                 member_exit: self.member_exit,
             }
             .to_bytes();
-            let UnitTarget::Team(team) = unit::create(addr(&request)).map_err(Error::Unit)? else {
+            let CreatedUnit::Team { team, nest } =
+                unit::create(addr(&request)).map_err(Error::Unit)?
+            else {
                 return Err(Error::Invalid);
             };
             self.team = Some(team);
+            self.nest = Some(nest);
             return Ok(false);
         }
         if self.cursor < self.segments.len() {
@@ -276,12 +281,13 @@ impl Job {
                 let token = source.borrow().token().ok_or(Error::Invalid)?;
                 segment.mapping = Some(
                     Mapping::new(
-                        CellSource::Pend {
-                            token,
-                            offset: 0,
-                            count: segment.size / PAGE_SIZE,
+                        CellPosition {
+                            object: CellObject::Pend(token),
+                            page: 0,
+                            generation: 0,
                         },
-                        self.team.unwrap(),
+                        segment.size / PAGE_SIZE,
+                        self.nest.ok_or(Error::Invalid)?,
                         Placement::exact(VirtAddr::new(segment.va), PAGE_SIZE)
                             .ok_or(Error::Invalid)?,
                         segment.flags,
@@ -310,7 +316,7 @@ impl Job {
                 stack: VirtAddr::new(self.stack),
             }
             .to_bytes();
-            let UnitTarget::Task(task) = unit::create(addr(&request)).map_err(Error::Unit)? else {
+            let CreatedUnit::Task(task) = unit::create(addr(&request)).map_err(Error::Unit)? else {
                 return Err(Error::Invalid);
             };
             self.task = Some(task);
@@ -346,6 +352,16 @@ impl Job {
                 )?
                 .get(),
             );
+            return Ok(false);
+        }
+        if self.child_space.is_none() {
+            self.child_space = Some(grant(
+                self.nest.ok_or(Error::Invalid)?,
+                task,
+                Mark::NONE,
+                Operations::Nest(NestRights::INSPECT | NestRights::RESERVE),
+                Modifiable::Yes,
+            )?);
             return Ok(false);
         }
         for segment in &mut self.segments {
@@ -388,6 +404,7 @@ impl Job {
                 self.creator,
                 self.entry,
                 PendId::from_bytes(&(self.child_ready.unwrap() as u64).to_le_bytes()).unwrap(),
+                self.child_space.ok_or(Error::Invalid)?,
                 &records,
             )?;
             let size = bytes
@@ -500,7 +517,7 @@ impl Job {
             self.observed = Some(info);
         }
         if let Some(team) = self.team {
-            // Team's UnitInfo.reclaimed is not a completion channel in ABI 9.
+            // Team's UnitInfo.reclaimed is not a completion channel in ABI 10.
             // Delete actively coordinates Nest retirement and returns Busy
             // until every member and mapping is safe. Success also clears this
             // controller's descendant Task receipts, so preserve ours above.
@@ -538,6 +555,11 @@ impl Job {
                 return Ok(false);
             }
         }
+        if let Some(nest) = self.nest {
+            pend::return_(nest).map_err(Error::Pend)?;
+            self.nest = None;
+            return Ok(false);
+        }
         self.phase = Phase::Closed;
         Ok(true)
     }
@@ -573,7 +595,11 @@ fn grant(
             operations,
             modifiable,
             distributable: Distributable::No,
-            range: PendRange::Inherit,
+            scope: match operations {
+                Operations::Share(_) | Operations::Flat(_) => PendScope::Pages(PendRange::Inherit),
+                Operations::Nest(_) => PendScope::Nest(NestScope::Whole),
+                _ => PendScope::Object,
+            },
         },
     }
     .to_bytes();

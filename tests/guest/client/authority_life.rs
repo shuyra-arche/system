@@ -128,7 +128,7 @@ fn fixture_grant(
     source: PendId,
     target: TaskId,
 ) -> Result<PendId, erra::Error<kernel_api::abi::call::pend::PendFail>> {
-    use kernel_api::model::pend::{AccordRequest, AccordTarget, Distributable, Limits, PendRange};
+    use kernel_api::model::pend::{AccordRequest, AccordTarget, Distributable, Limits, PendScope};
     let request = AccordRequest {
         src: source,
         target: AccordTarget::Task(target),
@@ -137,7 +137,7 @@ fn fixture_grant(
             operations: Operations::Clone(CloneRights::PUSH | CloneRights::PEEK),
             modifiable: Modifiable::Yes,
             distributable: Distributable::No,
-            range: PendRange::Inherit,
+            scope: PendScope::Object,
         },
     };
     pend::accord(fixture::addr(&request.to_bytes()))

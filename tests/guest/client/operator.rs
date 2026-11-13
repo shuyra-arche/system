@@ -13,7 +13,7 @@ use kernel_api::model::{
     modifiable::Modifiable,
     pend::{
         AccordRequest, AccordTarget, CloneRights, CreationRights, Distributable, Limits,
-        Operations, PendRange,
+        Operations, PendScope,
     },
     sign::SignRights,
     unit::UnitQuery,
@@ -51,7 +51,7 @@ macro_rules! rpc {
             .begin::<$operation>($body, Wait::At(deadline()))
             .unwrap();
         let value = pending.wait().unwrap().value;
-        pending.finish().unwrap();
+        fixture::cleanup(|| pending.finish());
         value
     }};
 }
@@ -69,7 +69,7 @@ fn rights(distributable: Distributable) -> Limits {
         operations: Operations::Clone(CloneRights::PUSH | CloneRights::PEEK),
         modifiable: Modifiable::Yes,
         distributable,
-        range: PendRange::Inherit,
+        scope: PendScope::Object,
     }
 }
 fn grant(source: PendId, target: TaskId, limits: Limits) -> PendId {

@@ -6,7 +6,7 @@ pub(crate) mod memory;
 mod source;
 mod task;
 use cache::Cache;
-pub(crate) use image::Image;
+pub(crate) use image::{Image, ProgramKind};
 use kernel_api::{
     abi::call::{
         cell::CellFail, pend::PendFail, share_view::ShareFail, sign::SignFail, unit::UnitFail,

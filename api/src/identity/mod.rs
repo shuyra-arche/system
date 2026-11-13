@@ -715,7 +715,7 @@ pub fn grant(operation: operations::Operation) -> Grant {
 }
 
 pub const NAME: &str = "identity";
-pub const INTERFACE_ID: &str = "shuyra.system.identity.v2";
+pub const INTERFACE_ID: &str = "shuyra.system.identity.v3";
 
 impl Grant {
     pub const fn name(self) -> &'static str {

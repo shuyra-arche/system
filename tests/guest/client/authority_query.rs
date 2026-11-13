@@ -136,7 +136,11 @@ pub fn run(
         wait: Wait::At(deadline()),
     };
     assert_eq!(verdict(&court, root.into(), Permit::Bound), Code::Unjudged);
-    rejected.finish().unwrap();
+    fixture::until(|| match rejected.finish() {
+        Ok(()) => true,
+        Err(QueryError::Cleanup(error)) if error.is_busy() => false,
+        Err(error) => panic!("query cleanup {error:?}"),
+    });
     assert_eq!(fixture::active(), baseline);
     writeln!(
         Console,

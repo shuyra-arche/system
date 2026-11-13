@@ -3,13 +3,30 @@ use erra::Error;
 use kernel_api::abi::call::pend::PendFail;
 use twine::{
     sign::Watch,
-    view::clone::{Reply, ReplyError},
+    view::clone::{ReceiveError, Reply, ReplyError},
 };
 
 #[derive(Debug)]
 pub enum CleanupError {
     Watch(Error<PendFail>),
     Reply(ReplyError),
+}
+
+impl CleanupError {
+    /// The retained cleanup can make progress after yielding. Other failures
+    /// require caller action and must not be silently retried as contention.
+    pub fn is_busy(&self) -> bool {
+        match self {
+            Self::Watch(error) => error.source.is_busy(),
+            Self::Reply(ReplyError::Return(error)) => error.source.is_busy(),
+            Self::Reply(ReplyError::Receive(ReceiveError::Pull(error))) => error.source.is_busy(),
+            Self::Reply(ReplyError::Receive(
+                ReceiveError::Open(error) | ReceiveError::Shut(error),
+            )) => error.source.is_busy(),
+            Self::Reply(ReplyError::Receive(ReceiveError::Return(error))) => error.source.is_busy(),
+            _ => false,
+        }
+    }
 }
 
 /// Owns every acquired route, including resources from a failed submission.

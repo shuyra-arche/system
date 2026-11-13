@@ -5,7 +5,7 @@ use kernel_api::{
     address::VirtAddr,
     model::{
         identity::TaskId,
-        unit::{UnitCreate, UnitInfo, UnitQuery, UnitState, UnitTarget},
+        unit::{CreatedUnit, UnitCreate, UnitInfo, UnitQuery, UnitState, UnitTarget},
     },
 };
 use kernel_client::call::unit;
@@ -62,7 +62,7 @@ impl Worker {
         }
         .to_bytes();
         let target = unit::create(VirtAddr::new(request.as_ptr().addr())).map_err(Error::Kernel)?;
-        let UnitTarget::Task(task) = target else {
+        let CreatedUnit::Task(task) = target else {
             // A Task request returning a Team contradicts the trusted ABI.
             unreachable!("Kernel returned a non-Task for Task creation")
         };

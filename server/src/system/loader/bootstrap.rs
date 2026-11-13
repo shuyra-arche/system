@@ -1,14 +1,13 @@
-//! A one-shot target-side initializer for writable mappings under Kernel ABI 9.
+//! A one-shot target-side initializer for writable mappings under Kernel ABI 10.
 //! Only immutable loader code is projected by the parent; writable Share grants
 //! are associated and published by the receiving Task in its own CPU space.
 use super::Error;
 use alloc::vec::Vec;
 use kernel_api::{
-    address::{PAGE_SIZE, VirtAddr},
+    address::{PAGE_SIZE, PageCount, VirtAddr},
     model::{
         cell::{
-            CellCreate, CellInfo, CellObject, CellPosition, CellSource, CellState, CreatedCell,
-            MemoDestination, Placement,
+            CellAssociation, CellInfo, CellLevel, CellObject, CellPosition, CellState, Placement,
         },
         identity::{Mark, PendId, TaskId},
         modifiable::Modifiable,
@@ -16,16 +15,17 @@ use kernel_api::{
         unit::{ExitScope, UnitInfo, UnitQuery},
     },
 };
-use kernel_client::call::{cell, pend, room, share_view, sign, unit};
-pub(super) const MARK: Mark = Mark::of("shuyra/system/loader/startup/v9");
-const MAGIC: usize = 0x3954_5241_5453_5953;
-const HEADER: usize = 5;
+use kernel_client::call::{cell, nest, pend, room, share_view, sign, unit};
+pub(super) const MARK: Mark = Mark::of("shuyra/system/loader/startup/v10");
+const MAGIC: usize = 0x3a54_5241_5453_5953;
+const HEADER: usize = 6;
 const RECORD: usize = 4;
 
 pub(super) fn metadata(
     owner: TaskId,
     entry: usize,
     ready: PendId,
+    space: PendId,
     regions: &[[usize; RECORD]],
 ) -> Result<Vec<u8>, Error> {
     let words = HEADER
@@ -35,7 +35,14 @@ pub(super) fn metadata(
     bytes
         .try_reserve_exact(words.checked_mul(8).ok_or(Error::Invalid)?)
         .map_err(|_| Error::Capacity)?;
-    for word in [MAGIC, owner.get(), entry, ready.get(), regions.len()] {
+    for word in [
+        MAGIC,
+        owner.get(),
+        entry,
+        ready.get(),
+        space.get(),
+        regions.len(),
+    ] {
         bytes.extend_from_slice(&(word as u64).to_le_bytes());
     }
     for region in regions {
@@ -124,11 +131,11 @@ fn meta(owner: TaskId) -> PendId {
         found = Some(info.token);
     }
 }
-fn publish(token: PendId, pages: usize) {
+fn publish(token: PendId, source: PendId, pages: usize) {
     for page in 0..pages {
         loop {
             let mut position = CellPosition {
-                object: CellObject::Memo(token),
+                object: CellObject::Pend(token),
                 page,
                 generation: 0,
             };
@@ -148,6 +155,21 @@ fn publish(token: PendId, pages: usize) {
             position.generation = info.generation;
             match info.state {
                 CellState::Published => break,
+                CellState::Vacant => match cell::insert(addr(
+                    &CellAssociation {
+                        source: CellPosition {
+                            object: CellObject::Pend(source),
+                            page,
+                            generation: 0,
+                        },
+                        target: position,
+                    }
+                    .to_bytes(),
+                )) {
+                    Ok(()) => (),
+                    Err(error) if error.source.is_busy() => (),
+                    Err(_) => stop!(),
+                },
                 CellState::Ready => match cell::publish(addr(&position.to_bytes())) {
                     Ok(()) => (),
                     Err(error) if error.source.is_busy() => (),
@@ -221,7 +243,8 @@ pub(super) unsafe extern "C" fn enter(words: *const usize, count: usize) -> ! {
         stop!();
     }
     let ready = id(header[3]);
-    let count = header[4];
+    let space = id(header[4]);
+    let count = header[5];
     if count > 2 * u16::MAX as usize {
         stop!();
     }
@@ -233,29 +256,20 @@ pub(super) unsafe extern "C" fn enter(words: *const usize, count: usize) -> ! {
         if source == 0 || pages == 0 || access != 6 || !address.is_multiple_of(PAGE_SIZE) {
             stop!();
         }
-        let request = CellCreate::Memo {
-            source: CellSource::Pend {
-                token: id(source),
-                offset: 0,
-                count: pages,
-            },
-            destination: MemoDestination::Internal {
-                team: kernel_api::model::identity::TeamId::new(0),
-                placement: Placement::exact(VirtAddr::new(address), PAGE_SIZE)
-                    .unwrap_or_else(|| stop!()),
-                access: access as u64,
-            },
-        }
-        .to_bytes();
         let token = loop {
-            match cell::create(PendId::NONE, addr(&request)) {
-                Ok(CreatedCell::Memo { token, .. }) => break token,
+            match nest::reserve(
+                space,
+                Placement::exact(VirtAddr::new(address), PAGE_SIZE).unwrap_or_else(|| stop!()),
+                PageCount::new(pages).unwrap_or_else(|| stop!()),
+                CellLevel::BASE,
+                access as u64,
+            ) {
+                Ok((token, _)) => break token,
                 Err(error) if error.source.is_busy() => room::yield_(),
                 Err(error) => fail(1000 + (-(error.source as isize)) as u64),
-                _ => stop!(),
             }
         };
-        publish(token, pages);
+        publish(token, id(source), pages);
     }
     loop {
         match pend::return_(metadata) {

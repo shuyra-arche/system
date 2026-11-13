@@ -1,4 +1,4 @@
-"""Boot the System Client integration guest with a built Shuyra ABI 9 QEMU image."""
+"""Boot the System Client integration guest with a built Shuyra ABI 10 QEMU image."""
 
 import argparse
 import os
@@ -10,14 +10,14 @@ import tempfile
 PAGE = 4096
 PASS = b"PASS system-client typed=1 sender=1 poll=1 variant=1 decode=1 partial=1 timeout=1 late=1 backpressure=1 send-timeout=1 cleanup=1 ingress=1 route=1 shutdown=1 identity=1"
 REQUIRED = [
-    b"PASS grant-adjacency worker-to-unit-denied=1",
+    b"PASS grant-cross-team dormant=1 management-denied=1",
     b"PASS loader-elf native=1 user=1 arguments=1 private=1 cache=1 eviction=1 cancel=1 reclaim=1",
     b"PASS loader-memory native=1 insert=1 publish=1 share=1 partial=1 cleanup=1",
     b"PASS supervisor-bootstrap native=1 roles=2 root=1 wired=1 revision=1 partial=1 cleanup=1",
     b"PASS supervisor-worker native=1 dormant=1 arguments=1 exit=1 cancel=1 reclaim=1",
     b"PASS operator-service native=1 namespace=1 scope=1 source=1 unbind=1 revoke=1 replay=1 watch=1 cleanup=1",
     PASS,
-    b"PASS reply-adjacency local=1 creator=1 sibling-denied=1",
+    b"PASS reply-cross-team local=1 creator=1 sibling=1 sender=1 forged=1 cleanup=1",
     b"PASS identity-actor faces=20 fair=1 revision=1 coalesced=1 failed-reply=1 revoked=1 partial=1 shutdown=1",
     b"PASS wait-group dedup=1 replace=1 partial=1 conflict=1 cleanup=1",
     b"PASS authority-query native=1 sender=1 denied=1 unjudged=1 cleanup=1",
@@ -42,7 +42,7 @@ def initrd(elf: bytes) -> bytes:
         payload += elf[offset : offset + length].ljust(pages * PAGE, b"\0")
     total = PAGE + len(payload)
     region_count = len(regions) // 40
-    header = struct.pack("<8sHBBIQQ", b"SQBOOT01", 2, 12, 9, region_count, entry, total)
+    header = struct.pack("<8sHBBIQQ", b"SQBOOT01", 2, 12, 10, region_count, entry, total)
     assert len(header) + len(regions) <= PAGE
     return (struct.pack("<II", PAGE, total).ljust(PAGE, b"\0")
             + (header + regions).ljust(PAGE, b"\0") + payload)

@@ -120,7 +120,8 @@ fn request(name: &str) -> control::Named {
 }
 
 #[unsafe(no_mangle)]
-extern "C" fn start() -> ! {
+extern "C" fn start(at: usize, count: usize) -> ! {
+    fixture::boot(at, count);
     writeln!(Console, "system-client start").unwrap();
     let license = fixture::license();
     workers::run();
@@ -174,8 +175,8 @@ extern "C" fn start() -> ! {
             }
         }
         assert!(matches!(pending.poll(), Err(Error::Inactive)));
-        pending.finish().unwrap();
-        pending.finish().unwrap();
+        fixture::cleanup(|| pending.finish());
+        fixture::cleanup(|| pending.finish());
         assert!(pending.is_finished());
         assert_eq!(fixture::active(), baseline, "reply/watch/payload leak");
     }
@@ -190,7 +191,7 @@ extern "C" fn start() -> ! {
         twine::view::clone::ReplyError::WrongSender { expected, actual }
     ))) if expected == service && actual == root)
     );
-    pending.finish().unwrap();
+    fixture::cleanup(|| pending.finish());
     SPOOF_DONE.store(true, Ordering::Release);
     until(|| REQUESTS.load(Ordering::Acquire) == 5);
     assert_eq!(fixture::active(), baseline);
@@ -199,7 +200,7 @@ extern "C" fn start() -> ! {
     assert!(matches!(pending.wait(), Err(Error::NotReady)));
     POLL_GO.store(true, Ordering::Release);
     until(|| pending.poll().unwrap().is_some());
-    pending.finish().unwrap();
+    fixture::cleanup(|| pending.finish());
     assert_eq!(fixture::active(), baseline);
 
     // Removing SIGN permission forces failure after creating and granting the
@@ -218,8 +219,8 @@ extern "C" fn start() -> ! {
     };
     assert!(matches!(failure.error, Error::CreateWatch(_)));
     assert!(!failure.cleanup.is_finished());
-    failure.cleanup.finish().unwrap();
-    failure.cleanup.finish().unwrap();
+    fixture::cleanup(|| failure.cleanup.finish());
+    fixture::cleanup(|| failure.cleanup.finish());
     assert!(failure.cleanup.is_finished());
     assert_eq!(REQUESTS.load(Ordering::Acquire), count);
     pend::return_(limited).unwrap();
@@ -231,7 +232,7 @@ extern "C" fn start() -> ! {
         .unwrap();
     assert!(matches!(pending.wait(), Err(Error::TimedOut)));
     assert!(room::clock() >= at);
-    pending.finish().unwrap();
+    fixture::cleanup(|| pending.finish());
     LATE_GO.store(true, Ordering::Release);
     until(|| LATE_DONE.load(Ordering::Acquire));
     assert_eq!(fixture::active(), baseline);
@@ -246,7 +247,7 @@ extern "C" fn start() -> ! {
         .begin::<State>(request("ready"), Wait::At(deadline()))
         .unwrap();
     pending.wait().unwrap();
-    pending.finish().unwrap();
+    fixture::cleanup(|| pending.finish());
     assert_eq!(REQUESTS.load(Ordering::Acquire), before + 1);
     assert_eq!(fixture::active(), baseline);
 
@@ -261,7 +262,7 @@ extern "C" fn start() -> ! {
     };
     assert!(matches!(failure.error, Error::TimedOut));
     assert!(room::clock() >= at);
-    failure.cleanup.finish().unwrap();
+    fixture::cleanup(|| failure.cleanup.finish());
     PAUSE.store(0, Ordering::Release);
     assert_eq!(REQUESTS.load(Ordering::Acquire), before);
     assert_eq!(fixture::active(), baseline);
@@ -386,7 +387,7 @@ fn ingress(license: PendId, root: TaskId) {
         .unwrap();
     let received = pending.wait().unwrap();
     assert_eq!(received.metadata, service);
-    pending.finish().unwrap();
+    fixture::cleanup(|| pending.finish());
     assert_eq!(REQUESTS.load(Ordering::Acquire), 1);
     assert_eq!(fixture::active(), baseline);
 
@@ -412,7 +413,7 @@ fn ingress(license: PendId, root: TaskId) {
         .begin::<State>(request("stop"), Wait::At(deadline()))
         .unwrap();
     pending.wait().unwrap();
-    pending.finish().unwrap();
+    fixture::cleanup(|| pending.finish());
     until(|| INGRESS_DONE.load(Ordering::Acquire));
     until(|| fixture::inspect(UnitQuery::Target(target)).reclaimed);
     unit::delete(target).unwrap();
@@ -512,7 +513,7 @@ fn identity(license: PendId, root: TaskId) {
             let mut pending = client.begin::<$op>($body, Wait::At(deadline())).unwrap();
             let response = pending.wait().unwrap();
             assert_eq!(response.metadata, service);
-            pending.finish().unwrap();
+            fixture::cleanup(|| pending.finish());
             response.value
         }};
     }

@@ -199,7 +199,7 @@ fn failure_codes_and_grant_routes_remain_explicit() {
 }
 
 #[test]
-fn v2_envelope_and_selector_have_explicit_wire_goldens() {
+fn v3_envelope_and_selector_have_explicit_wire_goldens() {
     use system_api::value::Request;
     let request = Request::<operations::Request, 2> {
         reply: PendId::new(17),
@@ -209,7 +209,7 @@ fn v2_envelope_and_selector_have_explicit_wire_goldens() {
         }),
     };
     let mut golden = b"SYS2".to_vec();
-    golden.extend_from_slice(&2u16.to_le_bytes());
+    golden.extend_from_slice(&3u16.to_le_bytes());
     golden.extend_from_slice(&2u16.to_le_bytes());
     golden.extend_from_slice(&17u64.to_le_bytes());
     golden.push(18);
@@ -218,6 +218,9 @@ fn v2_envelope_and_selector_have_explicit_wire_goldens() {
     golden.extend_from_slice(&5u64.to_le_bytes());
     golden.extend_from_slice(&9u64.to_le_bytes());
     assert_eq!(exact(&request), golden);
+    let mut old = golden.clone();
+    old[4..6].copy_from_slice(&2u16.to_le_bytes());
+    assert!(Request::<operations::Request, 2>::decode_exact(&old).is_none());
     let mut selector = vec![2];
     selector.extend_from_slice(&5u64.to_le_bytes());
     selector.extend_from_slice(&0u64.to_le_bytes());

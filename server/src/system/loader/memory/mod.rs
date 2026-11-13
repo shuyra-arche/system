@@ -1,28 +1,29 @@
 //! Native CPU Memo publication and fallible ownership cleanup.
 use kernel_api::{
-    abi::call::{cell::CellFail, pend::PendFail},
-    address::VirtAddr,
+    abi::call::{cell::CellFail, nest::NestFail, pend::PendFail},
+    address::{PageCount, VirtAddr},
     model::{
         cell::{
-            CellAssociation, CellCreate, CellInfo, CellObject, CellPosition, CellSource, CellState,
-            CreatedCell, MemoDestination, Placement,
+            CellAssociation, CellInfo, CellLevel, CellObject, CellPosition, CellState, Placement,
         },
-        identity::{PendId, TeamId},
+        identity::PendId,
     },
 };
-use kernel_client::call::{cell, pend};
+use kernel_client::call::{cell, nest, pend};
 
 #[derive(Debug)]
 pub enum Error {
     Invalid,
     Cell(erra::Error<CellFail>),
     Pend(erra::Error<PendFail>),
+    Nest(erra::Error<NestFail>),
 }
 impl Error {
     pub fn busy(&self) -> bool {
         match self {
             Self::Cell(error) => error.source.is_busy(),
             Self::Pend(error) => error.source.is_busy(),
+            Self::Nest(error) => error.source.is_busy(),
             _ => false,
         }
     }
@@ -40,8 +41,10 @@ enum Phase {
 /// finished; the enclosing Source owner keeps the physical holding alive.
 #[must_use = "finish the owned Memo and retain it after any cleanup failure"]
 pub struct Mapping {
-    source: CellSource,
-    destination: MemoDestination,
+    source: CellPosition,
+    nest: PendId,
+    placement: Placement,
+    access: u64,
     token: Option<PendId>,
     address: Option<VirtAddr>,
     count: usize,
@@ -50,15 +53,12 @@ pub struct Mapping {
 }
 impl Mapping {
     pub fn new(
-        source: CellSource,
-        team: TeamId,
+        source: CellPosition,
+        count: usize,
+        nest: PendId,
         placement: Placement,
         access: u64,
     ) -> Result<Self, Error> {
-        let count = match source {
-            CellSource::Slot(range) => range.count,
-            CellSource::Pend { count, .. } => count,
-        };
         if count == 0
             || count
                 .checked_mul(kernel_api::address::PAGE_SIZE)
@@ -71,11 +71,9 @@ impl Mapping {
         }
         Ok(Self {
             source,
-            destination: MemoDestination::Internal {
-                team,
-                placement,
-                access,
-            },
+            nest,
+            placement,
+            access,
             token: None,
             address: None,
             count,
@@ -110,23 +108,21 @@ impl Mapping {
     }
     fn progress(&mut self) -> Result<bool, Error> {
         if self.token.is_none() {
-            let request = CellCreate::Memo {
-                source: self.source,
-                destination: self.destination,
-            }
-            .to_bytes();
-            let CreatedCell::Memo { token, address } =
-                cell::create(PendId::NONE, addr(&request)).map_err(Error::Cell)?
-            else {
-                return Err(Error::Invalid);
-            };
+            let (token, address) = nest::reserve(
+                self.nest,
+                self.placement,
+                PageCount::new(self.count).ok_or(Error::Invalid)?,
+                CellLevel::BASE,
+                self.access,
+            )
+            .map_err(Error::Nest)?;
             self.token = Some(token);
             self.address = Some(address);
             self.phase = Phase::Publishing;
             return Ok(false);
         }
         let mut position = CellPosition {
-            object: CellObject::Memo(self.token.unwrap()),
+            object: CellObject::Pend(self.token.unwrap()),
             page: self.cursor,
             generation: 0,
         };
@@ -143,16 +139,13 @@ impl Mapping {
         position.generation = info.generation;
         match info.state {
             CellState::Vacant => {
-                let CellSource::Slot(range) = self.source else {
-                    return Err(Error::Invalid);
-                };
                 let source = CellPosition {
-                    object: CellObject::Slot(range.reference),
-                    page: range
-                        .offset
+                    page: self
+                        .source
+                        .page
                         .checked_add(self.cursor)
                         .ok_or(Error::Invalid)?,
-                    generation: 0,
+                    ..self.source
                 };
                 cell::insert(addr(
                     &CellAssociation {

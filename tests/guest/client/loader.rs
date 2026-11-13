@@ -1,11 +1,11 @@
 use crate::{
     fixture::{self, Console},
-    native_loader::{Image, Job, Loader, Spawn},
+    native_loader::{Image, Job, Loader, ProgramKind, Spawn},
 };
 use core::fmt::Write as _;
 use kernel_api::model::{
     identity::PendId,
-    unit::{ControlId, ExitCause, ProgramKind, UnitState},
+    unit::{ControlId, ExitCause, UnitState},
 };
 static IMAGE: &[u8] = include_bytes!(env!("SYSTEM_LOADER_IMAGE"));
 fn prepare(loader: &mut Loader) -> Job {
@@ -62,6 +62,22 @@ fn initialized(job: &mut Job) {
 pub fn run(license: PendId) {
     let baseline = fixture::active();
     let mut loader = Loader::new(license).unwrap();
+    assert!(
+        loader
+            .prepare(
+                Image {
+                    bytes: IMAGE,
+                    kind: ProgramKind::Supervisor
+                },
+                Spawn {
+                    args: &[],
+                    stack: 128 * 1024,
+                    guard: ControlId::NONE,
+                    member_exit: true
+                }
+            )
+            .is_err()
+    );
     for rounds in [0, 1, 4, 8] {
         let mut partial = prepare(&mut loader);
         for _ in 0..rounds {

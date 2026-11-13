@@ -14,7 +14,7 @@ use kernel_api::{
         modifiable::Modifiable,
         pend::{
             AccordRequest, AccordTarget, CloneRights, CreationRights, Distributable, Limits,
-            Operations, PendInfo, PendRange,
+            Operations, PendInfo, PendScope,
         },
         sign::SignRights,
         unit::{UnitInfo, UnitQuery, UnitTarget},
@@ -347,7 +347,7 @@ impl Workers {
                                 ),
                                 modifiable: Modifiable::Yes,
                                 distributable: Distributable::No,
-                                range: PendRange::Inherit,
+                                scope: PendScope::Object,
                             },
                         }
                         .to_bytes();

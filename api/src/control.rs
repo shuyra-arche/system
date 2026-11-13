@@ -125,7 +125,7 @@ pub fn grant(operation: operations::Operation) -> Grant {
 }
 
 pub const NAME: &str = "control";
-pub const INTERFACE_ID: &str = "shuyra.system.control.v2";
+pub const INTERFACE_ID: &str = "shuyra.system.control.v3";
 
 impl Grant {
     pub const fn name(self) -> &'static str {

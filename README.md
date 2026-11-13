@@ -22,14 +22,14 @@ server/client dependency. See [runtime contracts](docs/runtime-contracts.md).
 
 ## Build and verify
 
-The protocol v2 migration branch has API and Client on Kernel ABI 9, Twine and
+The protocol v3 migration branch has API and Client on Kernel ABI 10, Twine and
 Weave. `server/src/protocol` supplies the new ingress and is exercised directly
 by `tests/guest/client`. The legacy Server application still uses API v1 and
 removed Client facades; its full build currently fails until those services
 are ported. This branch remains draft. See [Client lifecycle](client/README.md)
 and [ingress boundaries](server/src/protocol/README.md).
 
-The new components are checked with nightly `ac8310ba643a3796cbe77d2e06944d7c8513999f`:
+The native migration checks below use the explicitly recorded nightly compiler in the PR evidence:
 
 ```sh
 cargo +nightly test --locked -p system-api --tests --target x86_64-unknown-linux-gnu
@@ -38,7 +38,7 @@ cargo +nightly test --locked --manifest-path tests/identity-state/Cargo.toml --t
 python3 tests/guest/client/run.py /path/to/shuyra
 ```
 
-The guest uses a real ABI 9 Kernel, one and four Harts and the actual production
+The guest uses a real ABI 10 Kernel, one and four Harts and the actual production
 SDK/ingress. It does not launch the assembled System policy/boot application.
 The production Identity book, request dispatcher, multi-endpoint Task loop and
 revision notifications are ported and tested through this ingress. Independent
@@ -69,19 +69,20 @@ complete supervisor integration is still required.
 
 The [native Loader](server/src/system/loader/README.md) now constructs real User
 Teams through generation-qualified Cell associations and publications. A
-receiving-Task initializer installs private RW mappings under v9, then jumps to
+receiving-Task initializer installs private RW mappings under v10, then jumps to
 the image with copied arguments. RX cache eviction retains live Unit sources;
 DATA/BSS isolation, partial cancellation, native exit and reclamation are tested
 on one/four Harts. RPC admission and the remaining application wiring are still
 being migrated. See the [guest workflow](tests/guest/client/README.md).
 
-Cross-Team service reply grants are a separate confirmed blocker under ABI 9.
-The guest verifies that a Unit may grant its creator a reply route, but cannot
-grant a sibling worker in the creator's Team. See
-[Kernel #140](https://github.com/shuyra-arche/kernel/issues/140). Passing the
-same-Team service tests does not establish ordinary-Unit RPC into these workers.
+Cross-Team delegation now uses Kernel #140's fixed registration quotas. The
+component guest exercises S -> Dormant U initial grants and U -> S request/reply,
+with real sender validation, rejected forged routes, no execution-control upgrade,
+and explicit cleanup. See [the guest workflow](tests/guest/client/README.md).
+Protocol v3 and API/Client 0.3 use Kernel v10's nine-word typed Limits; v2 frames
+are rejected. Rebuild all consumers and Capsule/Ledger inputs together.
 
-Use `rust-toolchain.toml` (`nightly-2026-09-04`, RV64 target and Rust source).
+Use `rust-toolchain.toml` (`nightly-2026-11-13`, RV64 target and Rust source).
 Run from this repository root; examples use a Linux x86-64 host.
 
 ```sh

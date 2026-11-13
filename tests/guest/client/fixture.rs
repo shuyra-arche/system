@@ -10,7 +10,7 @@ use kernel_api::{
         modifiable::Modifiable,
         pend::{
             AccordRequest, AccordTarget, Distributable, Limits, Operations, PendInfo, PendRange,
-            PendStatus, Target,
+            PendScope, PendStatus, Target,
         },
         unit::{ExitScope, UnitCreate, UnitInfo, UnitQuery, UnitTarget},
     },
@@ -118,7 +118,10 @@ pub fn grant(
             operations,
             modifiable,
             distributable: Distributable::No,
-            range: PendRange::Inherit,
+            scope: match operations {
+                Operations::Share(_) | Operations::Flat(_) => PendScope::Pages(PendRange::Inherit),
+                _ => PendScope::Object,
+            },
         },
     };
     pend::accord(addr(&request.to_bytes())).unwrap()
@@ -132,11 +135,11 @@ pub fn spawn(entry: extern "C" fn() -> !) -> (UnitTarget, TaskId) {
         count: 0,
         stack: VirtAddr::new(128 * 1024),
     };
-    let target = unit::create(addr(&request.to_bytes())).unwrap();
-    let UnitTarget::Task(task) = target else {
+    let created = unit::create(addr(&request.to_bytes())).unwrap();
+    let kernel_api::model::unit::CreatedUnit::Task(task) = created else {
         panic!("expected Task")
     };
-    (target, task)
+    (UnitTarget::Task(task), task)
 }
 
 pub fn until(mut done: impl FnMut() -> bool) {
@@ -177,3 +180,35 @@ unsafe impl GlobalAlloc for Allocator {
 }
 #[global_allocator]
 static ALLOCATOR: Allocator = Allocator;
+
+static SPACE: AtomicUsize = AtomicUsize::new(0);
+pub fn boot(at: usize, count: usize) {
+    use kernel_api::boot::{
+        args,
+        ledger::{Entries, Name},
+    };
+    assert_eq!(count, args::LEN);
+    // SAFETY: the initial Task receives this validated startup argument block.
+    let words = unsafe { core::slice::from_raw_parts(at as *const usize, count) };
+    // SAFETY: the trusted boot arguments identify the read-only Ledger mapping.
+    let bytes = unsafe {
+        core::slice::from_raw_parts(words[args::LEDGER] as *const u8, words[args::LEDGER_LEN])
+    };
+    let entry = Entries::new(bytes).unwrap().find(Name::Space).unwrap();
+    SPACE.store(entry.handle(), Ordering::Release);
+}
+pub fn space() -> PendId {
+    let raw = SPACE.load(Ordering::Acquire);
+    assert_ne!(raw, 0);
+    PendId::from_bytes(&(raw as u64).to_le_bytes()).unwrap()
+}
+
+// A request deadline never restarts. This separate fixed bound covers cleanup
+// after success, timeout or rejection while preserving its actual owner.
+pub fn cleanup(mut operation: impl FnMut() -> Result<(), system_client::CleanupError>) {
+    until(|| match operation() {
+        Ok(()) => true,
+        Err(error) if error.is_busy() => false,
+        Err(error) => panic!("client cleanup {error:?}"),
+    });
+}

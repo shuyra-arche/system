@@ -1,16 +1,14 @@
 //! A loader-owned image source, retained by every live target projection.
-use super::{Error, memory::Mapping};
+use super::Error;
 use alloc::{rc::Rc, vec::Vec};
 use core::cell::RefCell;
 use kernel_api::{
     address::{PAGE_SIZE, VirtAddr},
     model::{
-        cell::{
-            Allocation, CellCreate, CellObject, CellSource, CreatedCell, Placement, ReferenceRange,
-            SlotId,
-        },
-        identity::{PendId, TeamId},
+        cell::{Allocation, SlotId},
+        identity::PendId,
         modifiable::Modifiable,
+        pend::{NarrowRequest, PendInfo},
     },
 };
 use kernel_client::call::{cell, pend, share_view};
@@ -35,7 +33,7 @@ pub(super) struct Source {
     flags: u64,
     phase: Phase,
     slot: Option<SlotId>,
-    mapping: Option<Mapping>,
+    address: Option<VirtAddr>,
     share: Option<PendId>,
 }
 impl Source {
@@ -60,7 +58,7 @@ impl Source {
             flags,
             phase: Phase::Allocate,
             slot: None,
-            mapping: None,
+            address: None,
             share: None,
         })
     }
@@ -95,53 +93,34 @@ impl Source {
     fn progress(&mut self, license: PendId) -> Result<bool, Error> {
         match self.phase {
             Phase::Allocate => {
-                let spec =
-                    CellCreate::Slot(Allocation::new(self.size, PAGE_SIZE).ok_or(Error::Invalid)?)
-                        .to_bytes();
-                let CreatedCell::Slot(slot) =
-                    cell::create(license, addr(&spec)).map_err(Error::Cell)?
-                else {
-                    return Err(Error::Invalid);
-                };
+                let slot = cell::create(
+                    license,
+                    Allocation::new(self.size, PAGE_SIZE).ok_or(Error::Invalid)?,
+                )
+                .map_err(Error::Cell)?;
                 self.slot = Some(slot);
                 self.phase = Phase::Map;
             }
             Phase::Map => {
-                if self.mapping.is_none() {
-                    self.mapping = Some(
-                        Mapping::new(
-                            CellSource::Slot(ReferenceRange {
-                                reference: self.slot.unwrap(),
-                                offset: 0,
-                                count: self.pages(),
-                            }),
-                            TeamId::new(0),
-                            Placement::lowest(PAGE_SIZE).unwrap(),
-                            6,
-                        )
-                        .map_err(Error::Mapping)?,
+                if self.share.is_none() {
+                    self.share = Some(
+                        share_view::create(license, self.slot.unwrap(), Modifiable::Yes)
+                            .map_err(Error::Share)?,
                     );
+                    return Ok(false);
                 }
-                if self
-                    .mapping
-                    .as_mut()
-                    .unwrap()
-                    .advance()
-                    .map_err(Error::Mapping)?
-                {
-                    self.phase = Phase::Copy;
+                let (address, size) =
+                    share_view::open(self.share.unwrap()).map_err(Error::Share)?;
+                if size != self.size {
+                    return Err(Error::Invalid);
                 }
+                self.address = Some(address);
+                self.phase = Phase::Copy;
             }
             Phase::Copy => {
-                let address = self
-                    .mapping
-                    .as_ref()
-                    .unwrap()
-                    .address()
-                    .ok_or(Error::Invalid)?
-                    .get();
-                // SAFETY: this Task owns the entire initialized private writable
-                // mapping. No Share or other Task can yet withdraw/modify it.
+                let address = self.address.ok_or(Error::Invalid)?.get();
+                // SAFETY: this Task owns the unpublished Share root and its
+                // writable mapping. No descendant has been granted yet.
                 unsafe {
                     core::ptr::copy_nonoverlapping(
                         self.contents.as_ptr(),
@@ -152,33 +131,30 @@ impl Source {
                 if self.flags & 4 != 0 {
                     self.contents = Vec::new();
                 }
-                self.phase = Phase::Share;
-            }
-            Phase::Share => {
-                self.share = Some(
-                    share_view::create(
-                        license,
-                        self.slot.unwrap(),
-                        if self.flags & 4 != 0 {
-                            Modifiable::Yes
-                        } else {
-                            Modifiable::No
-                        },
-                    )
-                    .map_err(Error::Share)?,
-                );
                 self.phase = Phase::Unmap;
             }
-            Phase::Unmap => {
-                if let Some(mapping) = self.mapping.as_mut() {
-                    mapping.finish().map_err(Error::Mapping)?;
-                    self.mapping = None;
-                }
+            Phase::Share => {
+                let token = self.share.unwrap();
+                let mut bytes = [0; PendInfo::SIZE];
+                pend::inspect(token, VirtAddr::new(bytes.as_mut_ptr().addr()))
+                    .map_err(Error::Pend)?;
+                let mut limits = PendInfo::from_bytes(&bytes).ok_or(Error::Invalid)?.limits;
+                limits.modifiable = if self.flags & 4 != 0 {
+                    Modifiable::Yes
+                } else {
+                    Modifiable::No
+                };
+                pend::narrow(addr(&NarrowRequest { token, limits }.to_bytes()))
+                    .map_err(Error::Pend)?;
                 self.phase = Phase::Release;
             }
+            Phase::Unmap => {
+                share_view::shut(self.share.unwrap()).map_err(Error::Share)?;
+                self.address = None;
+                self.phase = Phase::Share;
+            }
             Phase::Release => {
-                cell::delete(addr(&CellObject::Slot(self.slot.unwrap()).to_bytes()))
-                    .map_err(Error::Cell)?;
+                cell::delete(self.slot.unwrap()).map_err(Error::Cell)?;
                 self.slot = None;
                 self.phase = Phase::Ready;
             }
@@ -192,16 +168,16 @@ impl Source {
             return Ok(());
         }
         self.phase = Phase::Closing;
-        if let Some(mapping) = self.mapping.as_mut() {
-            mapping.finish().map_err(Error::Mapping)?;
-            self.mapping = None;
+        if self.address.is_some() {
+            share_view::shut(self.share.ok_or(Error::Invalid)?).map_err(Error::Share)?;
+            self.address = None;
         }
         if let Some(token) = self.share {
             pend::return_(token).map_err(Error::Pend)?;
             self.share = None;
         }
         if let Some(slot) = self.slot {
-            cell::delete(addr(&CellObject::Slot(slot).to_bytes())).map_err(Error::Cell)?;
+            cell::delete(slot).map_err(Error::Cell)?;
             self.slot = None;
         }
         self.phase = Phase::Closed;
