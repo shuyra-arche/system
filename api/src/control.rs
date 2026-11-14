@@ -1,4 +1,5 @@
 //! Supervision intent, lifecycle observations and restart requests.
+pub mod instance;
 use crate::{
     Mark, Name, TaskId, TeamId,
     value::{Optional, Outcome},

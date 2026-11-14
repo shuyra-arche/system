@@ -24,6 +24,10 @@ RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**
 | `tests/` | Host contracts and explicit target component fixtures |
 
 Production packages keep `no_std`. Test code belongs under `tests/`.
+The [Instance handoff v1](docs/instance.md) adds caller-owned instance operations,
+queryable receipts and Operator UnitRoots for the Hub integration. Its native
+[independent-Team fixture](tests/guest/handoff/README.md) is a provider increment;
+the full S1/S2 checklist and downstream acceptance remain open.
 Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
 [PROVENANCE.md](PROVENANCE.md) before changing this repository.
 

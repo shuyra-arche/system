@@ -23,7 +23,7 @@ impl Layout {
             keys: Vec::new(),
         }
     }
-    fn number(&mut self) -> u64 {
+    pub(crate) fn number(&mut self) -> u64 {
         let id = self.next;
         self.next = id
             .checked_add(1)
@@ -109,6 +109,12 @@ impl Layout {
 
 /// All acquired grants, publications and private delegation roots remain here,
 /// including when a later setup step fails. Entry coordinates are observations.
+pub(crate) struct Plan<'a> {
+    pub instance: u64,
+    pub task: TaskId,
+    pub owner: TaskId,
+    pub unit: &'a declaration::Unit,
+}
 #[derive(Default)]
 pub(crate) struct Installation {
     pub anchors: Vec<op::Entry>,
@@ -117,17 +123,42 @@ pub(crate) struct Installation {
     containers: Vec<op::Binding>,
     roots: Vec<PendId>,
     removal: Option<op::OperationId>,
+    // Last acknowledged Operator revision, used only as a CAS precondition.
+    root: Option<op::unit::Root>,
 }
 impl Installation {
+    pub fn root(&self) -> Option<op::unit::Root> {
+        self.root.clone()
+    }
+    pub fn phase(&mut self, services: &Services, phase: op::unit::Phase) -> Result<(), op::Fail> {
+        let Some(root) = &self.root else {
+            return Ok(());
+        };
+        if root.phase == phase {
+            return Ok(());
+        }
+        self.root = Some(result(
+            services.mutate::<op::authority::operations::AdvanceRoot>(op::unit::Advance {
+                instance: root.registration.instance,
+                expected: root.revision,
+                phase,
+            }),
+        )?);
+        Ok(())
+    }
     pub fn install(
         &mut self,
         layout: &mut Layout,
         services: &Services,
-        instance: u64,
-        task: TaskId,
-        unit: &declaration::Unit,
+        plan: Plan<'_>,
         source: impl Fn(Mark, kernel_api::model::pend::Limits) -> Option<PendId>,
     ) -> Result<(), op::Fail> {
+        let Plan {
+            instance,
+            task,
+            owner,
+            unit,
+        } = plan;
         self.anchors
             .try_reserve_exact(unit.namespaces().len())
             .map_err(|_| op::Fail::Full)?;
@@ -148,13 +179,68 @@ impl Installation {
         self.roots
             .try_reserve_exact(publications)
             .map_err(|_| op::Fail::Full)?;
-        for ns in unit.namespaces() {
-            let mut anchor = layout.key(services, ns.key)?;
-            if ns.placement == Placement::Instance {
-                let container = layout.part(services, anchor, &alloc::format!("i{instance}"))?;
-                anchor = container.entry.clone();
-                self.containers.push(container);
+        if unit
+            .namespaces()
+            .iter()
+            .any(|ns| ns.placement == Placement::Instance)
+        {
+            self.containers.try_reserve(1).map_err(|_| op::Fail::Full)?;
+            let pane = layout.part(
+                services,
+                layout.root(services),
+                &alloc::format!("i{instance}"),
+            )?;
+            self.containers.push(pane.clone());
+            let info = super::services::lookup(task).ok_or(op::Fail::Dead)?;
+            if info.creator != services.caller
+                || info.state == kernel_api::model::unit::UnitState::Exited
+            {
+                return Err(op::Fail::Denied);
             }
+            let team = info.team;
+            self.root = Some(result(
+                services.mutate::<op::authority::operations::RegisterRoot>(
+                    op::unit::Registration {
+                        instance: system_protocol::control::instance::InstanceId {
+                            system: services.caller.into(),
+                            sequence: system_protocol::control::instance::Sequence::new(instance)
+                                .ok_or(op::Fail::Bad)?,
+                        },
+                        owner: owner.into(),
+                        task: task.into(),
+                        team: team.into(),
+                        pane,
+                    },
+                ),
+            )?);
+        }
+        let mut keys: Vec<(&str, op::Entry)> = Vec::new();
+        keys.try_reserve_exact(unit.namespaces().len())
+            .map_err(|_| op::Fail::Full)?;
+        for ns in unit.namespaces() {
+            let mut anchor = if ns.placement == Placement::Instance {
+                let root = self
+                    .root
+                    .as_ref()
+                    .ok_or(op::Fail::Unknown)?
+                    .registration
+                    .pane
+                    .entry
+                    .clone();
+                // Composition keys remain policy, below this instance's one
+                // ordinary UnitRoot Pane rather than a global type hierarchy.
+                if let Some((_, anchor)) = keys.iter().find(|(key, _)| *key == ns.key) {
+                    anchor.clone()
+                } else {
+                    let container = layout.part(services, root, ns.key)?;
+                    let anchor = container.entry.clone();
+                    self.containers.push(container);
+                    keys.push((ns.key, anchor.clone()));
+                    anchor
+                }
+            } else {
+                layout.key(services, ns.key)?
+            };
             if ns.placement == Placement::Instance && !ns.path.as_str().is_empty() {
                 self.containers
                     .try_reserve(ns.path.as_str().split('/').count())

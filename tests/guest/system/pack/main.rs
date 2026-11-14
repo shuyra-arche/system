@@ -3,6 +3,7 @@ use unit_contract::{
     document as d,
     event::{self, Event},
 };
+mod handoff;
 fn main() {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if args[0] == "check" {
@@ -25,6 +26,9 @@ fn main() {
                 )
             })
             .collect();
+        if handoff::check(args[2].to_str().unwrap(), &events, &log) {
+            return;
+        }
         let Some(Event::Started { system }) = events.first() else {
             panic!("missing System identity")
         };
@@ -89,7 +93,12 @@ fn main() {
     let capsule = std::fs::read(&args[0]).unwrap();
     let system = std::fs::read(&args[1]).unwrap();
     let image = std::fs::read(&args[2]).unwrap();
-    let count: usize = args[4].to_str().unwrap().parse().unwrap();
+    let scenario = args[4].to_str().unwrap();
+    let count: usize = if matches!(scenario, "handoff" | "death") {
+        0
+    } else {
+        scenario.parse().unwrap()
+    };
     let mut declarations = vec![d::v2::Unit::<String> {
         schema: 2,
         id: "system".into(),
@@ -100,6 +109,9 @@ fn main() {
         },
         ..Default::default()
     }];
+    if matches!(scenario, "handoff" | "death") {
+        declarations.extend(handoff::catalog(scenario == "death"));
+    }
     for i in 0..count {
         declarations.push(d::v2::Unit {
             schema: 2,

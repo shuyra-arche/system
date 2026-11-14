@@ -1,0 +1,137 @@
+use unit_contract::{
+    document as d,
+    event::{Cause, Event},
+};
+
+pub fn catalog(death: bool) -> Vec<d::v2::Unit<String>> {
+    let mut catalog = vec![
+        d::v2::Unit {
+            schema: 2,
+            id: "controller".into(),
+            loader: d::Loader {
+                image: "user-bin".into(),
+                stack: 512 * 1024,
+                args: vec![if death { 2 } else { 0 }],
+                ..Default::default()
+            },
+            identity: d::Identity {
+                aliases: vec![],
+                grants: vec![1],
+            },
+            control: d::Control {
+                ending: d::Ending::Transient,
+                construction: vec![d::Construction {
+                    unit: Some("driver".into()),
+                    owner: d::Owner::Caller,
+                    identity: d::IdentitySelection::Caller,
+                    arguments: d::Arguments { min: 1, max: 1 },
+                    stack: d::Range {
+                        min: 512 * 1024,
+                        max: 512 * 1024,
+                    },
+                    max_image: 0,
+                }],
+                ..Default::default()
+            },
+            supply: d::v2::Supply {
+                bindings: vec![d::v2::SupplyBinding {
+                    source: "system/control".into(),
+                    resource: "instance".into(),
+                    slot: 7,
+                    rights: d::Rights {
+                        operations: d::rights::Operations::Clone(vec![
+                            d::rights::Clone::Push,
+                            d::rights::Clone::Peek,
+                        ]),
+                        modifiable: true,
+                        distributable: false,
+                        window: d::rights::Window::Inherit,
+                    },
+                }],
+            },
+            ..Default::default()
+        },
+        d::v2::Unit {
+            schema: 2,
+            id: "driver".into(),
+            loader: d::Loader {
+                image: "user-bin".into(),
+                stack: 512 * 1024,
+                ..Default::default()
+            },
+            control: d::Control {
+                creation: d::Creation::Requested,
+                ready: d::Ready::Signal(0xabcd),
+                ending: d::Ending::Transient,
+                ..Default::default()
+            },
+            operator: d::v2::Operator {
+                namespace: vec![d::v2::Namespace {
+                    key: "driver".into(),
+                    placement: d::Placement::Instance,
+                    path: "".into(),
+                    scope: d::Scope::Subtree,
+                    ops: (1 << 2) | (1 << 4) | (1 << 5) | (1 << 8),
+                    permit: None,
+                    source_mark: None,
+                    bindings: vec![],
+                }],
+            },
+            ..Default::default()
+        },
+    ];
+    if !death {
+        let mut observer = catalog[0].clone();
+        observer.id = "observer".into();
+        observer.loader.args = vec![3];
+        observer.control.construction.clear();
+        catalog.insert(1, observer);
+    }
+    catalog
+}
+pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
+    if !matches!(scenario, "handoff" | "death") {
+        return false;
+    }
+    let Some(Event::Started { system }) = events.first() else {
+        panic!("missing System identity")
+    };
+    assert!(
+        matches!(events.last(), Some(Event::Complete { system: owner, reason: 0 }) if owner == system)
+    );
+    let serial = String::from_utf8_lossy(log);
+    assert!(serial.contains(&format!(
+        "exit tid={system} reason=0x0 note: system: complete"
+    )));
+    assert!(!serial.contains("FAIL handoff") && !serial.contains("page fault killed"));
+    let marker = if scenario == "death" {
+        "PASS handoff owner-death accepted=1"
+    } else {
+        "PASS handoff create=1 replay=1 conflict=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
+    };
+    assert!(serial.contains(marker));
+    if scenario == "handoff" {
+        assert!(serial.contains("PASS handoff authorization=1"));
+        assert!(serial.contains("PASS handoff lost-reply=1 pending-cancel=1"));
+    }
+    let mut bound = vec![];
+    for (at, event) in events.iter().enumerate() {
+        if let Event::Bound { task, team, .. } = event {
+            assert!(
+                !bound
+                    .iter()
+                    .any(|(old_task, old_team)| old_task == task || old_team == team)
+            );
+            bound.push((*task, *team));
+            let exit = events.iter().enumerate().find(|(_, event)| matches!(event, Event::Exited { task: observed, exit } if observed == task && exit.cause != Cause::Fault)).unwrap().0;
+            let retired = events.iter().enumerate().find(|(_, event)| matches!(event, Event::Retired { task: observed } if observed == task)).unwrap().0;
+            assert!(at < exit && exit < retired);
+        }
+    }
+    assert!(bound.len() >= if scenario == "death" { 1 } else { 4 });
+    println!(
+        "PASS system-handoff scenario={scenario} users={} independent-teams=1 root-exit=1 retired=1",
+        bound.len()
+    );
+    true
+}

@@ -25,6 +25,7 @@ use system_protocol::identity as id;
 pub(crate) struct Plan<'a> {
     pub instance: u64,
     pub task: TaskId,
+    pub owner: TaskId,
     pub unit: Option<&'a Arc<Unit>>,
     pub identity: id::Install,
 }
@@ -49,6 +50,7 @@ impl Installation {
         let Plan {
             instance,
             task,
+            owner,
             unit,
             identity,
         } = plan;
@@ -94,10 +96,23 @@ impl Installation {
                 .lease(&mut self.supplies, services.caller, task, unit.supply())
                 .map_err(|_| "declared resource lease")?;
             self.namespaces
-                .install(layout, services, instance, task, unit, |mark, limits| {
-                    sources.marked(mark, limits)
-                })
-                .map_err(|_| "namespace installation")?;
+                .install(
+                    layout,
+                    services,
+                    crate::system::app::namespace::Plan {
+                        instance,
+                        task,
+                        owner,
+                        unit,
+                    },
+                    |mark, limits| sources.marked(mark, limits),
+                )
+                .map_err(|error| {
+                    crate::debug::put(&alloc::format!(
+                        "system: namespace installation: {error:?}\n"
+                    ));
+                    "namespace installation"
+                })?;
         }
         self.installed = true;
         Ok(())

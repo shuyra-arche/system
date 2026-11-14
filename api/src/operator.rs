@@ -1,4 +1,5 @@
 //! Namespace references, attenuation, publication and observation contracts.
+pub mod unit;
 use crate::{
     EntryId, Mark, Name, Path, PendId, TaskId,
     identity::Selector,
@@ -346,6 +347,10 @@ pub struct Event {
 
 #[weave::interface(tag = u8)]
 pub mod operations {
+    #[operation(code = 12, request = (), response = super::Outcome<super::Optional<super::unit::Access>, super::Fail>)]
+    pub struct OwnRoot;
+    #[operation(code = 13, request = super::Resolve, response = super::Outcome<super::unit::Association, super::Fail>)]
+    pub struct ResolveRoot;
     #[operation(code = 3, request = super::At, response = super::Outcome<super::Resource, super::Fail>)]
     pub struct Find;
     #[operation(code = 5, request = super::At, response = super::Outcome<super::Listing, super::Fail>)]
@@ -400,6 +405,14 @@ pub mod authority {
         pub struct Associate;
         #[operation(code = 14, request = super::Resolve, response = super::Outcome<super::Entry, super::Fail>)]
         pub struct ResolveNamespace;
+        #[operation(code = 15, request = super::unit::Registration, response = super::Outcome<super::unit::Root, super::Fail>)]
+        pub struct RegisterRoot;
+        #[operation(code = 16, request = super::unit::Advance, response = super::Outcome<super::unit::Root, super::Fail>)]
+        pub struct AdvanceRoot;
+        #[operation(code = 17, request = crate::control::instance::InstanceId, response = super::Outcome<super::unit::Root, super::Fail>)]
+        pub struct InspectRoot;
+        #[operation(code = 18, request = super::unit::Associate, response = super::Outcome<super::unit::Association, super::Fail>)]
+        pub struct AssociateRoot;
     }
 
     #[derive(weave::Contract)]

@@ -82,3 +82,10 @@ A timeout or failed assertion leaves a failed receipt. CI uploads this evidence.
 The User image is a native `no_std` test ELF, not a Toolchain std Unit. Full
 System/Toolchain acceptance, public Create/Claim/InstanceId/UnitRoot handoff,
 cross-Team application RPC, recovery and fault campaigns remain S1–S3 work.
+
+The separate `--handoff` mode uses the [independent-Team consumer](../handoff/README.md)
+against this same production Server. It exercises the Instance v1 subset,
+Operator UnitRoots, revision CAS, direct Driver RPC, native restricted lease
+withdrawal, replay/lost reply/cancellation and early owner exit. Its evidence
+lives under `target/handoff/`; it does not mark the complete S1/S2 or Toolchain
+acceptance checklist passed.

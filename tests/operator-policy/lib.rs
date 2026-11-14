@@ -24,3 +24,5 @@ pub mod system {
 }
 #[cfg(test)]
 mod namespace;
+#[cfg(test)]
+mod roots;

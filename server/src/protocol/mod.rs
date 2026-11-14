@@ -24,6 +24,7 @@ use weave::{
 };
 
 pub type Control = Endpoint<api::control::operations::Interface, 1>;
+pub type Instance = Endpoint<api::control::instance::operations::Interface, 10>;
 pub type Identity = Endpoint<api::identity::operations::Interface, 2>;
 pub type Operator = Endpoint<api::operator::operations::Interface, 3>;
 pub type Loader = Endpoint<api::loader::operations::Interface, 4>;
