@@ -16,8 +16,13 @@ core::arch::global_asm!(
     ".section .text.entry,\"ax\"",
     ".global _start",
     "_start:",
+    // a0/a1 still point to the Kernel-owned copied startup words. That original
+    // stack stays owned by this Task; its small capacity cannot host the full
+    // unoptimized supervisor call chain. The Capsule owns this separate RW
+    // segment, with an unmapped page below it, until the System Team retires.
     ".option push",
     ".option norelax",
+    "la sp, __system_stack_top",
     "la gp, __global_pointer$",
     ".option pop",
     "li tp, 0",

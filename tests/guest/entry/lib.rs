@@ -60,6 +60,16 @@ pub mod system {
 mod data;
 mod services;
 pub fn run(boot: boot::Boot) -> Result<(), usize> {
+    unsafe extern "C" {
+        static __system_stack_bottom: u8;
+        static __system_stack_top: u8;
+    }
+    let pointer: usize;
+    // Read the real production entry's current stack, not a fixture stack.
+    unsafe { core::arch::asm!("mv {}, sp", out(reg) pointer, options(nomem, nostack)) };
+    assert!(pointer > (&raw const __system_stack_bottom).addr() + 64 * 1024);
+    assert!(pointer <= (&raw const __system_stack_top).addr());
+    assert!(pointer.is_multiple_of(16));
     data::run(&boot.accounts);
     let archive =
         unit_contract::bundle::Archive::parse(boot.accounts.view()).map_err(|_| 10usize)?;
