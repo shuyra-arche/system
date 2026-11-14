@@ -288,7 +288,7 @@ fn kernel_rights_use_current_checked_permission_families() {
         pend::{Distributable, Limits, Operations, PendRange, PendScope, ShareRights},
     };
     let rights = Rights(Limits {
-        operations: Operations::Share(ShareRights::OPEN),
+        operations: Operations::Share(ShareRights::ASSOCIATE),
         modifiable: Modifiable::No,
         distributable: Distributable::No,
         scope: PendScope::Pages(PendRange::Inherit),
@@ -302,6 +302,19 @@ fn kernel_rights_use_current_checked_permission_families() {
     let mut invalid = bytes(&rights);
     invalid[8..16].copy_from_slice(&u64::MAX.to_le_bytes());
     assert!(Rights::decode_exact(&invalid).is_none());
+    for retired in [ShareRights::OPEN, ShareRights::SHUT] {
+        let mut invalid = bytes(&rights);
+        invalid[8..16].copy_from_slice(&(retired.bits() as u64).to_le_bytes());
+        assert!(Rights::decode_exact(&invalid).is_none());
+        assert!(
+            Rights(Limits {
+                operations: Operations::Share(retired),
+                ..rights.0
+            })
+            .encode(&mut [0; 72])
+            .is_none()
+        );
+    }
 }
 
 #[test]

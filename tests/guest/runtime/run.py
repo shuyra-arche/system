@@ -1,4 +1,4 @@
-"""Verify the production System heap against real Kernel9 on one/four Harts."""
+"""Verify the production System heap against real Kernel ABI 11 on one/four Harts."""
 import argparse
 import importlib.util
 import os
@@ -10,11 +10,13 @@ import tempfile
 MARKER = b"PASS system-runtime heap=1 growing=1 shared=1 owner=1 worker-exit=1 reclaim=1 contention=1"
 SUPPLY = b"PASS supply-native rights=1 scope=1 replay=1 cancel=1 reorder=1 withdrawal=1 cleanup=1"
 WINDOW = b"PASS supply-window relative=1 narrowed=1 once=1 cleanup=1"
+RPC = b"PASS system-rpc abi=11 protocol=4 context=1 sender=1 reply=1 cleanup=1 worker-reclaimed=1"
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("kernel", type=Path)
+    parser.add_argument("--harts", type=int, choices=(1, 4), nargs="+", default=[1, 4])
     args = parser.parse_args()
     guest = Path(__file__).resolve().parent
     sys.dont_write_bytecode = True
@@ -28,7 +30,8 @@ def main():
                         "--manifest-path", guest / "Cargo.toml", "--target-dir", target], check=True)
         image = target / "initrd"
         image.write_bytes(capsule.initrd((target / triple / "release/system-runtime-guest").read_bytes()))
-        for harts in ("1", "4"):
+        for count in args.harts:
+            harts = str(count)
             command = [os.environ.get("QEMU_RISCV64", "qemu-system-riscv64"),
                        "-M", "virt", "-cpu", "rv64", "-m", "128M", "-smp", harts,
                        "-bios", os.environ.get("QEMU_OPENSBI", "default"),
@@ -41,7 +44,7 @@ def main():
                 raise SystemExit(f"QEMU timed out: {harts} Hart(s)") from error
             print(f"QEMU {harts} Hart(s)\n{result.stdout.decode(errors='replace')}", flush=True)
             result.check_returncode()
-            if any(marker not in result.stdout for marker in (MARKER, SUPPLY, WINDOW)) or b"FAIL system-runtime" in result.stdout:
+            if any(marker not in result.stdout for marker in (MARKER, SUPPLY, WINDOW, RPC)) or b"FAIL system-runtime" in result.stdout:
                 raise SystemExit(f"runtime invariant failed: {harts} Hart(s)")
 
 

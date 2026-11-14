@@ -20,9 +20,7 @@ impl CleanupError {
             Self::Watch(error) => error.source.is_busy(),
             Self::Reply(ReplyError::Return(error)) => error.source.is_busy(),
             Self::Reply(ReplyError::Receive(ReceiveError::Pull(error))) => error.source.is_busy(),
-            Self::Reply(ReplyError::Receive(
-                ReceiveError::Open(error) | ReceiveError::Shut(error),
-            )) => error.source.is_busy(),
+            Self::Reply(ReplyError::Receive(ReceiveError::Mapping(error))) => error.is_busy(),
             Self::Reply(ReplyError::Receive(ReceiveError::Return(error))) => error.source.is_busy(),
             _ => false,
         }
@@ -35,7 +33,7 @@ impl CleanupError {
 #[derive(Default)]
 #[must_use = "finish the cleanup, retrying on failure"]
 pub struct Cleanup {
-    pub(super) reply: Option<Reply>,
+    pub(super) reply: Option<Reply<crate::Context>>,
     pub(super) incoming: Option<Watch>,
     pub(super) outgoing: Option<Watch>,
 }

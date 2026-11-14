@@ -45,4 +45,4 @@ pub mod operations {
 pub struct Call;
 
 pub const NAME: &str = "retirement";
-pub const INTERFACE_ID: &str = "shuyra.system.retirement.v3";
+pub const INTERFACE_ID: &str = "shuyra.system.retirement.v4";

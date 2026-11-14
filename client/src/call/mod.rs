@@ -65,10 +65,16 @@ pub(crate) struct Connection {
     sender: Sender,
     peer: TaskId,
     license: PendId,
+    context: crate::Context,
 }
 
 impl Connection {
-    pub(crate) fn bind(entry: PendId, peer: TaskId, license: PendId) -> Result<Self, Error> {
+    pub(crate) fn bind(
+        entry: PendId,
+        peer: TaskId,
+        license: PendId,
+        context: crate::Context,
+    ) -> Result<Self, Error> {
         let mut bytes = [0; PendInfo::SIZE];
         pend::inspect(entry, VirtAddr::new(bytes.as_mut_ptr().addr())).map_err(Error::Inspect)?;
         let info = PendInfo::from_bytes(&bytes).ok_or(Error::InvalidEndpoint)?;
@@ -77,6 +83,7 @@ impl Connection {
             sender: Sender::new(entry),
             peer,
             license,
+            context,
         })
     }
 
@@ -97,8 +104,10 @@ impl Connection {
             >;
             let mut outgoing = buffer::<Envelope<O, DOMAIN>>()?;
             let incoming = buffer::<<O::Interface as Contract>::Response>()?;
-            cleanup.reply =
-                Some(Reply::create(self.license, incoming.len()).map_err(Error::CreateReply)?);
+            cleanup.reply = Some(
+                Reply::create(self.license, incoming.len(), self.context.clone())
+                    .map_err(Error::CreateReply)?,
+            );
             let reply = cleanup.reply.as_mut().unwrap();
             let route = loop {
                 match reply.grant(self.peer) {

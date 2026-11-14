@@ -4,7 +4,7 @@
 //! Subject proves live authority: admission must still consult native services.
 mod rights;
 use alloc::{string::String, sync::Arc, vec::Vec};
-use kernel_api::model::{identity::Mark, pend::Limits, unit::ProgramKind};
+use kernel_api::model::{identity::Mark, pend::Limits};
 use system_protocol::{Name, Path, identity, operator, supply, value::Rights};
 use unit_contract::{bundle, document as d};
 
@@ -21,9 +21,15 @@ pub enum Error {
 #[derive(Debug)]
 pub struct Loader {
     pub image: &'static str,
-    pub kind: ProgramKind,
+    pub kind: Space,
     pub args: Vec<usize>,
     pub stack: usize,
+}
+/// Declared execution policy, never a Kernel construction authority.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Space {
+    User,
+    Supervisor,
 }
 #[derive(Debug)]
 pub struct Publication {
@@ -134,8 +140,8 @@ impl Unit {
             loader: Loader {
                 image: value.loader.image,
                 kind: match value.loader.space {
-                    d::Space::User => ProgramKind::User,
-                    d::Space::Supervisor => ProgramKind::Supervisor,
+                    d::Space::User => Space::User,
+                    d::Space::Supervisor => Space::Supervisor,
                 },
                 args: value
                     .loader
@@ -201,8 +207,8 @@ impl Catalog {
             }
             let image = archive.find(unit.loader().image).ok_or(Error::Image)?;
             let expected = match unit.loader().kind {
-                ProgramKind::User => bundle::Kind::User,
-                ProgramKind::Supervisor => bundle::Kind::Supervisor,
+                Space::User => bundle::Kind::User,
+                Space::Supervisor => bundle::Kind::Supervisor,
             };
             if image.kind != expected {
                 return Err(Error::Image);
@@ -214,9 +220,7 @@ impl Catalog {
             system,
         };
         let own = catalog.find(system).ok_or(Error::Missing)?;
-        if own.loader().image != archive.image().name
-            || own.loader().kind != ProgramKind::Supervisor
-        {
+        if own.loader().image != archive.image().name || own.loader().kind != Space::Supervisor {
             return Err(Error::Image);
         }
         catalog.validate()?;

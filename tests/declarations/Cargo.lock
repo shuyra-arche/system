@@ -60,7 +60,7 @@ dependencies = [
 [[package]]
 name = "kernel-api"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=23dec6b30e1ec08f42d3701e2613acd8c562c459#23dec6b30e1ec08f42d3701e2613acd8c562c459"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=b2eb37e2af134e4bb4248df454c437b06c1f93c0#b2eb37e2af134e4bb4248df454c437b06c1f93c0"
 dependencies = [
  "bitflags",
  "erra",
@@ -70,7 +70,7 @@ dependencies = [
 [[package]]
 name = "kernel-api-macros"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=23dec6b30e1ec08f42d3701e2613acd8c562c459#23dec6b30e1ec08f42d3701e2613acd8c562c459"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=b2eb37e2af134e4bb4248df454c437b06c1f93c0#b2eb37e2af134e4bb4248df454c437b06c1f93c0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -170,7 +170,7 @@ dependencies = [
 
 [[package]]
 name = "system-api"
-version = "0.2.0"
+version = "0.4.0"
 dependencies = [
  "kernel-api",
  "weave",

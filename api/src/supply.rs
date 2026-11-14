@@ -228,4 +228,4 @@ impl LeaseIds {
 }
 
 pub const NAME: &str = "supply";
-pub const INTERFACE_ID: &str = "shuyra.system.supply.v3";
+pub const INTERFACE_ID: &str = "shuyra.system.supply.v4";

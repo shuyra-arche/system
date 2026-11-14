@@ -2,7 +2,11 @@
 #![no_main]
 
 use core::fmt::{self, Write};
-use kernel_api::{address::VirtAddr, boot::ledger::Call, model::unit::ExitScope};
+use kernel_api::{
+    address::VirtAddr,
+    boot::ledger::{Call, Name},
+    model::unit::ExitScope,
+};
 use kernel_client::call::{debug, unit};
 
 #[global_allocator]
@@ -38,9 +42,12 @@ extern "C" fn system_start(pointer: *const usize, count: usize) -> ! {
     let Some(license) = accounts.permission(Call::Create) else {
         finish(1, "system: creation license");
     };
+    let Some(system_server::boot::Resource::Nest(space)) = accounts.resource(Name::Space) else {
+        finish(1, "system: Internal Nest");
+    };
     // SAFETY: initial Task, before allocations/workers. It stays the supervisor
     // and owns every heap Memo until the enclosing Team exits.
-    if unsafe { system_server::runtime::heap::initialize(license) }.is_err() {
+    if unsafe { system_server::runtime::heap::initialize(license, space) }.is_err() {
         finish(1, "system: heap initialization");
     }
     let boot = match unsafe { system_server::boot::take(words) } {

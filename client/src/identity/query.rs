@@ -30,6 +30,7 @@ pub enum QueryError {
 pub struct TaskQuery {
     authority: TaskId,
     license: PendId,
+    context: crate::Context,
     resolve: PendId,
     matches: PendId,
     same: PendId,
@@ -57,8 +58,13 @@ impl State {
         wait: Wait,
     ) -> Result<crate::Response<O>, QueryError> {
         self.finish()?;
-        let mut client =
-            Client::bind(endpoint, query.authority, query.license).map_err(QueryError::Call)?;
+        let mut client = Client::bind(
+            endpoint,
+            query.authority,
+            query.license,
+            query.context.clone(),
+        )
+        .map_err(QueryError::Call)?;
         let result = match client.begin::<O>(request, wait) {
             Ok(mut pending) => {
                 let result = pending.wait();
@@ -78,7 +84,11 @@ impl State {
 }
 
 impl TaskQuery {
-    pub fn from_wired(wired: Wired, license: PendId) -> Result<Self, QueryError> {
+    pub fn from_wired(
+        wired: Wired,
+        license: PendId,
+        context: crate::Context,
+    ) -> Result<Self, QueryError> {
         if !wired.valid() {
             return Err(QueryError::InvalidWiring);
         }
@@ -99,11 +109,13 @@ impl TaskQuery {
             .try_into()
             .map_err(|_| QueryError::InvalidWiring)?;
         for endpoint in [resolve, matches, same] {
-            Client::bind(endpoint, authority, license).map_err(QueryError::Call)?;
+            Client::bind(endpoint, authority, license, context.clone())
+                .map_err(QueryError::Call)?;
         }
         Ok(Self {
             authority,
             license,
+            context,
             resolve,
             matches,
             same,

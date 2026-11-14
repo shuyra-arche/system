@@ -13,7 +13,7 @@ doctest = false
 [dependencies]
 unit-contract = { package = "unit", git = "https://github.com/shuyra-arche/unit.git", rev = "aaa2b58c1ef0b40428dcc71d1321736156551109", default-features = false }
 system-protocol = { package = "system-api", path = "../../api" }
-kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "b2eb37e2af134e4bb4248df454c437b06c1f93c0" }
 weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }
 
 [dev-dependencies]

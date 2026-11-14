@@ -12,7 +12,7 @@ use kernel_api::{
         identity::{Mark, PendId, TaskId},
         modifiable::Modifiable,
         pend::{
-            CloneRights, Distributable, Limits, Operations, PendInfo, PendRange, PendStatus, Target,
+            CloneRights, Distributable, Limits, Operations, PendInfo, PendScope, PendStatus, Target,
         },
         unit::{UnitQuery, UnitTarget},
     },
@@ -27,7 +27,7 @@ fn limits() -> Limits {
         operations: Operations::Clone(CloneRights::PUSH | CloneRights::PEEK),
         modifiable: Modifiable::No,
         distributable: Distributable::No,
-        range: PendRange::Inherit,
+        scope: PendScope::Object,
     }
 }
 fn request(id: u64, root: TaskId) -> api::Acquire {

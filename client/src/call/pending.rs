@@ -61,9 +61,9 @@ impl<O: Operation> Pending<O> {
                 self.state = State::Waiting;
                 Ok(None)
             }
-            Err(ReceiveError::Transport(ReplyError::Receive(TwineReceiveError::Open(error))))
-                if error.source.is_busy() =>
-            {
+            Err(ReceiveError::Transport(ReplyError::Receive(TwineReceiveError::Mapping(
+                error,
+            )))) if error.is_busy() => {
                 // The frame has left the queue. Twine retains its Payload.
                 // Waiting for queue readability here could deadlock forever.
                 self.state = State::Mapping;

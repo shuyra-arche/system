@@ -1,9 +1,12 @@
-//! Task-local System protocol v2 calls over Twine Clone queues.
+//! Task-local System protocol v4 calls over native ABI 11 Twine Clone queues.
 #![no_std]
 
 extern crate alloc;
 
 mod call;
+mod context;
+
+pub use context::Context;
 
 pub use call::{Cleanup, CleanupError, Error, Failure, Pending, Response};
 pub use kernel_api::model::wait::Wait;
@@ -25,8 +28,9 @@ macro_rules! service {
                     entry: PendId,
                     peer: TaskId,
                     license: PendId,
+                    context: crate::Context,
                 ) -> Result<Self, crate::Error> {
-                    crate::call::Connection::bind(entry, peer, license).map(Self)
+                    crate::call::Connection::bind(entry, peer, license, context).map(Self)
                 }
 
                 /// Submit once. The returned call owns the fresh reply route.

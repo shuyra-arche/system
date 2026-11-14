@@ -22,3 +22,10 @@ become requirements. Old VNU1 records are rejected explicitly.
 fixture decodes a genuine schema-2 VNI1 archive from Kernel's boot arguments.
 The legacy Control application still consumes its old runtime model: remaining
 callers must migrate before this becomes the complete application interpreter.
+
+On ABI 11 the interpreter assigns Object, Pages or Whole Nest scopes explicitly.
+Retired Share Open/Shut, Memo declarations, Nest Transfer and unqualified
+Reservation operations fail closed. Schema-2 records do not carry live
+Reservation identities: the actual provider must select and deliver that
+authority at runtime. Execution kind is System declaration policy, not a Kernel
+privilege-selection operation. The policy suite checks these rejection cases.

@@ -1,112 +1,193 @@
-//! Relative windows are resolved once before recipient delivery.
+//! Relative windows are resolved once before recipient delivery, using ABI 11.
 use crate::{
     addr, inspect,
-    native_supply::{Resource, Source},
+    memory::Memory,
+    native_supply::{Resource, Source as Leases},
 };
 use alloc::string::String;
 use kernel_api::{
-    address::{PAGE_SIZE, VirtAddr},
+    abi::memory::{Action, Failure, Query, Snapshot, Source, Value},
+    address::{PAGE_SIZE, PageCount, VirtAddr},
     model::{
-        cell::{
-            Allocation, CellAssociation, CellCreate, CellInfo, CellObject, CellPosition,
-            CellSource, CellState, CreatedCell, MemoDestination, Placement, ReferenceRange,
-        },
-        identity::{PendId, TeamId},
+        cell::{CellLevel, Placement},
+        flat::SlotPosition,
+        identity::{Mark, PendId},
         modifiable::Modifiable,
-        pend::{Distributable, Limits, Operations, PendRange, ShareRights},
+        nest::{MemoPosition, NestId, ReserveRequest},
+        pend::{
+            AccordRequest, AccordTarget, Distributable, Limits, Operations, PendInfo, PendRange,
+            PendScope, ShareRights, Target, ViewTarget,
+        },
         unit::{UnitQuery, UnitTarget},
     },
 };
-use kernel_client::call::{cell, pend, room, share_view};
+use kernel_client::call::{pend, room, share_view};
 use system_protocol::{supply as api, value::Rights};
-fn position(object: CellObject, page: usize) -> CellPosition {
-    CellPosition {
-        object,
-        page,
-        generation: 0,
+
+fn change(memory: &mut Memory, action: impl Fn(&Memory) -> Action) -> Value {
+    let deadline = room::clock() + 5_000_000_000;
+    loop {
+        match memory.mutate(action(memory)) {
+            Ok(value) => return value,
+            Err(Failure::Busy | Failure::Stale) if room::clock() < deadline => room::yield_(),
+            error => panic!("native mutation: {error:?}"),
+        }
     }
 }
+fn info(token: PendId) -> PendInfo {
+    let mut bytes = [0; PendInfo::SIZE];
+    pend::inspect(token, VirtAddr::new(bytes.as_mut_ptr().addr())).unwrap();
+    PendInfo::from_bytes(&bytes).unwrap()
+}
+fn reserve(
+    memory: &mut Memory,
+    space: PendId,
+    nest: NestId,
+    count: usize,
+    access: u64,
+) -> (MemoPosition, VirtAddr) {
+    let Value::Reservation {
+        token,
+        reservation,
+        address,
+        ..
+    } = change(memory, |memory| {
+        let Snapshot::Nest(status) = memory.inspect(Query::Nest { token: space, nest }) else {
+            panic!("Nest")
+        };
+        Action::Reserve {
+            token: space,
+            nest,
+            expected: status.version,
+            reservation: ReserveRequest {
+                placement: Placement::lowest(PAGE_SIZE).unwrap(),
+                count: PageCount::new(count).unwrap(),
+                level: CellLevel::BASE,
+                access,
+            },
+        }
+    })
+    else {
+        panic!("Reservation")
+    };
+    (
+        MemoPosition::new(token, nest, reservation, 0).unwrap(),
+        address,
+    )
+}
+fn publish(memory: &mut Memory, target: MemoPosition, source: Source) {
+    change(memory, |memory| {
+        let Snapshot::Memo(status) = memory.inspect(Query::Memo(target)) else {
+            panic!("Memo")
+        };
+        Action::Insert {
+            target,
+            expected: status.generation,
+            source,
+        }
+    });
+    change(memory, |memory| {
+        let Snapshot::Memo(status) = memory.inspect(Query::Memo(target)) else {
+            panic!("Memo")
+        };
+        Action::Publish {
+            memo: target,
+            expected: status.generation,
+            maintenance: None,
+        }
+    });
+}
+fn release(memory: &mut Memory, memo: MemoPosition) {
+    change(memory, |memory| {
+        let Snapshot::Reservation(status) = memory.inspect(Query::Reservation {
+            token: memo.token(),
+            nest: memo.nest(),
+            reservation: memo.reservation(),
+        }) else {
+            panic!("Reservation")
+        };
+        Action::Release {
+            token: memo.token(),
+            nest: memo.nest(),
+            reservation: memo.reservation(),
+            expected: status.version,
+        }
+    });
+    pend::return_(memo.token()).unwrap();
+}
+
 pub fn run(license: PendId) {
     let UnitTarget::Task(root) = inspect(UnitQuery::Caller).target else {
-        panic!("caller");
+        panic!("caller")
     };
-    let CreatedCell::Slot(slot) = cell::create(
+    let space = crate::space();
+    let Target::Nest(nest) = info(space).target else {
+        panic!("space")
+    };
+    let mut memory = Memory::new(|why| panic!("{why}"));
+    let Value::CreatedFlat { token, flat, .. } = change(&mut memory, |_| Action::CreateFlat {
         license,
-        addr(&CellCreate::Slot(Allocation::new(8 * PAGE_SIZE, PAGE_SIZE).unwrap()).to_bytes()),
-    )
-    .unwrap() else {
-        panic!("Slot");
+        count: 8,
+        level: CellLevel::BASE,
+    }) else {
+        panic!("Flat")
     };
-    let descriptor = CellCreate::Memo {
-        source: CellSource::Slot(ReferenceRange {
-            reference: slot,
-            offset: 0,
-            count: 8,
-        }),
-        destination: MemoDestination::Internal {
-            team: TeamId::new(0),
-            placement: Placement::lowest(PAGE_SIZE).unwrap(),
-            access: 6,
-        },
-    }
-    .to_bytes();
-    let CreatedCell::Memo {
-        token: memo,
-        address,
-    } = cell::create(PendId::NONE, addr(&descriptor)).unwrap()
-    else {
-        panic!("Memo");
-    };
+    let (memo, address) = reserve(&mut memory, space, nest, 8, 6);
     for page in 0..8 {
-        let deadline = room::clock() + 5_000_000_000;
-        loop {
-            let mut info = [0; CellInfo::WIDTH];
-            let mut target = position(CellObject::Memo(memo), page);
-            cell::inspect(
-                addr(&target.to_bytes()),
-                VirtAddr::new(info.as_mut_ptr().addr()),
-            )
-            .unwrap();
-            let state = CellInfo::from_bytes(&info).unwrap();
-            target.generation = state.generation;
-            match state.state {
-                CellState::Vacant => cell::insert(addr(
-                    &CellAssociation {
-                        source: position(CellObject::Slot(slot), page),
-                        target,
-                    }
-                    .to_bytes(),
-                ))
-                .unwrap(),
-                CellState::Ready => cell::publish(addr(&target.to_bytes())).unwrap(),
-                CellState::Published => break,
-                CellState::Publishing | CellState::Retracting => room::yield_(),
-                CellState::Failed => panic!("mapping"),
+        let slot = SlotPosition::new(token, flat, page).unwrap();
+        change(&mut memory, |memory| {
+            let Snapshot::Slot(status) = memory.inspect(Query::Slot(slot)) else {
+                panic!("Slot")
+            };
+            Action::Occupy {
+                slot,
+                expected: status.version,
             }
-            assert!(room::clock() < deadline);
-        }
-        // SAFETY: this Task owns the private published RW Memo and full Slot.
+        });
+        let Snapshot::Slot(status) = memory.inspect(Query::Slot(slot)) else {
+            panic!("Slot")
+        };
+        let target = MemoPosition::new(memo.token(), nest, memo.reservation(), page).unwrap();
+        publish(
+            &mut memory,
+            target,
+            Source::Flat {
+                position: slot,
+                expected: status.version,
+            },
+        );
+        // SAFETY: this Task owns the settled private RW reservation and Flat.
         unsafe {
             (address.get() as *mut u8)
                 .add(page * PAGE_SIZE)
                 .write_bytes(page as u8 + 1, PAGE_SIZE);
         }
     }
-    let share = share_view::create(license, slot, Modifiable::No).unwrap();
-    loop {
-        match pend::return_(memo) {
-            Ok(()) => break,
-            Err(error) if error.source.is_busy() => room::yield_(),
-            Err(error) => panic!("{error:?}"),
-        }
-    }
     let maximum = Limits {
-        operations: Operations::Share(ShareRights::OPEN | ShareRights::SHUT),
+        operations: Operations::Share(ShareRights::ASSOCIATE),
         modifiable: Modifiable::No,
         distributable: Distributable::No,
-        range: PendRange::pages(1, 3).unwrap(),
+        scope: PendScope::Pages(PendRange::pages(1, 3).unwrap()),
     };
-    let mut source = Source::new("system/window").unwrap();
+    let share = share_view::derive(
+        license,
+        addr(
+            &AccordRequest {
+                src: token,
+                target: AccordTarget::Caller,
+                mark: Mark::NONE,
+                limits: Limits {
+                    distributable: Distributable::Yes,
+                    scope: PendScope::Pages(PendRange::Inherit),
+                    ..maximum
+                },
+            }
+            .to_bytes(),
+        ),
+    )
+    .unwrap();
+    release(&mut memory, memo);
+    let mut source = Leases::new("system/window").unwrap();
     source
         .register(Resource {
             name: "page",
@@ -117,8 +198,10 @@ pub fn run(license: PendId) {
             description: b"window",
         })
         .unwrap();
-    let mut requested = maximum;
-    requested.range = PendRange::pages(1, 1).unwrap();
+    let requested = Limits {
+        scope: PendScope::Pages(PendRange::pages(1, 1).unwrap()),
+        ..maximum
+    };
     let id = api::LeaseId::new(1).unwrap();
     source
         .acquire(
@@ -148,23 +231,44 @@ pub fn run(license: PendId) {
         }
         assert!(room::clock() < deadline);
     };
-    let (view, span) = share_view::open(delivered).unwrap();
-    assert_eq!(span, PAGE_SIZE);
-    // SAFETY: our active read-only borrow covers this exact page until Shut.
-    assert_eq!(unsafe { (view.get() as *const u8).read_volatile() }, 3);
-    share_view::shut(delivered).unwrap();
+    let delivered_info = info(delivered);
+    assert_eq!(
+        delivered_info.limits.scope,
+        PendScope::Pages(PendRange::pages(2, 1).unwrap())
+    );
+    let Target::View(ViewTarget::Share(view)) = delivered_info.target else {
+        panic!("Share")
+    };
+    let (read, address) = reserve(&mut memory, space, nest, 1, 2);
+    publish(
+        &mut memory,
+        read,
+        Source::Share {
+            token: delivered,
+            view,
+            page: 2,
+            count: 1,
+        },
+    );
+    // SAFETY: this settled read-only publication is within the delivered window.
+    assert_eq!(unsafe { (address.get() as *const u8).read_volatile() }, 3);
+    release(&mut memory, read);
     source.release(root, id).unwrap();
     let deadline = room::clock() + 5_000_000_000;
     while !source.finish().unwrap() {
         assert!(room::clock() < deadline);
         room::yield_();
     }
-    loop {
-        match pend::return_(share) {
-            Ok(()) => break,
-            Err(error) if error.source.is_busy() => room::yield_(),
-            Err(error) => panic!("{error:?}"),
+    pend::return_(share).unwrap();
+    change(&mut memory, |memory| {
+        let Snapshot::Flat(status) = memory.inspect(Query::Flat { token, flat }) else {
+            panic!("Flat")
+        };
+        Action::DeleteFlat {
+            token,
+            flat,
+            expected: status.version,
         }
-    }
-    cell::delete(addr(&CellObject::Slot(slot).to_bytes())).unwrap();
+    });
+    pend::return_(token).unwrap();
 }

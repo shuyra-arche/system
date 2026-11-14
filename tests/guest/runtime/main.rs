@@ -3,10 +3,20 @@
 extern crate alloc;
 #[path = "../../../server/src/runtime/heap/mod.rs"]
 mod heap;
+#[path = "../../../server/src/runtime/memory.rs"]
+pub mod memory;
+pub mod runtime {
+    pub use crate::memory;
+}
 #[path = "../../../server/src/system/supply/native.rs"]
 mod native_supply;
+#[path = "../../../server/src/protocol/mod.rs"]
+pub mod protocol;
+mod rpc;
 mod supply;
 mod window;
+#[path = "../../../server/src/system/app/worker/mod.rs"]
+pub mod worker;
 use alloc::{boxed::Box, vec, vec::Vec};
 use core::{
     fmt::{self, Write},
@@ -17,7 +27,7 @@ use kernel_api::{
     model::{
         identity::{PendId, TaskId},
         pend::{PendInfo, Target},
-        unit::{ExitScope, UnitCreate, UnitInfo, UnitQuery, UnitState, UnitTarget},
+        unit::{CreatedUnit, ExitScope, UnitCreate, UnitInfo, UnitQuery, UnitState},
     },
 };
 use kernel_client::call::{debug, pend, room, unit};
@@ -78,12 +88,40 @@ fn license() -> PendId {
         after = info.token;
     }
 }
+fn pends() -> usize {
+    let mut after = PendId::NONE;
+    let mut count = 0;
+    loop {
+        let mut bytes = [0; PendInfo::SIZE];
+        if pend::collect(after, VirtAddr::new(bytes.as_mut_ptr().addr()), 1).unwrap() == 0 {
+            return count;
+        }
+        after = PendInfo::from_bytes(&bytes).unwrap().token;
+        count += 1;
+    }
+}
+fn space() -> PendId {
+    let mut after = PendId::NONE;
+    loop {
+        let mut bytes = [0; PendInfo::SIZE];
+        assert_eq!(
+            pend::collect(after, VirtAddr::new(bytes.as_mut_ptr().addr()), 1).unwrap(),
+            1
+        );
+        let info = PendInfo::from_bytes(&bytes).unwrap();
+        if matches!(info.target, Target::Nest(_)) {
+            return info.token;
+        }
+        after = info.token;
+    }
+}
 #[unsafe(no_mangle)]
 extern "C" fn start() -> ! {
-    unsafe { heap::initialize(license()) }.unwrap();
+    unsafe { heap::initialize(license(), space()) }.unwrap();
     let mut warm = Vec::<u64>::with_capacity(512);
     warm.push(0xaabb);
     let baseline = heap::mappings();
+    let baseline_pends = pends();
     assert!(baseline > 0);
     let mut tasks = [TaskId::new(0); WORKERS];
     for (i, task) in tasks.iter_mut().enumerate() {
@@ -96,7 +134,7 @@ extern "C" fn start() -> ! {
             stack: VirtAddr::new(128 * 1024),
         }
         .to_bytes();
-        let UnitTarget::Task(id) = unit::create(addr(&descriptor)).unwrap() else {
+        let CreatedUnit::Task(id) = unit::create(addr(&descriptor)).unwrap() else {
             panic!("Task");
         };
         *task = id;
@@ -162,6 +200,11 @@ extern "C" fn start() -> ! {
     assert_eq!(large[large.len() - 1], 0x5a);
     drop(large);
     assert_eq!(heap::mappings(), baseline);
+    assert_eq!(
+        pends(),
+        baseline_pends,
+        "free heaps must also return their Flat and Reservation Pends"
+    );
     writeln!(
         Console,
         "PASS system-runtime heap=1 growing=1 shared=1 owner=1 worker-exit=1 reclaim=1 contention=1"
@@ -169,6 +212,7 @@ extern "C" fn start() -> ! {
     .unwrap();
     supply::run(license());
     window::run(license());
+    rpc::run(license(), space());
     writeln!(
         Console,
         "PASS supply-window relative=1 narrowed=1 once=1 cleanup=1"

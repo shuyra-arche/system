@@ -1,7 +1,7 @@
 # System support
 
 This unconditional `no_std` package reads immutable Unit bundles, typed Kernel
-ABI 10 boot resources and bounded DTB slices. It depends only on Kernel API/Client,
+ABI 11 boot resources and bounded DTB slices. It depends only on Kernel API/Client,
 Unit's pure declarations (`default-features = false`), FDT and Erra. There is no
 Env, Execution, Resource or driver API dependency in its resolved target tree.
 
@@ -18,7 +18,7 @@ respective System consumers before use.
 The device inventory keeps its existing 62-entry capacity without importing Hub.
 Native face creation requires an explicit creation license and returns queue
 ownership to its caller. Workload calibration uses measured monotonic nanoseconds;
-the removed timer-tick estimate is not an ABI 10 clock source.
+the removed timer-tick estimate is not an ABI 11 clock source.
 
 ```sh
 cargo test --locked -p system-support --tests --target x86_64-unknown-linux-gnu

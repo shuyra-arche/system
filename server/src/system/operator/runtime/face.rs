@@ -59,7 +59,11 @@ impl Face {
             closing: false,
         }
     }
-    pub fn initialize(&mut self, license: PendId) -> Result<(), Error> {
+    pub fn initialize(
+        &mut self,
+        license: PendId,
+        context: system_client::Context,
+    ) -> Result<(), Error> {
         if self.root.is_none() {
             let max_len = match self.role {
                 Role::Discovery => <<system_protocol::operator::Call as Contract>::Request as Codec>::SIZE.maximum(),
@@ -87,7 +91,7 @@ impl Face {
             let root = self.root.unwrap();
             macro_rules! bind {
                 ($kind:ident, $endpoint:path) => {
-                    match <$endpoint>::bind(root, license) {
+                    match <$endpoint>::bind(root, license, context) {
                         Ok(endpoint) => Ingress::$kind(endpoint),
                         Err(failure) => {
                             self.partial = Some(failure.cleanup);

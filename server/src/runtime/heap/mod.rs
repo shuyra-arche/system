@@ -25,6 +25,7 @@ const ANSWERED: u32 = 3;
 const BLOCK: usize = 4 * kernel_api::address::PAGE_SIZE;
 static ROOT: AtomicUsize = AtomicUsize::new(0);
 // Only ROOT reconstructs this table-local Pend from raw storage.
+static SPACE: AtomicUsize = AtomicUsize::new(0);
 static LICENSE: AtomicUsize = AtomicUsize::new(0);
 static MAPPINGS: AtomicUsize = AtomicUsize::new(0);
 #[derive(Clone, Copy)]
@@ -49,7 +50,9 @@ static MAILBOX: Mailbox = Mailbox {
 /// # Safety
 /// Call once from the initial Task before allocating or starting workers. This
 /// Task and its creation grant must outlive all allocations and workers.
-pub unsafe fn initialize(license: PendId) -> Result<(), &'static str> {
+/// `space` must be the caller's actual Internal Nest, obtained from the trusted
+/// boot Space grant. A foreign Nest can publish VAs absent from this Task.
+pub unsafe fn initialize(license: PendId, space: PendId) -> Result<(), &'static str> {
     let root = caller().ok_or("missing initial Task")?;
     let mut bytes = [0; PendInfo::SIZE];
     pend::inspect(license, VirtAddr::new(bytes.as_mut_ptr().addr())).map_err(|_| "heap license")?;
@@ -65,6 +68,21 @@ pub unsafe fn initialize(license: PendId) -> Result<(), &'static str> {
     if ROOT.load(Acquire) != 0 {
         return Err("heap already initialized");
     }
+    pend::inspect(space, VirtAddr::new(bytes.as_mut_ptr().addr())).map_err(|_| "heap space")?;
+    let info = PendInfo::from_bytes(&bytes).ok_or("invalid heap space")?;
+    if info.status != PendStatus::Active
+        || !matches!(info.target, kernel_api::model::pend::Target::Nest(_))
+        || !info.limits.operations.contains(Operations::Nest(
+            kernel_api::model::pend::NestRights::INSPECT
+                | kernel_api::model::pend::NestRights::RESERVE,
+        ))
+        || info.limits.modifiable != kernel_api::model::modifiable::Modifiable::Yes
+        || info.limits.scope
+            != kernel_api::model::pend::PendScope::Nest(kernel_api::model::pend::NestScope::Whole)
+    {
+        return Err("heap space denied");
+    }
+    SPACE.store(space.get(), Relaxed);
     LICENSE.store(license.get(), Relaxed);
     ROOT.store(root.get(), Release);
     Ok(())
@@ -144,8 +162,8 @@ fn inspect(query: UnitQuery) -> Option<UnitInfo> {
     }
     UnitInfo::from_bytes(&bytes)
 }
-fn address<T>(value: &T) -> VirtAddr {
-    VirtAddr::new(value as *const T as usize)
+fn space() -> PendId {
+    PendId::from_bytes(&(SPACE.load(Acquire) as u64).to_le_bytes()).unwrap_or_else(|| fatal())
 }
 fn fatal() -> ! {
     let note = b"system: heap ownership failed";

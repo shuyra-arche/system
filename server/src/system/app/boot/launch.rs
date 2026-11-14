@@ -33,7 +33,7 @@ pub(super) struct Handoff {
     pub controller: TaskId,
     pub operator: AtomicUsize,
     pub epoch: Epoch,
-    pub grants: [AtomicUsize; 4],
+    pub grants: [AtomicUsize; 5],
     pub publications: [AtomicUsize; 20],
     pub health: AtomicUsize,
     armed: AtomicBool,
@@ -52,7 +52,7 @@ impl Slot {
             controller,
             operator: AtomicUsize::new(0),
             epoch,
-            grants: [const { AtomicUsize::new(0) }; 4],
+            grants: [const { AtomicUsize::new(0) }; 5],
             publications: [const { AtomicUsize::new(0) }; 20],
             health: AtomicUsize::new(0),
             armed: AtomicBool::new(false),
@@ -93,6 +93,9 @@ impl Slot {
                 scope: match operations {
                     Operations::Share(_) | Operations::Flat(_) => {
                         PendScope::Pages(PendRange::Inherit)
+                    }
+                    Operations::Nest(_) => {
+                        PendScope::Nest(kernel_api::model::pend::NestScope::Whole)
                     }
                     _ => PendScope::Object,
                 },
@@ -175,7 +178,11 @@ fn operator(handoff: &Handoff) -> bool {
         Err(_) => return false,
     };
     handoff.health.store(published.get(), Ordering::Release);
+    let Some(context) = context(handoff) else {
+        return false;
+    };
     let config = operator::Config {
+        context,
         license,
         controller: handoff.controller,
         shutdown: native(handoff.grants[1].load(Ordering::Acquire)),
@@ -218,7 +225,11 @@ fn operator(handoff: &Handoff) -> bool {
     success
 }
 fn identity(handoff: &Handoff) -> bool {
+    let Some(context) = context(handoff) else {
+        return false;
+    };
     let config = identity::Config {
+        context,
         license: native(handoff.grants[0].load(Ordering::Acquire)),
         controller: handoff.controller,
         operator: TaskId::new(handoff.operator.load(Ordering::Acquire)),
@@ -271,4 +282,32 @@ unsafe extern "C" fn entry(words: *const usize, count: usize) -> ! {
         handoff.failed.store(true, Ordering::Release);
     }
     unit::exit(u64::from(!success), 0, VirtAddr::new(0), 0, ExitScope::Task)
+}
+
+fn context(handoff: &Handoff) -> Option<system_client::Context> {
+    let space = native(handoff.grants[4].load(Ordering::Acquire));
+    let mut bytes = [0; kernel_api::model::pend::PendInfo::SIZE];
+    let deadline = room::clock().saturating_add(super::BOOT_NS);
+    loop {
+        match pend::inspect(space, VirtAddr::new(bytes.as_mut_ptr().addr())) {
+            Ok(()) => break,
+            Err(error) if error.source.is_busy() && room::clock() < deadline => room::yield_(),
+            Err(_) => return None,
+        }
+    }
+    let info = kernel_api::model::pend::PendInfo::from_bytes(&bytes)?;
+    let kernel_api::model::pend::Target::Nest(nest) = info.target else {
+        return None;
+    };
+    // SAFETY: the trusted same-Team controller explicitly delivered its own
+    // Internal Nest. This context remains in this worker, shares the System
+    // Team's monotonic allocator and is retained by every ingress and query.
+    let memory = unsafe {
+        twine::view::memory::Native::new(
+            space,
+            nest,
+            crate::runtime::memory::next_request as fn() -> _,
+        )
+    };
+    Some(system_client::Context::new(memory))
 }

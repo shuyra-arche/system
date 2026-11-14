@@ -175,4 +175,4 @@ pub mod operations {
 pub struct Call;
 
 pub const NAME: &str = "loader";
-pub const INTERFACE_ID: &str = "shuyra.system.loader.v3";
+pub const INTERFACE_ID: &str = "shuyra.system.loader.v4";

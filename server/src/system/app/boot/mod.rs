@@ -84,6 +84,7 @@ pub struct Publication {
 #[must_use = "finish retained bootstrap resources, including after advance fails"]
 pub struct Workers {
     license: PendId,
+    context: system_client::Context,
     controller: TaskId,
     epoch: Epoch,
     phase: Phase,
@@ -102,7 +103,7 @@ pub struct Workers {
 }
 impl Workers {
     /// Borrow the initial Task's creation license; never discover grants by Mark.
-    pub fn new(license: PendId) -> Result<Self, Error> {
+    pub fn new(license: PendId, context: system_client::Context) -> Result<Self, Error> {
         let mut bytes = [0; UnitInfo::WIDTH];
         if !unit::inspect(UnitQuery::Caller, VirtAddr::new(bytes.as_mut_ptr().addr()))
             .map_err(Error::Unit)?
@@ -120,6 +121,7 @@ impl Workers {
             .map_err(|_| Error::Capacity)?;
         Ok(Self {
             license,
+            context,
             controller,
             epoch: Epoch::new(),
             phase: Phase::Preparing,
@@ -240,6 +242,16 @@ impl Workers {
                     Operations::Sign(SignRights::LISTEN | SignRights::CONSUME | SignRights::ROUTE),
                     Modifiable::No,
                 )?;
+                use twine::view::memory::Memory;
+                slot.grant(
+                    self.context.space().0,
+                    4,
+                    Operations::Nest(
+                        kernel_api::model::pend::NestRights::INSPECT
+                            | kernel_api::model::pend::NestRights::RESERVE,
+                    ),
+                    Modifiable::Yes,
+                )?;
                 self.operator.as_mut().unwrap().resume()?;
                 self.phase = Phase::Operator;
             }
@@ -291,6 +303,16 @@ impl Workers {
                     Operations::Sign(SignRights::LISTEN),
                     Modifiable::No,
                 )?;
+                use twine::view::memory::Memory;
+                slot.grant(
+                    self.context.space().0,
+                    4,
+                    Operations::Nest(
+                        kernel_api::model::pend::NestRights::INSPECT
+                            | kernel_api::model::pend::NestRights::RESERVE,
+                    ),
+                    Modifiable::Yes,
+                )?;
                 self.identity.as_mut().unwrap().resume()?;
                 self.phase = Phase::Identity;
             }
@@ -300,8 +322,13 @@ impl Workers {
                 }
                 let slot = self.operator.as_ref().unwrap();
                 let endpoint = native(slot.handoff().publications[2].load(Ordering::Acquire));
-                let mut setup = Client::bind(endpoint, slot.worker.task(), self.license)
-                    .map_err(Error::Client)?;
+                let mut setup = Client::bind(
+                    endpoint,
+                    slot.worker.task(),
+                    self.license,
+                    self.context.clone(),
+                )
+                .map_err(Error::Client)?;
                 match setup.begin::<setup::Root>((), Wait::At(self.deadline)) {
                     Ok(call) => self.root = Some(call),
                     Err(failure) => {
@@ -366,8 +393,13 @@ impl Workers {
                     };
                     let endpoint =
                         native(operator.handoff().publications[2].load(Ordering::Acquire));
-                    let mut setup = Client::bind(endpoint, operator.worker.task(), self.license)
-                        .map_err(Error::Client)?;
+                    let mut setup = Client::bind(
+                        endpoint,
+                        operator.worker.task(),
+                        self.license,
+                        self.context.clone(),
+                    )
+                    .map_err(Error::Client)?;
                     match setup.begin::<setup::Wired>(body, Wait::At(self.deadline)) {
                         Ok(call) => self.wiring = Some(call),
                         Err(failure) => {

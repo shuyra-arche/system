@@ -1,4 +1,4 @@
-//! Protocol v2 ingress. Route validation precedes all service side effects.
+//! Protocol v4 ingress over ABI 11 native deliveries. Route validation precedes all service side effects.
 //! Endpoints borrow their queue and own their watch and retained deliveries.
 
 use alloc::vec::Vec;
@@ -63,7 +63,7 @@ pub enum CleanupError {
 #[derive(Default)]
 #[must_use = "finish retained deliveries and the watch, retrying on failure"]
 pub struct Cleanup {
-    receiver: Option<Receiver>,
+    receiver: Option<Receiver<system_client::Context>>,
     watch: Option<Watch>,
 }
 impl fmt::Debug for Cleanup {
@@ -119,12 +119,20 @@ pub struct Endpoint<I: Contract, const DOMAIN: u16> {
 impl<I: Contract, const DOMAIN: u16> Endpoint<I, DOMAIN> {
     /// Borrow a queue with PULL and PEEK rights. Create it in the serving Task
     /// so clients can bind its owner as the authenticated reply source.
-    pub fn bind(queue: PendId, license: PendId) -> Result<Self, BindFailure> {
+    #[allow(
+        clippy::result_large_err,
+        reason = "retain native delivery cleanup without allocating on a failed bind"
+    )]
+    pub fn bind(
+        queue: PendId,
+        license: PendId,
+        context: system_client::Context,
+    ) -> Result<Self, BindFailure> {
         let mut cleanup = Cleanup::default();
         let result = (|| {
             let request = buffer::<<Call<I, DOMAIN> as Contract>::Request>()?;
             let response = buffer::<I::Response>()?;
-            let receiver = Receiver::new(queue);
+            let receiver = Receiver::new(queue, context);
             let source = receiver.source();
             cleanup.receiver = Some(receiver);
             cleanup.watch = Some(Watch::create(license).map_err(Error::CreateWatch)?);
@@ -197,8 +205,8 @@ impl<I: Contract, const DOMAIN: u16> Endpoint<I, DOMAIN> {
                     room::yield_();
                 }
                 Err(ServeError::Receive(transport::ReceiveError::Transport(
-                    ReceiveError::Open(error),
-                ))) if error.source.is_busy() => {
+                    ReceiveError::Mapping(error),
+                ))) if error.is_busy() => {
                     self.retry_delivery = true;
                     check_wait(wait)?;
                     room::yield_();

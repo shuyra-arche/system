@@ -51,7 +51,12 @@ impl Face {
             publication: None,
         }
     }
-    pub(super) fn initialize(&mut self, license: PendId, controller: TaskId) -> Result<(), Error> {
+    pub(super) fn initialize(
+        &mut self,
+        license: PendId,
+        controller: TaskId,
+        context: system_client::Context,
+    ) -> Result<(), Error> {
         type Request = <system_protocol::identity::Call as Contract>::Request;
         let max_len = Request::SIZE.maximum().expect("bounded Identity protocol");
         let root = clone_view::create(
@@ -65,13 +70,15 @@ impl Face {
         )
         .map_err(Error::Queue)?;
         self.root = Some(root);
-        self.endpoint = Some(match crate::protocol::Identity::bind(root, license) {
-            Ok(endpoint) => endpoint,
-            Err(failure) => {
-                self.partial = Some(failure.cleanup);
-                return Err(Error::Bind(failure.error));
-            }
-        });
+        self.endpoint = Some(
+            match crate::protocol::Identity::bind(root, license, context) {
+                Ok(endpoint) => endpoint,
+                Err(failure) => {
+                    self.partial = Some(failure.cleanup);
+                    return Err(Error::Bind(failure.error));
+                }
+            },
+        );
         let request = AccordRequest {
             src: root,
             target: AccordTarget::Task(controller),

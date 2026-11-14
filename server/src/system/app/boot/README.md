@@ -1,8 +1,11 @@
 # Native internal-service bootstrap
 
 `Workers` owns the Operator/Identity startup sequence. It borrows the initial
-Task's creation license, creates dedicated shutdown/revision Signs, prepares
-same-Team dormant Tasks and grants only recipient-local Clone/Sign rights.
+Task's creation license and native memory context, creates dedicated shutdown/revision Signs, prepares
+same-Team dormant Tasks and explicitly grants recipient-local Clone/Sign rights
+and narrowed INSPECT/RESERVE access to their actual Internal Nest. Each worker
+uses the shared native request allocator; the supervisor retains its original
+context for setup replies.
 `Slot` retains a stable handoff allocation until the Kernel proves that Task
 reclaimed. Release/acquire publication protects both configuration and receipts;
 no closure trampoline, scanned Mark or old capability conversion participates.
@@ -31,10 +34,10 @@ dead Task. The enclosing System must treat this as fatal to its Team rather than
 restart an internal worker and claim its language heap was reclaimed. Ordinary
 Units have separate Teams and independent retirement handling.
 
-The actual production objects run in `tests/guest/client` on one/four Harts:
-empty/partial cancellation, insufficient rights, both native service roles,
-Root/Wired, live Identity resolution and revision, Operator namespace use,
-ordered clean worker exits, unexpected worker death and caller capability
-baseline recovery. This verifies the bootstrap component; the assembled Server
-application, allocator/entry and remaining legacy service wiring are still being
-ported and are not represented by this test guest.
+The historical Client guest exercised these objects on older providers, including
+partial cancellation, both roles, Root/Wired and ordered retirement. Current
+ABI 11 migration adds explicit context and Nest handoff; that comprehensive guest
+and the full bootstrap/entry path have not passed on the new providers. Current
+runtime evidence in `tests/guest/runtime` covers the heap and same-Team
+Client/Ingress/Worker boundary only. It does not launch Operator/Identity or the
+complete System supervisor.

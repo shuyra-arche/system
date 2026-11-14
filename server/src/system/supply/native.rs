@@ -7,7 +7,8 @@ use kernel_api::{
     model::{
         identity::{Mark, PendId, TaskId},
         pend::{
-            AccordRequest, AccordTarget, Distributable, Limits, PendInfo, PendRange, PendStatus,
+            AccordRequest, AccordTarget, Distributable, Limits, NestScope, PendInfo, PendRange,
+            PendScope, PendStatus,
         },
     },
 };
@@ -349,7 +350,16 @@ impl Source {
                 let mut limits = lease.request.binding.rights.0;
                 // The private root already resolved the requested relative
                 // window. Applying it a second time would shift the range.
-                limits.range = PendRange::Inherit;
+                limits.scope = match limits.scope {
+                    PendScope::Pages(_) => PendScope::Pages(PendRange::Inherit),
+                    PendScope::Nest(NestScope::Reservation { id, .. }) => {
+                        PendScope::Nest(NestScope::Reservation {
+                            id,
+                            range: PendRange::Inherit,
+                        })
+                    }
+                    scope => scope,
+                };
                 let target = TaskId::new(
                     usize::try_from(lease.request.target.get()).map_err(|_| Fail::Bad)?,
                 );

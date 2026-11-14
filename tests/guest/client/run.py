@@ -1,4 +1,4 @@
-"""Boot the System Client integration guest with a built Shuyra ABI 10 QEMU image."""
+"""Boot the System Client integration guest with a built Shuyra ABI 11 QEMU image."""
 
 import argparse
 import os
@@ -42,7 +42,7 @@ def initrd(elf: bytes) -> bytes:
         payload += elf[offset : offset + length].ljust(pages * PAGE, b"\0")
     total = PAGE + len(payload)
     region_count = len(regions) // 40
-    header = struct.pack("<8sHBBIQQ", b"SQBOOT01", 2, 12, 10, region_count, entry, total)
+    header = struct.pack("<8sHBBIQQ", b"SQBOOT01", 2, 12, 11, region_count, entry, total)
     assert len(header) + len(regions) <= PAGE
     return (struct.pack("<II", PAGE, total).ljust(PAGE, b"\0")
             + (header + regions).ljust(PAGE, b"\0") + payload)

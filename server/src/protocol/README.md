@@ -1,4 +1,4 @@
-# Protocol v2 ingress
+# Protocol v4 ingress
 
 `Endpoint` borrows a native Clone queue and owns its Sign watch, receive buffers
 and retained deliveries. Create the queue in the serving Task, grant clients
@@ -11,7 +11,7 @@ active status and the exact non-distributable Push authority. The handler gets
 the authenticated caller and decoded operation body.
 
 Only receive Busy conditions before dispatch can restart reception. A retained
-payload with Open Busy is retried without waiting for another queued frame.
+payload with native mapping Pending/Busy is retried without waiting for another queued frame.
 One absolute `Wait` bounds this reception. The handler runs at most once. A
 reply encoding or send failure is reported after possible service side effects.
 It never causes automatic redispatch or cancellation.
@@ -22,11 +22,16 @@ withdraws clients' queue grants. Ingress does not infer resource reclamation
 from service completion or a successful send.
 
 Multiplexers using Poll must check `needs_retry` after NotReady: a retained
-payload with Open/Return Busy needs another receive attempt without a new queue
+payload with native mapping Pending/Busy or Return Busy needs another receive attempt without a new queue
 event. No request handler has run for that pending receive.
 
-This module and the production Identity multi-endpoint loop are directly
-compiled and exercised by `tests/guest/client`. The other old application loops
-and supervisor wiring still require porting before assembled Server use.
-`system-protocol` is the workspace API v2 dependency name during that port;
-unmigrated service code still pins API v1.
+Each endpoint receives an explicit Task-local `system_client::Context`, shared
+with that Task's clients and memory users. It supplies the actual Internal Nest
+and one monotonic native RequestId sequence; a new endpoint must not reset it.
+
+Current ABI 11 Client/Ingress runtime coverage is the same-Team scenario in
+`tests/guest/runtime`. Identity/Operator host checks compile their native service
+loops. The older comprehensive Client guest still needs its remaining ABI 11
+port; its historical success does not prove this revision's cross-Team or full
+bootstrap behavior. `system-protocol` names the workspace API v4 while the
+unmigrated application still carries an API v1 self Git pin.

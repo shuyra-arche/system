@@ -2,7 +2,9 @@ use kernel_api::{
     boot::capsule,
     model::{
         modifiable::Modifiable,
-        pend::{Distributable, NestRights, Operations, PendRange, ShareRights},
+        pend::{
+            Distributable, NestRights, NestScope, Operations, PendRange, PendScope, ShareRights,
+        },
     },
 };
 use system_declaration_tests::declaration::{Catalog, Error, Unit};
@@ -93,11 +95,10 @@ fn system() -> d::v2::Unit<&'static str> {
 }
 
 #[test]
-fn native_rights_keep_kind_window_distribution_and_the_nest_bit_gap() {
+fn native_rights_keep_kind_window_distribution_and_whole_nest_scope() {
     let mut unit = document("reader");
     let mut limit = rights(d::rights::Operations::Share(vec![
-        d::rights::Share::Open,
-        d::rights::Share::Shut,
+        d::rights::Share::Associate,
     ]));
     limit.window = d::rights::Window::Pages {
         offset: 1,
@@ -108,24 +109,22 @@ fn native_rights_keep_kind_window_distribution_and_the_nest_bit_gap() {
     unit.supply.bindings.push(binding(limit));
     let native = Unit::compile(unit).unwrap();
     let limits = native.supply()[0].rights.0;
+    assert_eq!(limits.operations, Operations::Share(ShareRights::ASSOCIATE));
     assert_eq!(
-        limits.operations,
-        Operations::Share(ShareRights::OPEN | ShareRights::SHUT)
+        limits.scope,
+        PendScope::Pages(PendRange::pages(1, 3).unwrap())
     );
-    assert_eq!(limits.range, PendRange::pages(1, 3).unwrap());
     assert_eq!(limits.modifiable, Modifiable::Yes);
     assert_eq!(limits.distributable, Distributable::Yes);
     let mut unit = document("nest");
     unit.supply
         .bindings
         .push(binding(rights(d::rights::Operations::Nest(vec![
-            d::rights::Nest::Transfer,
+            d::rights::Nest::Reserve,
         ]))));
-    assert_eq!(
-        Unit::compile(unit).unwrap().supply()[0].rights.0.operations,
-        Operations::Nest(NestRights::TRANSFER)
-    );
-    assert_eq!(NestRights::TRANSFER.bits(), 32);
+    let limits = Unit::compile(unit).unwrap().supply()[0].rights.0;
+    assert_eq!(limits.operations, Operations::Nest(NestRights::RESERVE));
+    assert_eq!(limits.scope, PendScope::Nest(NestScope::Whole));
 }
 
 #[test]
@@ -236,4 +235,21 @@ fn record_decoding_keeps_boot_strings_borrowed_and_rejects_v1_records() {
             .into_boxed_slice(),
     );
     assert!(matches!(Unit::decode(bytes), Err(Error::Record)));
+}
+
+#[test]
+fn retired_share_memo_and_unqualified_reservation_operations_fail_closed() {
+    use d::rights::{Memo, Nest, Operations as O, Share};
+    for operations in [
+        O::Share(vec![Share::Open]),
+        O::Share(vec![Share::Shut]),
+        O::Memo(vec![Memo::Insert]),
+        O::Nest(vec![Nest::Transfer]),
+        O::Nest(vec![Nest::Publish]),
+        O::Nest(vec![Nest::Release]),
+    ] {
+        let mut unit = document("reader");
+        unit.supply.bindings.push(binding(rights(operations)));
+        assert!(matches!(Unit::compile(unit), Err(Error::Policy)));
+    }
 }

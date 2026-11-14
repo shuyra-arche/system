@@ -1,5 +1,5 @@
 #![no_std]
-//! System protocol v2. Received identities come from transport metadata.
+//! System protocol v4 for Kernel ABI 11. Received identities come from transport metadata.
 //! A serialized Pend is local to the recipient and must be granted before send.
 extern crate alloc;
 
@@ -82,4 +82,4 @@ pub mod supply;
 pub mod value;
 
 pub use value::{EntryId, Mark, Name, Path, PendId, TaskId, TeamId};
-pub const VERSION: u16 = 3;
+pub const VERSION: u16 = 4;

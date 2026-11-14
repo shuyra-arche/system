@@ -29,6 +29,7 @@ pub use face::Publication;
 /// Borrowed Pend authorities in the serving Task's own table. The caller owns
 /// these grants and keeps them alive until Service::finish completes.
 pub struct Config {
+    pub context: system_client::Context,
     pub license: PendId,
     pub controller: TaskId,
     pub shutdown: PendId,
@@ -173,7 +174,11 @@ impl Service {
             self.faces
                 .last_mut()
                 .unwrap()
-                .initialize(self.config.license, self.config.controller)
+                .initialize(
+                    self.config.license,
+                    self.config.controller,
+                    self.config.context.clone(),
+                )
                 .map_err(Error::Face)?;
         }
         let mut reads = Vec::new();

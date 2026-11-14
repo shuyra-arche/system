@@ -36,6 +36,7 @@ use system_protocol::{
 use weave::{server::ServeError, transport::ReceiveError};
 
 pub struct Config {
+    pub context: system_client::Context,
     pub license: PendId,
     pub controller: TaskId,
     pub shutdown: PendId,
@@ -171,7 +172,8 @@ impl Service {
         {
             self.faces[index] = Some(Face::new(role));
             let face = self.faces[index].as_mut().unwrap();
-            face.initialize(self.config.license).map_err(Error::Face)?;
+            face.initialize(self.config.license, self.config.context.clone())
+                .map_err(Error::Face)?;
             face.deliver(self.config.controller, Distributable::Yes)
                 .map_err(Error::Face)?;
         }
@@ -369,7 +371,7 @@ impl Service {
             })),
             Request::Wired(wired) => {
                 Response::Wired(outcome(if caller == self.config.controller {
-                    TaskQuery::from_wired(wired, self.config.license)
+                    TaskQuery::from_wired(wired, self.config.license, self.config.context.clone())
                         .map_err(|_| Fail::Denied)
                         .and_then(|query| self.book.as_mut().unwrap().wire(query))
                 } else {
@@ -752,7 +754,7 @@ impl Service {
             let result = self.faces[index]
                 .as_mut()
                 .unwrap()
-                .initialize(self.config.license);
+                .initialize(self.config.license, self.config.context.clone());
             match result {
                 Ok(()) => (),
                 Err(error) if transient(&error) => continue,
