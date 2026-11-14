@@ -1,0 +1,467 @@
+//! Trusted setup for the two Identity probes, not a product capability declaration.
+
+use super::Fixture;
+use super::FixtureAction;
+use super::IdentityHooks;
+use super::hierarchy_scenario::{codecs, exercise, reference_lifetime};
+use crate::boot::Boot;
+use unit::{Deployment, UnitFile};
+
+use ::resource::port::{self, Access, Policy};
+use ::resource::raw::{Hole, inspect};
+use env::Wait;
+use ipc::session::establish;
+use system_api::identity::Grant;
+
+/// Pure preflight that must run before boot acquisition.
+pub fn preflight() {
+    codecs();
+    reference_lifetime();
+}
+
+/// Isolated supervisor fixture. Every observation goes over the real Identity IPC faces.
+pub fn acceptance(
+    boot: Boot,
+    declarations: &'static [&'static UnitFile],
+    deployment: &'static Deployment,
+    hooks: IdentityHooks,
+) {
+    use system_client::identity::TaskQuery;
+
+    let list = Fixture::scene(&boot, declarations, deployment).expect("identity: scene");
+    let mut assembly = Fixture::new(boot, declarations, deployment, hooks.supply)
+        .ok()
+        .expect("identity: assembly");
+    revision(&mut assembly);
+    for program in list {
+        if program.name() == "system-child" {
+            assembly
+                .resources
+                .write::<crate::system::control::unit::Control>()
+                .unwrap()
+                .enlist(program)
+                .expect("identity: runtime declaration");
+            continue;
+        }
+        assembly
+            .assemble(program)
+            .expect("identity: install static unit");
+    }
+    let query = |authority| {
+        let face = |grant: Grant| {
+            establish::find(authority, grant.mark()).expect("identity: face missing")
+        };
+        TaskQuery::direct(
+            authority,
+            face(Grant::Resolve),
+            face(Grant::Matches),
+            face(Grant::Same),
+        )
+        .expect("identity: face source")
+    };
+    for name in ["operator", "identity"] {
+        assert!(assembly.action(name, FixtureAction::Mint).is_err());
+        assert!(assembly.action(name, FixtureAction::Ruin).is_err());
+        assert_eq!(
+            assembly
+                .resources
+                .read::<crate::system::control::unit::Control>()
+                .unwrap()
+                .state(name.into())
+                .unwrap(),
+            crate::system::control::unit::table::State::Ready
+        );
+    }
+    let old_authority = assembly
+        .resources
+        .read::<crate::system::control::identity::Roster>()
+        .unwrap()
+        .authority()
+        .unwrap();
+    let old_query = query(old_authority);
+    let me = env::unit::self_id();
+    let host = assembly
+        .resources
+        .read::<crate::system::operator::management::Tree>()
+        .unwrap()
+        .host()
+        .unwrap();
+    let link = establish::endpoint(host, system_api::operator::LINK_MARK, Wait::POLL)
+        .expect("identity: operator request");
+    let (talk, ask) =
+        establish::give_at(host, system_api::operator::ASK_MARK).expect("identity: operator ask");
+    let tip = establish::find(host, system_api::operator::TIP_MARK)
+        .unwrap_or_else(|_| panic!("identity: trusted operator tip missing or ambiguous"));
+    let mut record = [0u8; system_api::operator::TIP_LEN];
+    let explicit_reply = link.seed();
+    let n = system_api::operator::Tip::Guest {
+        who: me,
+        reply: explicit_reply,
+        ask,
+    }
+    .store(&mut record)
+    .unwrap();
+    Hole::from_raw(tip)
+        .push(&record[..n], Wait::AtMost(1000))
+        .expect("identity: trusted guest registration");
+    let mut ack = [0; 1];
+    let (len, from) = Hole::from_raw(link.rx())
+        .pull(&mut ack, Wait::AtMost(1000))
+        .expect("identity: Operator admission acknowledgement");
+    assert_eq!((len, from, ack[0]), (1, host, system_api::operator::OK));
+    let operator = system_client::operator::Face::of(
+        unsafe { ipc::session::Session::from_raw(link, talk, host) }
+            .unwrap_or_else(|_| panic!("identity: owned Operator session")),
+    );
+    super::loader_scenario::acceptance(&mut assembly, &operator);
+    (hooks.account)(&mut assembly, &operator);
+    let service = operator
+        .resolve(system_api::namespace::SERVICE, Wait::AtMost(1000))
+        .unwrap();
+    let protected = || {
+        operator
+            .tile_from(
+                service,
+                system_api::operator::path::Path::new("control/mint"),
+                Wait::AtMost(1000),
+            )
+            .expect("identity: protected tile")
+    };
+    assert!(
+        protected().token(Wait::AtMost(1000)).is_ok(),
+        "identity: trusted operation"
+    );
+    let public = operator
+        .tile_from(
+            service,
+            system_api::operator::path::Path::new("control/state"),
+            Wait::AtMost(1000),
+        )
+        .expect("identity: public tile");
+    assert!(public.token(Wait::AtMost(1000)).is_ok());
+    let old = old_query.resolve(me, Wait::AtMost(1000)).unwrap().unwrap();
+    let old_dependent = assembly
+        .resources
+        .read::<crate::system::control::unit::Control>()
+        .unwrap()
+        .task("system-dependent")
+        .unwrap();
+    let old_hub = assembly
+        .resources
+        .read::<crate::system::control::unit::Control>()
+        .unwrap()
+        .task("hub")
+        .unwrap();
+    let old_devices = old_query
+        .resolve(old_hub, Wait::AtMost(1000))
+        .unwrap()
+        .unwrap()
+        .current;
+    assert!(
+        !old_devices.coalitions.is_empty(),
+        "identity: Hub selections not activated"
+    );
+    let coalition = old_devices.coalitions.iter().next().unwrap();
+    activation_boundary(&assembly, old_hub, coalition);
+    let before = old_query
+        .resolve(old_dependent, Wait::AtMost(1000))
+        .unwrap();
+    let activation = system_client::identity::Face::direct(
+        old_authority,
+        Grant::Activate,
+        establish::find(old_authority, Grant::Activate.mark()).unwrap(),
+    )
+    .unwrap();
+    assert!(
+        (hooks.hub_activate)(&activation, old_dependent, &[coalition]).is_err(),
+        "identity: qualification was not checked"
+    );
+    assert_eq!(
+        old_query
+            .resolve(old_dependent, Wait::AtMost(1000))
+            .unwrap(),
+        before
+    );
+    let uart_rx = (hooks.uart_rx)();
+    for (name, road) in [
+        ("router", hooks.router_entry),
+        ("rtc", hooks.rtc_entry),
+        ("uart", uart_rx.as_path()),
+    ] {
+        ready_driver(
+            &operator,
+            &old_query,
+            assembly
+                .resources
+                .read::<crate::system::control::unit::Control>()
+                .unwrap()
+                .task(name)
+                .unwrap(),
+            road,
+        );
+    }
+    assert!(
+        assembly.action("absent-unit", FixtureAction::Ruin).is_err(),
+        "unknown Ruin must fail without terminating System"
+    );
+    assembly
+        .progress()
+        .expect("System remains usable after unknown request");
+
+    assembly
+        .action("system-child", FixtureAction::Mint)
+        .expect("identity: scheduled mint");
+    let child = assembly
+        .action(
+            "system-child",
+            FixtureAction::Embark {
+                parent: Some(old_dependent),
+            },
+        )
+        .expect("identity: scheduled inheritance")
+        .unwrap();
+    let parent_binding = old_query
+        .resolve(old_dependent, Wait::AtMost(1000))
+        .unwrap()
+        .unwrap();
+    let child_binding = old_query
+        .resolve(child, Wait::AtMost(1000))
+        .unwrap()
+        .unwrap();
+    assert_eq!(child_binding.origin, parent_binding.current);
+    for _ in 0..3 {
+        assembly
+            .action("system-child", FixtureAction::Debark)
+            .expect("identity: scheduled debark");
+        assert_eq!(
+            assembly
+                .resources
+                .read::<crate::system::control::unit::Control>()
+                .unwrap()
+                .state("system-child".into())
+                .unwrap(),
+            crate::system::control::unit::table::State::Debarked
+        );
+        assert_eq!(
+            old_query
+                .resolve(child, Wait::AtMost(1000))
+                .unwrap()
+                .unwrap(),
+            child_binding
+        );
+        let resumed = assembly
+            .action(
+                "system-child",
+                FixtureAction::Embark {
+                    parent: Some(old_dependent),
+                },
+            )
+            .expect("identity: scheduled resume")
+            .unwrap();
+        assert_eq!(resumed, child);
+        assert_eq!(
+            old_query
+                .resolve(child, Wait::AtMost(1000))
+                .unwrap()
+                .unwrap(),
+            child_binding
+        );
+    }
+
+    crate::debug::put("identity: three Debark/Embark rounds preserve task and binding");
+    assert_eq!(old.current.principal.authority, old_authority);
+    let dynamic = exercise(
+        &mut assembly,
+        &operator,
+        old_authority,
+        old_dependent,
+        child,
+    );
+    let _ = dynamic;
+    crate::debug::put("system: identity, device and direct namespace acceptance passed");
+    assembly.settle();
+    assert!(
+        assembly.supervise().is_ok(),
+        "system: normal team shutdown failed"
+    );
+}
+
+fn revision(assembly: &mut Fixture) {
+    use crate::system::{
+        control::identity::Roster,
+        identity::revision::{Changed, Epoch},
+    };
+    use core::sync::atomic::Ordering;
+    use system_api::identity::PrincipalId;
+    use system_api::identity::Reply;
+    use system_api::identity::Wire;
+    use system_client::identity::CallError;
+    use system_client::identity::Face;
+
+    assembly.progress().expect("identity: initial maintenance");
+    let authority = assembly
+        .resources
+        .read::<Roster>()
+        .unwrap()
+        .authority()
+        .unwrap();
+    let epoch = assembly.resources.read::<Epoch>().unwrap().clone();
+    let changed = assembly.resources.read::<Changed>().unwrap();
+    assert!(
+        !changed.0.wait(Wait::POLL).unwrap(),
+        "identity: initial changes not consumed"
+    );
+    let before = epoch.0.load(Ordering::Acquire);
+    let query = Face::direct(
+        authority,
+        Grant::Resolve,
+        establish::find(authority, Grant::Resolve.mark()).unwrap(),
+    )
+    .unwrap();
+    assert!(matches!(
+        query.call(Wire::Resolve(env::unit::self_id()), Wait::AtMost(1000)),
+        Ok(Reply::Binding(Some(_)))
+    ));
+    assert_eq!(
+        epoch.0.load(Ordering::Acquire),
+        before,
+        "identity: query changed revision"
+    );
+    assert!(
+        !changed.0.wait(Wait::POLL).unwrap(),
+        "identity: query woke maintenance"
+    );
+    let derive = Face::direct(
+        authority,
+        Grant::Derive,
+        establish::find(authority, Grant::Derive.mark()).unwrap(),
+    )
+    .unwrap();
+    assert!(matches!(
+        derive.call(
+            Wire::Derive(PrincipalId::new(authority, u64::MAX)),
+            Wait::AtMost(1000)
+        ),
+        Err(CallError::Service(_))
+    ));
+    assert_eq!(
+        epoch.0.load(Ordering::Acquire),
+        before,
+        "identity: denial changed revision"
+    );
+    assert!(
+        !changed.0.wait(Wait::POLL).unwrap(),
+        "identity: denial woke maintenance"
+    );
+    assert!(matches!(
+        derive.call(
+            Wire::Derive(PrincipalId::root(authority)),
+            Wait::AtMost(1000)
+        ),
+        Ok(Reply::Principal(_))
+    ));
+    assert_eq!(
+        epoch.0.load(Ordering::Acquire),
+        before + 1,
+        "identity: mutation revision missing"
+    );
+    assert!(
+        changed.0.wait(Wait::POLL).unwrap(),
+        "identity: mutation did not wake maintenance"
+    );
+    drop(changed);
+    assembly.progress().expect("identity: changed maintenance");
+    assert_eq!(
+        epoch.0.load(Ordering::Acquire),
+        before + 1,
+        "maintenance must not duplicate the authoritative Identity revision"
+    );
+    assert!(
+        !assembly
+            .resources
+            .read::<Changed>()
+            .unwrap()
+            .0
+            .wait(Wait::POLL)
+            .unwrap(),
+        "identity: mutation notification not consumed"
+    );
+    crate::debug::put("identity: only successful mutations wake maintenance");
+}
+
+fn activation_boundary(
+    assembly: &Fixture,
+    hub: env::TaskId,
+    coalition: system_api::identity::CoalitionId,
+) {
+    use alloc::sync::Arc;
+    use core::sync::atomic::{AtomicBool, Ordering};
+    let authority = coalition.authority;
+    let entry = establish::find(authority, system_api::identity::Grant::Activate.mark()).unwrap();
+    let done = Arc::new(AtomicBool::new(false));
+    let finished = done.clone();
+    let caller = execution::unit::task::spawn(move || {
+        let entry =
+            establish::find(authority, system_api::identity::Grant::Activate.mark()).unwrap();
+        let face = system_client::identity::Face::direct(
+            authority,
+            system_api::identity::Grant::Activate,
+            entry,
+        )
+        .unwrap();
+        assert!(
+            face.call(
+                system_api::identity::Wire::Activate(
+                    hub,
+                    system_api::identity::CoalitionSet::new(&[coalition]).unwrap()
+                ),
+                Wait::AtMost(1000)
+            )
+            .is_err(),
+            "activation accepted an unbound non-manager sender"
+        );
+        finished.store(true, Ordering::Release);
+    });
+    port::ship(entry, caller.id(), Access::STORE, Policy::NONE).unwrap();
+    let until = env::chrono::clock() + 5_000_000_000;
+    while !done.load(Ordering::Acquire) {
+        assert!(
+            env::chrono::clock() < until,
+            "activation boundary never answered"
+        );
+        execution::room::park(core::time::Duration::from_millis(1)).unwrap();
+    }
+    caller.join();
+    let _ = assembly;
+}
+
+fn ready_driver(
+    operator: &system_client::operator::Face,
+    query: &system_client::identity::TaskQuery,
+    task: env::TaskId,
+    road: &system_api::operator::Path,
+) {
+    let until = env::chrono::clock() + 5_000_000_000;
+    loop {
+        let service = operator.resolve(system_api::namespace::SERVICE, Wait::AtMost(1000));
+        if let Ok(entry) = service
+            .and_then(|base| operator.tile_from(base, road, Wait::AtMost(1000)))
+            .and_then(|tile| tile.token(Wait::AtMost(1000)))
+        {
+            if matches!(inspect(entry), Ok(info) if info.alive && info.owner == task) {
+                let binding = query.resolve(task, Wait::AtMost(1000)).unwrap().unwrap();
+                assert!(
+                    !binding.current.coalitions.is_empty(),
+                    "identity: driver inactive"
+                );
+                assert_eq!(binding.current.principal.authority, query.authority());
+                return;
+            }
+        }
+        assert!(
+            env::chrono::clock() < until,
+            "identity: driver never republished"
+        );
+        execution::room::park(core::time::Duration::from_millis(1)).unwrap();
+    }
+}

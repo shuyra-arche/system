@@ -1,5 +1,5 @@
 use super::Accounts;
-use initrd::ledger::bundle::{Archive, File, Files, Unit, Units};
+use unit_contract::bundle::{Archive, File, Files, Unit, Units};
 
 /// The immutable initrd owns all borrowed image and declaration bytes.
 #[derive(Clone, Copy)]
@@ -9,10 +9,14 @@ pub struct Catalog<'a> {
 impl<'a> Catalog<'a> {
     pub fn new(view: &'a [u8]) -> Option<Self> {
         Some(Self {
-            archive: Archive::parse(view).ok()?,
+            archive: {
+                let archive = Archive::parse(view).ok()?;
+                kernel_api::boot::capsule::Capsule::parse(archive.capsule())?;
+                archive
+            },
         })
     }
-    pub fn of_boot(accounts: &Accounts) -> Option<Catalog<'static>> {
+    pub fn of_boot(accounts: &Accounts<'a>) -> Option<Self> {
         Catalog::new(accounts.view())
     }
     pub fn system(&self) -> Unit<'a> {

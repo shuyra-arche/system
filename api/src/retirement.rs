@@ -1,88 +1,48 @@
-//! Generic retirement request: the provider alone decides what must settle.
-
-use env::{PieToken, TaskId};
-use env::wire::Span as _;
-use wire::Message;
-
-pub const ASK: u8 = 0;
-pub const PENDING: u8 = 1;
-pub const DONE: u8 = 2;
-
-#[derive(env::Frame, Clone, Copy, PartialEq, Eq, Debug)]
-#[frame(len = 24)]
-pub struct Retirement {
-    pub state: u8,
-    pub target: TaskId,
-    pub back: PieToken,
+//! Completion is the provider's explicit safe-retirement receipt.
+use crate::{TaskId, value::Outcome};
+#[derive(Clone, Copy, Debug, PartialEq, Eq, weave::Code)]
+#[repr(u8)]
+pub enum State {
+    Unseen = 0,
+    Pending = 1,
+    Settled = 2,
+    Failed = 3,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, weave::Code)]
+#[repr(u8)]
+pub enum Fail {
+    Unknown = 1,
+    Denied = 2,
+    Busy = 3,
+    Failed = 4,
+}
+#[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
+pub struct Target {
+    pub task: TaskId,
 }
 
-impl Retirement {
-    pub const fn ask(back: PieToken) -> Self {
-        Self::ask_for(TaskId::new(0), back)
-    }
-
-    pub const fn ask_for(target: TaskId, back: PieToken) -> Self {
-        Self { state: ASK, target, back }
-    }
-
-    pub const fn pending() -> Self {
-        Self::pending_for(TaskId::new(0))
-    }
-
-    pub const fn pending_for(target: TaskId) -> Self {
-        Self {
-            state: PENDING,
-            target,
-            back: PieToken::NONE,
-        }
-    }
-
-    pub const fn done() -> Self {
-        Self::done_for(TaskId::new(0))
-    }
-
-    pub const fn done_for(target: TaskId) -> Self {
-        Self {
-            state: DONE,
-            target,
-            back: PieToken::NONE,
-        }
-    }
-
-    pub const fn settled(&self) -> bool {
-        self.state == DONE
+#[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
+pub struct Receipt {
+    pub task: TaskId,
+    #[frame(code)]
+    pub state: State,
+}
+impl Receipt {
+    pub fn settled(&self) -> bool {
+        self.state == State::Settled
     }
 }
-
-impl Message for Retirement {
-    type In = Self;
-    type Buf = [u8; Self::LEN];
-    const EMPTY: Self::Buf = [0; Self::LEN];
-
-    fn store(&self, out: &mut [u8]) -> Option<usize> {
-        self.store_at(out, 0)
-    }
-
-    fn fetch(bytes: &[u8]) -> Option<Self> {
-        let (value, end) = <Self as env::wire::Span>::fetch_at(bytes, 0)?;
-        (end == bytes.len()).then_some(value)
-    }
+#[weave::interface(tag = u8)]
+pub mod operations {
+    #[operation(code = 1, request = super::Target, response = super::Outcome<super::Receipt, super::Fail>)]
+    pub struct Retire;
+    #[operation(code = 2, request = super::Target, response = super::Outcome<super::Receipt, super::Fail>)]
+    pub struct Inspect;
 }
 
-#[mold::interface(id = "sqware.system.retirement.v1", metadata)]
-mod interface {
-    #[channels]
-    pub enum Channel {
-        #[channel(key = "back", legacy = "system-retirement-back")]
-        Back,
-    }
-}
-
-pub use interface::{BACK, CHANNELS as DECLARATIONS, REGISTRY};
-
-fn reply_to(request: &Retirement) -> PieToken {
-    request.back
-}
-
-#[mold::contract(request = Retirement, response = Retirement, mark = BACK, back = reply_to)]
+#[derive(weave::Contract)]
+#[contract(request = crate::value::Request<operations::Request, 7>, response = operations::Response)]
 pub struct Call;
+
+pub const NAME: &str = "retirement";
+pub const INTERFACE_ID: &str = "shuyra.system.retirement.v4";

@@ -1,19 +1,19 @@
-use env::PieToken;
-use env::TaskId;
-use system_api::identity::Binding;
-use system_api::identity::Fail;
-use system_api::identity::Install;
-use system_api::identity::Match;
-use system_api::identity::Selector;
-use system_api::identity::Subject;
-use system_api::identity::{InstallId, InstallSpec, InstallState, InstallStatus};
+use system_protocol::PendId;
+use system_protocol::TaskId;
+use system_protocol::identity::Binding;
+use system_protocol::identity::Fail;
+use system_protocol::identity::Install;
+use system_protocol::identity::Match;
+use system_protocol::identity::Selector;
+use system_protocol::identity::Subject;
+use system_protocol::identity::{InstallId, InstallState};
 
 use super::{IdentityBook, limits};
 
 pub(super) struct BindingRow {
     pub(super) task: TaskId,
     pub(super) binding: Binding,
-    pub(super) install: Option<(PieToken, TaskId, InstallId)>,
+    pub(super) install: Option<(PendId, TaskId, InstallId)>,
 }
 
 /// What the narrowed subject replaces in the sender's own binding.
@@ -30,27 +30,26 @@ impl IdentityBook {
         self.bindings
             .iter()
             .find(|b| b.task == task)
-            .map(|b| b.binding)
+            .map(|b| b.binding.clone())
     }
 
-    fn validate(&self, s: Subject) -> Result<(), Fail> {
-        self.principal(s.principal)?;
-        for &c in s.coalitions.as_slice() {
-            if !self.amid(s.principal, c)? {
+    fn validate(&self, s: &Subject) -> Result<(), Fail> {
+        self.principal(*s.principal())?;
+        for &c in s.coalitions() {
+            if !self.amid(*s.principal(), c)? {
                 return Err(Fail::NotEligible);
             }
         }
         Ok(())
     }
 
-    fn narrow(&self, base: Subject, requested: Subject) -> Result<(), Fail> {
+    fn narrow(&self, base: &Subject, requested: &Subject) -> Result<(), Fail> {
         self.validate(requested)?;
-        if !self.heir(base.principal, requested.principal)?
+        if !self.heir(*base.principal(), *requested.principal())?
             || requested
-                .coalitions
-                .as_slice()
+                .coalitions()
                 .iter()
-                .any(|c| !base.coalitions.contains(*c))
+                .any(|c| !base.coalitions().contains(c))
         {
             return Err(Fail::NotNarrower);
         }
@@ -58,22 +57,22 @@ impl IdentityBook {
     }
 
     pub fn matches(&self, task: TaskId, selector: Selector) -> Result<Match, Fail> {
-        match selector {
+        match &selector {
             Selector::Exact(p) | Selector::DescendantOf(p) => {
-                self.principal(p)?;
+                self.principal(*p)?;
             }
             Selector::MemberOf(c) => {
-                self.coalition(c)?;
+                self.coalition(*c)?;
             }
         }
         let Some(b) = self.resolve(task) else {
             return Ok(Match::Unbound);
         };
         let yes = match selector {
-            Selector::Exact(p) => b.current.principal == p,
-            Selector::DescendantOf(p) => self.heir(p, b.current.principal)?,
+            Selector::Exact(p) => *b.current.principal() == p,
+            Selector::DescendantOf(p) => self.heir(p, *b.current.principal())?,
             Selector::MemberOf(c) => {
-                b.current.coalitions.contains(c) && self.amid(b.current.principal, c)?
+                b.current.coalitions().contains(&c) && self.amid(*b.current.principal(), c)?
             }
         };
         Ok(if yes { Match::Yes } else { Match::No })
@@ -82,7 +81,7 @@ impl IdentityBook {
     pub fn same(&self, a: TaskId, b: TaskId) -> Match {
         match (self.resolve(a), self.resolve(b)) {
             (Some(a), Some(b)) => {
-                if a.current.principal == b.current.principal {
+                if *a.current.principal() == *b.current.principal() {
                     Match::Yes
                 } else {
                     Match::No
@@ -94,6 +93,9 @@ impl IdentityBook {
 
     pub fn bind(&mut self, from: TaskId, request: BindingRequest) -> Result<(), Fail> {
         let BindingRequest { task, install } = request;
+        if task == TaskId::NONE {
+            return Err(Fail::Bad);
+        }
         if from != self.installer {
             return Err(Fail::Denied);
         }
@@ -105,21 +107,21 @@ impl IdentityBook {
         }
         let subject = match install {
             Install::Authorized(s) => {
-                self.validate(s)?;
+                self.validate(&s)?;
                 s
             }
-            Install::Inherit { parent } => self.resolve(parent).ok_or(Fail::Denied)?.current,
-            Install::Restrict { parent, subject } => {
-                self.narrow(self.resolve(parent).ok_or(Fail::Denied)?.current, subject)?;
+            Install::Inherit(parent) => self.resolve(parent.task).ok_or(Fail::Denied)?.current,
+            Install::Restrict(system_protocol::identity::Restriction { parent, subject }) => {
+                self.narrow(&self.resolve(parent).ok_or(Fail::Denied)?.current, &subject)?;
                 subject
             }
-            Install::Derive { parent } => {
+            Install::Derive(parent) => {
                 let child = self.derive(from, parent)?;
-                Subject::new(child, &[])?
+                Subject::new(child, &[]).ok_or(Fail::Bad)?
             }
         };
         let binding = Binding {
-            origin: subject,
+            origin: subject.clone(),
             current: subject,
         };
         if let Some(b) = self.bindings.iter_mut().find(|b| b.task == task) {
@@ -150,12 +152,12 @@ impl IdentityBook {
             .iter()
             .position(|b| b.task == from)
             .ok_or(Fail::Denied)?;
-        self.narrow(self.bindings[at].binding.current, subject)?;
+        self.narrow(&self.bindings[at].binding.current, &subject)?;
         match anchor {
             Anchor::Keep => self.bindings[at].binding.current = subject,
             Anchor::Move => {
                 self.bindings[at].binding = Binding {
-                    origin: subject,
+                    origin: subject.clone(),
                     current: subject,
                 }
             }
@@ -169,7 +171,7 @@ impl IdentityBook {
             .iter_mut()
             .find(|b| b.task == from)
             .ok_or(Fail::Denied)?;
-        b.binding.current = b.binding.origin;
+        b.binding.current = b.binding.origin.clone();
         Ok(())
     }
 }
@@ -182,7 +184,7 @@ impl IdentityBook {
             id,
             action,
         } = request;
-        if caller != self.installer || endpoint.get() == 0 || id.value == 0 {
+        if caller != self.installer || endpoint.get() == 0 {
             return Err(Fail::Denied);
         }
         let at = self
@@ -190,15 +192,15 @@ impl IdentityBook {
             .iter()
             .position(|row| row.endpoint == endpoint && row.caller == caller && row.id == id);
         if let Some(at) = at {
-            let spec = match action {
-                InstallAction::Apply(spec) => Some(spec),
+            let spec = match &action {
+                InstallAction::Apply(spec) => Some(spec.clone()),
                 _ => None,
             };
             if spec.is_some() && self.installations[at].spec != spec {
                 return Err(Fail::Changed);
             }
             if matches!(action, InstallAction::Cancel | InstallAction::Retire) {
-                let target = self.installations[at].spec.map(|s| s.task);
+                let target = self.installations[at].spec.as_ref().map(|s| s.task);
                 if let Some(task) = target {
                     self.bindings
                         .retain(|b| b.task != task || b.install != Some((endpoint, caller, id)));
@@ -216,24 +218,18 @@ impl IdentityBook {
             .install_origins
             .iter()
             .position(|row| row.endpoint == endpoint && row.caller == caller);
-        if let Some(origin) = origin {
-            if id.value <= self.install_origins[origin].high {
-                return if action == InstallAction::Inspect {
-                    Ok(InstallStatus {
-                        state: InstallState::Closed,
-                        binding: None,
-                        failure: None,
-                    })
-                } else if matches!(action, InstallAction::Apply(_)) {
-                    Err(Fail::Changed)
-                } else {
-                    Ok(InstallStatus {
-                        state: InstallState::Closed,
-                        binding: None,
-                        failure: None,
-                    })
-                };
-            }
+        if let Some(origin) = origin
+            && id.get() <= self.install_origins[origin].high
+        {
+            return if matches!(action, InstallAction::Apply(_)) {
+                Err(Fail::Changed)
+            } else {
+                Ok(InstallStatus {
+                    state: InstallState::Closed,
+                    binding: None,
+                    failure: None,
+                })
+            };
         }
         if action == InstallAction::Inspect {
             return Ok(InstallStatus {
@@ -260,16 +256,16 @@ impl IdentityBook {
                         InstallState::Installed | InstallState::Pending | InstallState::Retiring
                     )
             });
-            self.install_origins[origin].high = id.value;
+            self.install_origins[origin].high = id.get();
         } else {
             self.install_origins.push(super::InstallOrigin {
                 endpoint,
                 caller,
-                high: id.value,
+                high: id.get(),
             });
         }
-        let spec = match action {
-            InstallAction::Apply(spec) => Some(spec),
+        let spec = match &action {
+            InstallAction::Apply(spec) => Some(spec.clone()),
             _ => None,
         };
         let state = match action {
@@ -282,7 +278,7 @@ impl IdentityBook {
             endpoint,
             caller,
             id,
-            spec,
+            spec: spec.clone(),
             state,
             failure: None,
         });
@@ -328,13 +324,13 @@ impl IdentityBook {
     }
     fn install_status(&self, at: usize) -> InstallStatus {
         let row = &self.installations[at];
-        let binding = row.spec.and_then(|spec| {
+        let binding = row.spec.as_ref().and_then(|spec| {
             self.bindings
                 .iter()
                 .find(|b| {
                     b.task == spec.task && b.install == Some((row.endpoint, row.caller, row.id))
                 })
-                .map(|b| b.binding)
+                .map(|b| b.binding.clone())
         });
         InstallStatus {
             state: row.state,
@@ -344,7 +340,11 @@ impl IdentityBook {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "bounded subject state stays inline without adding a fallible allocation to dispatch"
+)]
 pub enum InstallAction {
     Apply(InstallSpec),
     Inspect,
@@ -352,12 +352,13 @@ pub enum InstallAction {
     Retire,
 }
 pub struct InstallationRequest {
-    pub endpoint: PieToken,
+    pub endpoint: PendId,
     pub caller: TaskId,
     pub id: InstallId,
     pub action: InstallAction,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BindingRequest {
     pub task: TaskId,
     pub install: Install,
@@ -373,27 +374,29 @@ impl IdentityBook {
     pub fn activate(
         &mut self,
         from: TaskId,
-        request: (TaskId, system_api::identity::CoalitionSet),
+        request: (TaskId, system_protocol::identity::CoalitionSet),
     ) -> Result<(), Fail> {
         let (task, coalitions) = request;
         if coalitions.is_empty() {
             return Err(Fail::Bad);
         }
-        let manager = self.resolve(from).ok_or(Fail::Denied)?.current.principal;
+        let manager = *self.resolve(from).ok_or(Fail::Denied)?.current.principal();
         let binding = self.resolve(task).ok_or(Fail::Denied)?;
         if binding.origin != binding.current {
             return Err(Fail::NotNarrower);
         }
-        let mut ids = [system_api::identity::CoalitionId::new(self.authority, 0);
-            system_api::identity::limits::MAX_ACTIVE_COALITIONS];
-        let mut n = binding.current.coalitions.len();
-        ids[..n].copy_from_slice(binding.current.coalitions.as_slice());
+        let mut ids = [system_protocol::identity::CoalitionId {
+            authority: self.authority,
+            slot: 0,
+        }; system_protocol::identity::MAX_ACTIVE_COALITIONS];
+        let mut n = binding.current.coalitions().len();
+        ids[..n].copy_from_slice(binding.current.coalitions());
         for coalition in coalitions.iter() {
             let index = self.coalition(coalition)?;
             if self.coalitions[index].manager != manager {
                 return Err(Fail::NotManager);
             }
-            if !self.amid(binding.current.principal, coalition)? {
+            if !self.amid(*binding.current.principal(), coalition)? {
                 return Err(Fail::NotEligible);
             }
             if !ids[..n].contains(&coalition) {
@@ -404,16 +407,25 @@ impl IdentityBook {
                 n += 1;
             }
         }
-        let subject = Subject::new(binding.current.principal, &ids[..n])?;
+        let subject = Subject::new(*binding.current.principal(), &ids[..n]).ok_or(Fail::Bad)?;
         let row = self
             .bindings
             .iter_mut()
             .find(|row| row.task == task)
             .ok_or(Fail::Denied)?;
         row.binding = Binding {
-            origin: subject,
+            origin: subject.clone(),
             current: subject,
         };
         Ok(())
     }
+}
+
+// Service state stays separate from the wire reply's Coded/Optional wrappers.
+pub type InstallSpec = BindingRequest;
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InstallStatus {
+    pub state: InstallState,
+    pub binding: Option<Binding>,
+    pub failure: Option<Fail>,
 }

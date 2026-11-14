@@ -1,0 +1,14 @@
+[package]
+name = "system-memory-contracts"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[lib]
+path = "lib.rs"
+doctest = false
+
+[dependencies]
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "684f479c45dc2d94d405b32b4ffc6334a4233fc9" }

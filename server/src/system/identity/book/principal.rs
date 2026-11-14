@@ -1,6 +1,6 @@
-use env::TaskId;
-use system_api::identity::Fail;
-use system_api::identity::PrincipalId;
+use system_protocol::TaskId;
+use system_protocol::identity::Fail;
+use system_protocol::identity::PrincipalId;
 
 use super::{IdentityBook, limits};
 
@@ -11,7 +11,10 @@ pub(super) struct PrincipalNode {
 impl IdentityBook {
     #[cfg(test)]
     pub fn root(&self) -> PrincipalId {
-        PrincipalId::root(self.authority)
+        PrincipalId {
+            authority: self.authority,
+            slot: 0,
+        }
     }
 
     pub(super) fn principal(&self, id: PrincipalId) -> Result<usize, Fail> {
@@ -43,7 +46,8 @@ impl IdentityBook {
 
     pub fn derive(&mut self, from: TaskId, parent: PrincipalId) -> Result<PrincipalId, Fail> {
         self.principal(parent)?;
-        if from != self.installer && self.resolve(from).map(|b| b.current.principal) != Some(parent)
+        if from != self.installer
+            && self.resolve(from).map(|b| *b.current.principal()) != Some(parent)
         {
             return Err(Fail::Denied);
         }
@@ -63,6 +67,9 @@ impl IdentityBook {
         self.principals.push(PrincipalNode {
             parent: Some(parent),
         });
-        Ok(PrincipalId::new(self.authority, slot))
+        Ok(PrincipalId {
+            authority: self.authority,
+            slot,
+        })
     }
 }
