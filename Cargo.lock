@@ -50,7 +50,7 @@ checksum = "784a4df722dc6267a04af36895398f59d21d07dce47232adf31ec0ff2fa45e67"
 [[package]]
 name = "kernel-api"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=0ee104ddf94ca74a18135bf216b888a2437bd6f8#0ee104ddf94ca74a18135bf216b888a2437bd6f8"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=2cfb581a7ef767ebae0fda4864ed5da625ef067e#2cfb581a7ef767ebae0fda4864ed5da625ef067e"
 dependencies = [
  "bitflags",
  "erra",
@@ -60,7 +60,7 @@ dependencies = [
 [[package]]
 name = "kernel-api-macros"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=0ee104ddf94ca74a18135bf216b888a2437bd6f8#0ee104ddf94ca74a18135bf216b888a2437bd6f8"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=2cfb581a7ef767ebae0fda4864ed5da625ef067e#2cfb581a7ef767ebae0fda4864ed5da625ef067e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -70,7 +70,7 @@ dependencies = [
 [[package]]
 name = "kernel-client"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=0ee104ddf94ca74a18135bf216b888a2437bd6f8#0ee104ddf94ca74a18135bf216b888a2437bd6f8"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=2cfb581a7ef767ebae0fda4864ed5da625ef067e#2cfb581a7ef767ebae0fda4864ed5da625ef067e"
 dependencies = [
  "erra",
  "kernel-api",
@@ -260,7 +260,7 @@ dependencies = [
 [[package]]
 name = "twine"
 version = "0.4.0"
-source = "git+https://github.com/shuyra-arche/twine.git?rev=80158211d8232c789c4609a3ea490bd16bbdac7b#80158211d8232c789c4609a3ea490bd16bbdac7b"
+source = "git+https://github.com/shuyra-arche/twine.git?rev=7c75c62d15d173032d99fed54ca7fd00337d787b#7c75c62d15d173032d99fed54ca7fd00337d787b"
 dependencies = [
  "erra",
  "kernel-api",

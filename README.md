@@ -30,15 +30,17 @@ Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
 
 | Provider | Exact revision |
 | --- | --- |
-| Kernel API/Client | `0ee104ddf94ca74a18135bf216b888a2437bd6f8` (ABI/Ledger 11/11, Capsule 2) |
-| Twine | `80158211d8232c789c4609a3ea490bd16bbdac7b` |
+| Kernel API/Client | `2cfb581a7ef767ebae0fda4864ed5da625ef067e` (ABI/Ledger 11/11, Capsule 2) |
+| Twine | `7c75c62d15d173032d99fed54ca7fd00337d787b` |
 | Weave | `7a7d67fb3f190aeb43049d051b0972bcd53213bc` |
 | Unit declarations | `aaa2b58c1ef0b40428dcc71d1321736156551109` (schema 2, runtime disabled) |
 
-Kernel [#180](https://github.com/shuyra-arche/kernel/pull/180) and Twine
-[#9](https://github.com/shuyra-arche/twine/pull/9) are published candidate pins;
+Kernel [#182](https://github.com/shuyra-arche/kernel/pull/182) and Twine
+[#10](https://github.com/shuyra-arche/twine/pull/10) are published candidate pins;
 they must land before this consumer. The test platform selects matching Vanllia
-[#40](https://github.com/shuyra-arche/vanllia/pull/40). No new release is implied.
+[#41](https://github.com/shuyra-arche/vanllia/pull/41). No new release is implied.
+Twine continues retained Release(Busy) explicitly, preserving the failed receipt
+and owner until a new Release completes. API/Client/Server share one Kernel source.
 
 API/Client 0.4 and protocol v4 reject v2/v3 envelopes and retired Share Open/Shut
 rights. A client or ingress receives an explicit shared memory context backed by
@@ -76,10 +78,11 @@ Task request journals, cancellation and explicit retirement on that same heap.
 Its explicit test-platform feature qualifies local instruction visibility only
 for the paired one-Hart QEMU invocation.
 
-The selected Kernel's native memory backend rejects multiple Harts at
-qualification: remote translation acknowledgements do not prove remote CPU data
-accesses have drained. The unqualified normal Vanllia platform also rejects
-native Publish. Neither boundary may be bypassed by inventing completion proof.
+The selected Kernel supports bounded all-Hart CPU data completion on the
+qualified coherent-RAM fixture. The runtime CI checks one and four Harts.
+Executable SMP remains Unsupported; local instruction qualification is valid
+only for one Hart. The unqualified normal Vanllia platform still rejects native
+Publish. Neither boundary may be bypassed by inventing completion proof.
 The [entry guest](tests/guest/entry/README.md) also exercises the production
 entry, native DTB/initrd projections and internal-service bootstrap. The broad
 Client guest still needs migration and must not inherit older runtime evidence.
