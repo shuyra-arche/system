@@ -61,10 +61,7 @@ impl Services {
                     return;
                 }
                 Ok(false) => (),
-                Err(error) => {
-                    crate::debug::put(&alloc::format!("system: service bootstrap: {error}\n"));
-                    fatal("system: native service bootstrap failed")
-                }
+                Err(_) => fatal("system: native service bootstrap failed"),
             }
             // Workers owns the deadline for its current bootstrap phase.
             room::yield_();
