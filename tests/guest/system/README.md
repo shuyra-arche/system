@@ -5,7 +5,7 @@ packages that exact production binary and separately compiled ordinary User
 ELFs in pure schema-2 records; it does not substitute a fixture implementation
 for `system_server::run`.
 
-The release scenarios are:
+The same scenarios run with either System build profile:
 
 - An empty startup catalog boots and retires the real Operator/Identity workers.
 - Two transient ordinary User Teams receive declared narrow Clone Supply grants
@@ -32,17 +32,35 @@ export QEMU_OPENSBI=/path/to/fw_dynamic.bin
 python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform
 ```
 
-The runner always selects one Hart. The provider qualification is limited to
-this coherent QEMU invocation, local FENCE.I and no External requester. It does
-not establish SMP or hardware behavior.
+The default selects one Hart. `--profile debug` selects the unoptimized System
+binary; the separately compiled User ELF remains the fixed release fixture.
+`--harts 1 2 4` is available for an explicitly SMP-qualified Kernel platform;
+it does not make an older single-Hart-only provider support SMP. Provider
+qualification covers paired coherent QEMU virt CPUs with no External requester,
+not hardware or device retirement.
 
-`--profile debug` builds and runs the unoptimized production binary. Compilation
-passes, but its repeated-install/worker-retirement execution currently exposes
-an Operator page fault inside the native transport return path. This is a real
-failing scenario, retained for diagnosis; it is not a required passing CI check.
-Identity subsequently loses its Operator dependency. The failure's cause is
-not yet established as System, compiler or provider behavior. Release passing
-does not prove debug runtime correctness.
+The production entry uses a separate 1 MiB, 16-byte-aligned RW/non-executable
+PT_LOAD stack before entering Rust. It retains the original a0/a1 word pointer
+on the Kernel-owned bootstrap stack for this Task's lifetime. An absent page
+below the new stack is outside all PT_LOADs and below the Kernel's post-image
+Normal allocation window. Native reservation admission cannot populate it.
+The original 64 KiB stack overflowed the debug supervisor call chain and could
+corrupt a neighboring internal worker stack before a useful fault. This fix
+changes neither ABI arguments nor the memory request sequence. The entry
+fixture checks the actual current stack; this runner checks the ELF guard/load
+layout and executes the full application without relaxing its assertions.
+
+Both System profiles pass all three one-Hart scenarios with the selected release
+Kernel. Broader exploratory runs of the current SMP increment remain failing:
+a two-Hart complete debug application timed out after constructing its first
+Task; a debug-Kernel composition faulted during internal-service startup. These
+are retained failures, not the already-completed Kernel #179 data/instruction
+component contract. Their causes are not yet established. They are not promoted
+to required passing CI gates or described as complete application acceptance.
+
+`target/evidence/<profile>/` retains each serial log and JSON result, exact
+System/User/Kernel/firmware hashes, profile selection, locks, ELFs and archives.
+A timeout or failed assertion leaves a failed receipt. CI uploads this evidence.
 
 The User image is a native `no_std` test ELF, not a Toolchain std Unit. Full
 System/Toolchain acceptance, public Create/Claim/InstanceId/UnitRoot handoff,

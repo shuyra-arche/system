@@ -42,9 +42,12 @@ before canonical providers; declared consumers retain providers until retirement
 settles. Unsettled safety gates fail closed. Cleanup time bounds cause a Team
 exit with its owners retained, not early source retirement.
 
-The complete binary builds in both profiles and release application scenarios
-run under the qualified one-Hart QEMU platform. The unoptimized application's
-Operator fault remains unresolved (see the [application scenario](../../../../tests/guest/system/README.md)).
+The complete binary builds in both profiles. Both System profiles run under
+the qualified one-Hart release Kernel after the production entry switches to
+its Capsule-owned stack. The 64 KiB Kernel bootstrap stack was insufficient for
+the unoptimized application; fault addresses in transport/allocator code were
+not evidence of a transport defect. Complete SMP and debug-Kernel application
+execution remain unaccepted (see the [application scenario](../../../../tests/guest/system/README.md)).
 Public operation/instance identity and lifetime semantics, returned UnitRoot,
 Create cancellation/replay pressure, selected-owner death, retirement-provider
 failure, supervision recovery, and std User integration require further focused
