@@ -60,7 +60,7 @@ creates both Tasks, explicitly grants their startup resources and connects
 Root/Wired without the old Schedule/closure bootstrap. Its production worker
 owner keeps execution exit, Kernel reclamation and record deletion separate.
 The guest verifies normal/partial startup, cancellation, both roles and cleanup.
-The [support package](support/README.md) is fully on Kernel 9 and the pure Unit
+The [support package](support/README.md) is on Kernel 10 and the pure Unit
 bundle, including typed boot accounts and explicit Share/Sign dispatch pairs.
 The assembled app still has legacy supervisor/service callers; removal of those
 callers remain outstanding. The native entry/linker and growing, reclaiming heap
@@ -101,7 +101,7 @@ belong to [Vanllia](https://github.com/shuyra-arche/vanllia).
 ## Current limitations
 
 The support package passes its host tests and RV64 check on the pinned nightly.
-The assembled Server still cannot build; Control/Assembly, the remaining service
+The assembled Server still cannot build; its runtime heap still uses retired ABI 9 Cell construction calls, and Control/Assembly, the remaining service
 integration and the mixed shipping graph require migration. The native entry
 is verified with an explicit contract fixture, not the complete application. The old `test-support` scenarios still use declarations and
 Unit shapes from before dynamic selection and require repair; do not treat all

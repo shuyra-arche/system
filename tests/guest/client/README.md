@@ -42,5 +42,6 @@ Validated component inputs: Kernel/API/Client
 `37c75f5bbb0794b4e9daf61bf0a93e81492e3daf`, Rust nightly-2026-11-13
 (`8eb778d04094d3af4b26580cab327e0413eb1e02`), QEMU 10.0.13 and OpenSBI 1.6.
 The guest uses normal locked Git dependencies; no local SDK patch is needed.
-The assembled legacy Server/Support pins and old fixtures are outside this
-component graph and remain part of the draft migration, not release evidence.
+Production Server/Support SDK pins are aligned to the same provider. The legacy
+Server application (including runtime heap Cell construction) and old fixtures
+still need migration. Their full build is not passing release evidence.
