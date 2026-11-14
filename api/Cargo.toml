@@ -1,6 +1,6 @@
 [package]
 name = "system-api"
-version = "0.1.0"
+version = "0.4.0"
 edition = "2024"
 
 [lib]
@@ -9,6 +9,5 @@ bench = false
 doctest = false
 
 [dependencies]
-env = { git = "https://github.com/shuyra-arche/env.git", rev = "d3000253cd5d13d466e91fafd4dbb27a5ec5aaae" }
-wire = { git = "https://github.com/shuyra-arche/wire.git", rev = "0ff77dc4573fa2620d2fe995a18c01949d9c7e57" }
-mold = { git = "https://github.com/shuyra-arche/mold.git", rev = "f52501f4c91b686eded8b4bcd743b4e96084b7f9" }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
+weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }

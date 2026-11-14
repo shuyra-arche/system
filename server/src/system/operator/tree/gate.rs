@@ -1,50 +1,91 @@
-//! 裁决 → 线上那一格：怎么问（Facts）、怎么翻（verdict）。
-//! 把 judge 那三格答案翻成线上那一格码（Code）。判据要问的那几条边由树域那一侧
+//! Namespace admission depends on one trusted query bundle. Unknown facts fail
+//! closed; Same is one atomic identity query rather than two Resolve snapshots.
+use kernel_api::model::wait::Wait;
+use system_client::identity::TaskQuery;
+use system_protocol::{
+    EntryId, TaskId,
+    identity::{self, Selector},
+    operator::{Fail, Permit},
+};
 
-use env::TaskId;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Unavailable;
 
-use system_api::operator::Permit;
-use system_api::operator::Ruling;
+pub trait Facts {
+    fn bound(&self, task: TaskId) -> Result<bool, Unavailable>;
+    fn matches(&self, task: TaskId, selector: Selector) -> Result<bool, Unavailable>;
+    fn same(&self, left: TaskId, right: TaskId) -> Result<bool, Unavailable>;
+    fn opens(&self, entry: EntryId) -> Result<Option<TaskId>, Unavailable>;
+}
 
-use super::judge::{Facts, judge};
-
-pub const WIRE_OK: u8 = 0;
-pub const WIRE_DENIED: u8 = 8;
-pub const WIRE_UNJUDGED: u8 = 9;
-
-/// 一颗线上码——裁决那一侧的全部出口
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Code {
-    /// 放行（继续去动树）
     Ok,
-    /// 这一位不许。**终态**
     Denied,
-    /// 判不了：这一问要的那条事实问不到——对面不答 / 超时（**会好**），或那一号是碑 /
-    /// 那一格是块窗格 / 开者那扇门封印了（**好不了**）。两类同格；**重试是客人的策略**
     Unjudged,
 }
-
 impl Code {
-    /// 写给客人的那一格
-    pub const fn wire(self) -> u8 {
+    pub const fn failure(self) -> Option<Fail> {
         match self {
-            Code::Ok => WIRE_OK,
-            Code::Denied => WIRE_DENIED,
-            Code::Unjudged => WIRE_UNJUDGED,
+            Self::Ok => None,
+            Self::Denied => Some(Fail::Denied),
+            Self::Unjudged => Some(Fail::Unjudged),
         }
     }
-
-    /// 放行了吗——调用点只该问这一句
-    pub const fn passed(self) -> bool {
-        matches!(self, Code::Ok)
-    }
 }
 
-/// 判一格：`facts` 是那几条边（Facts 的四问），`permit` 是那一格自己那一句话
 pub fn verdict(facts: &impl Facts, who: TaskId, permit: Permit) -> Code {
-    match judge(facts, who, permit) {
-        Ruling::Allow => Code::Ok,
-        Ruling::Deny => Code::Denied,
-        Ruling::Unjudged => Code::Unjudged,
+    let answer = match permit {
+        Permit::Public => return Code::Ok,
+        Permit::Bound => facts.bound(who),
+        Permit::Identity(selector) => facts.matches(who, selector),
+        Permit::Opener(at) => match facts.opens(at) {
+            Ok(Some(opener)) => facts.same(who, opener),
+            Ok(None) | Err(Unavailable) => return Code::Unjudged,
+        },
+    };
+    match answer {
+        Ok(true) => Code::Ok,
+        Ok(false) => Code::Denied,
+        Err(Unavailable) => Code::Unjudged,
     }
 }
+
+/// The opener lookup comes from the serving Operator's own namespace state.
+/// Query endpoints come from an authenticated bootstrap receipt. Every query
+/// uses the same supplied absolute deadline and rechecks live native authority.
+pub struct Court<'a, F> {
+    pub query: Option<&'a TaskQuery>,
+    pub openers: F,
+    pub wait: Wait,
+}
+impl<F: Fn(EntryId) -> Result<Option<TaskId>, Unavailable>> Facts for Court<'_, F> {
+    fn bound(&self, task: TaskId) -> Result<bool, Unavailable> {
+        self.query
+            .ok_or(Unavailable)?
+            .resolve(identity::Task { task }, self.wait)
+            .map(|value| value.is_some())
+            .map_err(|_| Unavailable)
+    }
+    fn matches(&self, task: TaskId, selector: Selector) -> Result<bool, Unavailable> {
+        self.query
+            .ok_or(Unavailable)?
+            .matches(identity::Matches { task, selector }, self.wait)
+            .map(|value| value == identity::Match::Yes)
+            .map_err(|_| Unavailable)
+    }
+    fn same(&self, left: TaskId, right: TaskId) -> Result<bool, Unavailable> {
+        self.query
+            .ok_or(Unavailable)?
+            .same(identity::Same { left, right }, self.wait)
+            .map(|value| value == identity::Match::Yes)
+            .map_err(|_| Unavailable)
+    }
+    fn opens(&self, at: EntryId) -> Result<Option<TaskId>, Unavailable> {
+        (self.openers)(at)
+    }
+}
+
+#[cfg(test)]
+#[path = "../../../../../tests/operator-policy/policy.rs"]
+mod tests;

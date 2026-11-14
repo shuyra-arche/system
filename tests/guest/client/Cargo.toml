@@ -1,0 +1,27 @@
+[package]
+name = "system-client-guest"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[[bin]]
+name = "system-client-guest"
+path = "main.rs"
+test = false
+bench = false
+
+[dependencies]
+system-client = { path = "../../../client" }
+twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "80158211d8232c789c4609a3ea490bd16bbdac7b" }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
+kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
+weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }
+
+system-protocol = { package = "system-api", path = "../../../api" }
+
+erra = { version = "0.2.0", default-features = false }
+
+[profile.release]
+panic = "abort"

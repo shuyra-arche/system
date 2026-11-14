@@ -1,0 +1,22 @@
+[package]
+name = "operator-policy-tests"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[lib]
+path = "lib.rs"
+doctest = false
+
+[dependencies]
+system-protocol = { package = "system-api", path = "../../api" }
+system-client = { path = "../../client" }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
+weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }
+
+kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
+
+twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "80158211d8232c789c4609a3ea490bd16bbdac7b" }
+erra = { version = "0.2.0", default-features = false }

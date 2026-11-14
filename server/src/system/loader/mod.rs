@@ -1,65 +1,92 @@
-mod build;
+//! Native ELF construction. Policy and RPC admission belong to System control.
 mod cache;
-mod cached;
 mod image;
-mod mapping;
-mod service;
 mod source;
-mod spawn;
 mod task;
-
-pub(crate) use build::{Source, snapshot};
-pub(crate) use image::Image;
-pub(crate) use service::release_image;
-pub(crate) use service::{entry, faces, frame, install, shutdown, watch};
-pub(crate) use spawn::Spawn;
-pub(crate) use task::Unit;
-
 use cache::Cache;
-use env::UnitResult;
-
-const CACHE_PAGES: usize = 256;
-
-pub(crate) struct Loader {
-    cache: Cache,
+pub(crate) use image::{Image, ProgramKind};
+use kernel_api::{
+    abi::{
+        call::{pend::PendFail, share_view::ShareFail, unit::UnitFail},
+        memory::Failure,
+    },
+    model::identity::PendId,
+};
+pub(crate) use task::{Job, Phase, Spawn};
+#[derive(Debug)]
+pub(crate) enum Error {
+    Invalid,
+    Capacity,
+    Image(image::elf::Error),
+    Mapping(crate::runtime::view::Error),
+    Native(Failure),
+    Pend(erra::Error<PendFail>),
+    Share(erra::Error<ShareFail>),
+    Unit(erra::Error<UnitFail>),
 }
-
-pub(super) fn fail(source: env::UnitFail) -> erra::Error<env::UnitFail> {
-    erra::Error::new("constructing ELF image", source)
-}
-
-impl Loader {
-    pub(crate) fn new() -> Self {
-        Self {
-            cache: Cache::new(CACHE_PAGES),
+impl Error {
+    pub fn busy(&self) -> bool {
+        match self {
+            Self::Mapping(error) => error.busy(),
+            Self::Native(Failure::Busy | Failure::Stale) => true,
+            Self::Pend(error) => error.source.is_busy(),
+            Self::Share(error) => error.source.is_busy(),
+            Self::Unit(error) => error.source.is_busy(),
+            _ => false,
         }
     }
-
-    pub(crate) fn clear_images(&mut self) {
-        self.cache.clear();
+}
+pub(crate) struct Loader {
+    license: PendId,
+    space: PendId,
+    cache: Cache,
+}
+impl Loader {
+    /// # Safety
+    /// Space is this Task's actual Internal Nest. Loader copies image bytes
+    /// through private writable staging projections there.
+    pub unsafe fn new(license: PendId, space: PendId) -> Result<Self, Error> {
+        Ok(Self {
+            license,
+            space,
+            cache: Cache::new(256)?,
+        })
     }
-
-    pub(crate) fn cached_entries(&self) -> usize {
-        self.cache.entry_count()
+    pub fn prepare(&mut self, image: Image<'_>, spawn: Spawn<'_>) -> Result<Job, Error> {
+        Job::new(image, spawn)
     }
-
-    pub(crate) fn build(&mut self, image: Image<'_>) -> UnitResult<Unit> {
-        build::load(self, image, env::unit::self_id())
+    pub fn cached_entries(&self) -> usize {
+        self.cache.count()
     }
-
-    pub(crate) fn construct(
-        &mut self,
-        image: Image<'_>,
-        spawn: Spawn<'_>,
-    ) -> Result<system_api::loader::Built, system_api::loader::Fail> {
-        build::construct(self, image, spawn)
+    pub fn clear_images(&mut self) -> Result<bool, Error> {
+        self.cache.clear()
+    }
+    pub fn advance(&mut self) -> Result<bool, Error> {
+        self.cache.sweep()
     }
 }
 
-impl Default for Loader {
-    fn default() -> Self {
-        Self::new()
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Invalid => f.write_str("invalid native image construction state"),
+            Self::Capacity => f.write_str("image construction capacity exhausted"),
+            Self::Image(error) => write!(f, "ELF: {error:?}"),
+            Self::Mapping(error) => write!(f, "image Memo: {error:?}"),
+            Self::Native(error) => write!(f, "image native memory: {error:?}"),
+            Self::Pend(error) => write!(f, "image Pend: {error}"),
+            Self::Share(error) => write!(f, "image Share derivation: {error}"),
+            Self::Unit(error) => write!(f, "image Unit: {error}"),
+        }
     }
 }
 
-pub(crate) use service::EndpointState;
+fn abort(note: &'static str) -> ! {
+    kernel_client::call::unit::exit(
+        0,
+        0x4c4f_4144,
+        kernel_api::address::VirtAddr::new(note.as_ptr().addr()),
+        note.len(),
+        kernel_api::model::unit::ExitScope::Team,
+    )
+}

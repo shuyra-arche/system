@@ -1,8 +1,11 @@
-//! Program diagnostics through the environment debug channel.
+//! Program diagnostics through the Kernel debug channel.
 
 pub fn put(message: &str) {
     let bytes = message.as_bytes();
-    let _ = env::debug::put(env::VirtAddr::new(bytes.as_ptr() as usize), bytes.len());
+    let _ = kernel_client::call::debug::put(
+        kernel_api::address::VirtAddr::new(bytes.as_ptr() as usize),
+        bytes.len(),
+    );
 }
 
 #[macro_export]

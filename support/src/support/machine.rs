@@ -3,11 +3,10 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use ::resource::dock::View;
-use env::{Name, Page};
+use kernel_api::boot::ledger::{Name, Page};
 
-/// Two inventory entries are reserved for the boot DTB and interrupt resource.
-pub const MAX_DEVICES: usize = hub_api::INVENTORY_MAX - 2;
+/// System preserves the bounded inventory capacity without importing a driver protocol.
+pub const MAX_DEVICES: usize = 62;
 
 /// 可派发的设备区域及其驱动信息；line 为零表示没有本控制器的中断线路。
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -18,19 +17,18 @@ pub struct Device {
     pub line: u32,
 }
 
-/// **引导期那两件不按类认的东西**的坐标由它们自己说（`Name::Page(Page::Dtb)` / `Name::Trap(env::Trap::SupervisorExternal)`）——
-/// 它们不进 Machine::devices 那张表（树里没有"哪一类"可判），由装配者按**已知坐标**要
+/// Borrows the complete DTB; its lifetime bounds every inventory query.
+/// Interrupt routes are separately authorized View/Sign pairs in the boot ledger.
 #[derive(Clone, Copy)]
-pub struct Machine {
-    fdt: fdt::Fdt<'static>,
+pub struct Machine<'a> {
+    fdt: fdt::Fdt<'a>,
 }
 
-impl Machine {
+impl<'a> Machine<'a> {
     /// 把一段**已借映的只读区**解释成设备树
-    /// 前置：`view` 指向终身存活、只读、形状合法的 FDT（`Name::Page(Page::Dtb)` 那一枚门闩的视图）
-    pub fn of(view: View) -> Result<Machine, &'static str> {
-        let fdt = unsafe { fdt::Fdt::from_ptr(view.base() as *const u8) }
-            .map_err(|_| "system: tree parse")?;
+    /// Parsing is bounded by the supplied slice, without trusting a raw FDT pointer.
+    pub fn of(bytes: &'a [u8]) -> Result<Self, &'static str> {
+        let fdt = fdt::Fdt::new(bytes).map_err(|_| "system: tree parse")?;
         Ok(Machine { fdt })
     }
 

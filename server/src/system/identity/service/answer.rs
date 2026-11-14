@@ -1,150 +1,224 @@
-//! Face admission precedes every state read or write.
+//! Endpoint admission precedes every state read or write.
 use crate::system::identity::book::{
-    Anchor, Association, IdentityBook, InstallAction, InstallationRequest, ReferenceQuery,
+    Anchor, Association, BindingRequest, IdentityBook, InstallAction, InstallationRequest,
+    Membership, ReferenceQuery, Selection,
 };
-use env::PieToken;
-use env::TaskId;
-use system_api::identity::Fail;
-use system_api::identity::Grant;
-use system_api::identity::PageTarget;
-use system_api::identity::Reply;
-use system_api::identity::Wire;
+use system_protocol::{
+    PendId, TaskId,
+    identity::{
+        self, CoalitionId, Fail, Grant, MatchReply, PageTarget, PrincipalId,
+        operations::{DecodedRequest, Response},
+    },
+    value::{Optional, Outcome},
+};
+use weave::Coded;
 
-pub struct Request {
-    pub context: Context,
-    pub wire: Option<Wire>,
-}
+/// From the serving endpoint and authenticated Clone metadata, never the body.
 pub struct Context {
     pub from: TaskId,
-    pub endpoint: PieToken,
+    pub endpoint: PendId,
     pub grant: Grant,
 }
 
-pub fn answer(book: &mut IdentityBook, request: Request) -> Reply {
-    let Request {
-        context: Context {
-            from,
-            endpoint,
-            grant,
-        },
-        wire,
-    } = request;
-    let Some(wire) = wire else {
-        return Reply::Fail(Fail::Bad);
-    };
-    if Grant::for_wire(&wire) != grant {
-        return Reply::Fail(Fail::Denied);
+pub fn answer(book: &mut IdentityBook, context: Context, request: DecodedRequest) -> Response {
+    let Context {
+        from,
+        endpoint,
+        grant,
+    } = context;
+    macro_rules! route {
+        ($variant:ident, $grant:ident, $result:expr) => {
+            Response::$variant(
+                if grant != Grant::$grant || from == TaskId::NONE || endpoint == PendId::NONE {
+                    Outcome::Failure(Fail::Denied)
+                } else {
+                    match $result {
+                        Ok(value) => Outcome::Success(value),
+                        Err(fail) => Outcome::Failure(fail),
+                    }
+                },
+            )
+        };
     }
-    let result = match wire {
-        Wire::Resolve(task) => Ok(Reply::Binding(book.resolve(task))),
-        Wire::Matches(task, selector) => book.matches(task, selector).map(Reply::Match),
-        Wire::Same(a, b) => Ok(Reply::Match(book.same(a, b))),
-        Wire::Sire(p) => book.sire(p).map(Reply::Principal),
-        Wire::Heir(a, b) => book.heir(a, b).map(Reply::Bool),
-        Wire::Amid(p, c) => book.amid(p, c).map(Reply::Bool),
-        Wire::Members(c, cursor) => book
-            .page(PageTarget::Members(c), cursor)
-            .map(Reply::Members),
-        Wire::Memberships(p, cursor) => book
-            .page(PageTarget::Memberships(p), cursor)
-            .map(Reply::Memberships),
-        Wire::Adopt(s) => book
-            .narrow_own(
+    match request {
+        DecodedRequest::Resolve(request) => {
+            route!(Resolve, Resolve, Ok(Optional(book.resolve(request.task))))
+        }
+        DecodedRequest::Matches(request) => route!(
+            Matches,
+            Matches,
+            book.matches(request.task, request.selector)
+                .map(|value| MatchReply {
+                    value: Coded(value)
+                })
+        ),
+        DecodedRequest::Same(request) => route!(
+            Same,
+            Same,
+            Ok(MatchReply {
+                value: Coded(book.same(request.left, request.right))
+            })
+        ),
+        DecodedRequest::Sire(principal) => route!(Sire, Sire, book.sire(principal).map(Optional)),
+        DecodedRequest::Heir(request) => {
+            route!(Heir, Heir, book.heir(request.parent, request.child))
+        }
+        DecodedRequest::Amid(request) => {
+            route!(Amid, Amid, book.amid(request.principal, request.coalition))
+        }
+        DecodedRequest::Members(request) => route!(
+            Members,
+            Members,
+            book.page::<PrincipalId>(PageTarget::Members(request.coalition), request.cursor.0)
+        ),
+        DecodedRequest::Memberships(request) => route!(
+            Memberships,
+            Memberships,
+            book.page::<CoalitionId>(PageTarget::Memberships(request.principal), request.cursor.0)
+        ),
+        DecodedRequest::Adopt(subject) => route!(
+            Adopt,
+            Adopt,
+            book.narrow_own(
                 from,
-                crate::system::identity::book::Selection {
-                    subject: s,
-                    anchor: Anchor::Keep,
-                },
+                Selection {
+                    subject,
+                    anchor: Anchor::Keep
+                }
             )
-            .map(|()| Reply::Unit),
-        Wire::Waive => book.waive(from).map(|()| Reply::Unit),
-        Wire::Restrict(s) => book
-            .narrow_own(
+            .and_then(|()| book.resolve(from).ok_or(Fail::Denied))
+        ),
+        DecodedRequest::Waive(()) => route!(Waive, Waive, book.waive(from)),
+        DecodedRequest::Restrict(subject) => route!(
+            Restrict,
+            Restrict,
+            book.narrow_own(
                 from,
-                crate::system::identity::book::Selection {
-                    subject: s,
-                    anchor: Anchor::Move,
-                },
+                Selection {
+                    subject,
+                    anchor: Anchor::Move
+                }
             )
-            .map(|()| Reply::Unit),
-        Wire::Derive(p) => book.derive(from, p).map(|p| Reply::Principal(Some(p))),
-        Wire::Found(id) => book.found(from, id).map(Reply::Coalition),
-        Wire::Admit(c, p) => book
-            .admit(
+            .and_then(|()| book.resolve(from).ok_or(Fail::Denied))
+        ),
+        DecodedRequest::Derive(parent) => route!(Derive, Derive, book.derive(from, parent)),
+        DecodedRequest::Found(id) => route!(Found, Found, book.found(from, id)),
+        DecodedRequest::Admit(request) => route!(
+            Admit,
+            Admit,
+            book.admit(
                 from,
-                crate::system::identity::book::Membership {
-                    coalition: c,
-                    principal: p,
-                },
+                Membership {
+                    principal: request.principal,
+                    coalition: request.coalition
+                }
             )
-            .map(|()| Reply::Unit),
-        Wire::Expel(c, p) => book
-            .expel(
+        ),
+        DecodedRequest::Expel(request) => route!(
+            Expel,
+            Expel,
+            book.expel(
                 from,
-                crate::system::identity::book::Membership {
-                    coalition: c,
-                    principal: p,
-                },
+                Membership {
+                    principal: request.principal,
+                    coalition: request.coalition
+                }
             )
-            .map(|()| Reply::Unit),
-        Wire::Bind(task, install) => book
-            .bind(
+        ),
+        DecodedRequest::Bind(request) => route!(
+            Bind,
+            Bind,
+            book.bind(
                 from,
-                crate::system::identity::book::BindingRequest {
-                    task,
-                    install: install,
-                },
+                BindingRequest {
+                    task: request.task,
+                    install: request.install
+                }
             )
-            .map(|()| Reply::Unit),
-        Wire::Unbind(task) => book.unbind(from, task).map(|()| Reply::Unit),
-        Wire::Activate(task, coalitions) => book
-            .activate(from, (task, coalitions))
-            .map(|()| Reply::Unit),
-        Wire::Install(id, spec) => book
-            .installation(InstallationRequest {
+            .and_then(|()| book.resolve(request.task).ok_or(Fail::Denied))
+        ),
+        DecodedRequest::Unbind(request) => route!(Unbind, Unbind, book.unbind(from, request.task)),
+        DecodedRequest::Activate(request) => route!(
+            Activate,
+            Activate,
+            book.activate(from, (request.task, request.coalitions))
+                .and_then(|()| book.resolve(request.task).ok_or(Fail::Denied))
+        ),
+        DecodedRequest::Install(request) => route!(
+            Install,
+            Install,
+            book.installation(InstallationRequest {
+                endpoint,
+                caller: from,
+                id: request.id,
+                action: InstallAction::Apply(BindingRequest {
+                    task: request.task,
+                    install: request.install
+                }),
+            })
+            .map(status)
+        ),
+        DecodedRequest::Inspect(id) => route!(
+            Inspect,
+            Install,
+            book.installation(InstallationRequest {
                 endpoint,
                 caller: from,
                 id,
-                action: InstallAction::Apply(spec),
+                action: InstallAction::Inspect
             })
-            .map(Reply::Installation),
-        Wire::Inspect(id) => book
-            .installation(InstallationRequest {
+            .map(status)
+        ),
+        DecodedRequest::Cancel(id) => route!(
+            Cancel,
+            Install,
+            book.installation(InstallationRequest {
                 endpoint,
                 caller: from,
                 id,
-                action: InstallAction::Inspect,
+                action: InstallAction::Cancel
             })
-            .map(Reply::Installation),
-        Wire::Cancel(id) => book
-            .installation(InstallationRequest {
+            .map(status)
+        ),
+        DecodedRequest::Retire(id) => route!(
+            Retire,
+            Install,
+            book.installation(InstallationRequest {
                 endpoint,
                 caller: from,
                 id,
-                action: InstallAction::Cancel,
+                action: InstallAction::Retire
             })
-            .map(Reply::Installation),
-        Wire::Retire(id) => book
-            .installation(InstallationRequest {
-                endpoint,
-                caller: from,
-                id,
-                action: InstallAction::Retire,
+            .map(status)
+        ),
+        DecodedRequest::Reference(request) => route!(
+            Reference,
+            Reference,
+            book.reference(ReferenceQuery {
+                object: request.object,
+                name: request.name
             })
-            .map(Reply::Installation),
-        Wire::Associate(object, name, entry) => book
-            .associate(
+            .map(Optional)
+        ),
+        DecodedRequest::Associate(request) => route!(
+            Associate,
+            Install,
+            book.associate(
                 from,
                 Association {
-                    object,
-                    name,
-                    entry,
-                },
+                    object: request.object,
+                    name: request.name,
+                    entry: request.entry
+                }
             )
-            .map(|()| Reply::Unit),
-        Wire::Reference(object, name) => book
-            .reference(ReferenceQuery { object, name })
-            .map(Reply::Reference),
-    };
-    result.unwrap_or_else(Reply::Fail)
+        ),
+    }
+}
+
+fn status(value: crate::system::identity::book::InstallStatus) -> identity::InstallStatus {
+    identity::InstallStatus {
+        state: Coded(value.state),
+        binding: Optional(value.binding),
+        failure: Optional(value.failure.map(Coded)),
+    }
 }
