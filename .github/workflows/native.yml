@@ -85,12 +85,30 @@ jobs:
           cat .evidence/runtime.log
       - name: Production entry, immutable boot data and native services on one Hart
         run: python3 tests/guest/entry/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
-      - name: Build single-Hart local-instruction test platform
+      - name: Build all-Hart instruction test platform
         run: cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --release --target riscv64gc-unknown-none-elf
-      - name: Native ELF construction and User Team retirement on one Hart
-        run: python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
+      - name: Native ELF construction and User Team retirement on 1/2/4 Harts
+        run: python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1 2 4
       - name: Complete release System application and ordinary User Teams
         run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform
+      - name: Debug Loader and instruction platform on 1/2/4 Harts
+        run: |
+          cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --target riscv64gc-unknown-none-elf
+          python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform --profile debug --harts 1 2 4
+      - name: Preserve Loader execution evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-loader
+          path: |
+            tests/guest/loader/target/evidence/**/*.json
+            tests/guest/loader/target/evidence/**/*.log
+            tests/guest/loader/target/evidence/**/*.lock
+            tests/guest/loader/target/evidence/**/initrd.bin
+            tests/guest/loader/target/evidence/**/system-loader-image
+            tests/guest/loader/target/evidence/**/system-loader-guest
+            tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/*/system-runtime-platform
+          if-no-files-found: error
       - name: Preserve runtime composition evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

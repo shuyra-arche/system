@@ -30,15 +30,15 @@ Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
 
 | Provider | Exact revision |
 | --- | --- |
-| Kernel API/Client | `2cfb581a7ef767ebae0fda4864ed5da625ef067e` (ABI/Ledger 11/11, Capsule 2) |
-| Twine | `7c75c62d15d173032d99fed54ca7fd00337d787b` |
+| Kernel API/Client | `684f479c45dc2d94d405b32b4ffc6334a4233fc9` (ABI/Ledger 11/11, Capsule 2) |
+| Twine | `8c68cbeffd024b4105a6a7c2f4baaab330994ca1` |
 | Weave | `7a7d67fb3f190aeb43049d051b0972bcd53213bc` |
 | Unit declarations | `aaa2b58c1ef0b40428dcc71d1321736156551109` (schema 2, runtime disabled) |
 
-Kernel [#182](https://github.com/shuyra-arche/kernel/pull/182) and Twine
-[#10](https://github.com/shuyra-arche/twine/pull/10) are published candidate pins;
+Kernel [#183](https://github.com/shuyra-arche/kernel/pull/183) and Twine
+[#11](https://github.com/shuyra-arche/twine/pull/11) are published candidate pins;
 they must land before this consumer. The test platform selects matching Vanllia
-[#41](https://github.com/shuyra-arche/vanllia/pull/41). No new release is implied.
+[#42](https://github.com/shuyra-arche/vanllia/pull/42). No new release is implied.
 Twine continues retained Release(Busy) explicitly, preserving the failed receipt
 and owner until a new Release completes. API/Client/Server share one Kernel source.
 
@@ -75,13 +75,13 @@ component test, not the complete System or a Toolchain User Unit.
 The [Loader guest](tests/guest/loader/README.md) separately creates independent
 ordinary User Teams from a native ELF, with private DATA/BSS, cached RX, fresh
 Task request journals, cancellation and explicit retirement on that same heap.
-Its explicit test-platform feature qualifies local instruction visibility only
-for the paired one-Hart QEMU invocation.
+Its explicit test-platform feature qualifies all-Hart instruction visibility
+for paired 1/2/4-Hart QEMU invocations.
 
 The selected Kernel supports bounded all-Hart CPU data completion on the
 qualified coherent-RAM fixture. The runtime CI checks one and four Harts.
-Executable SMP remains Unsupported; local instruction qualification is valid
-only for one Hart. The unqualified normal Vanllia platform still rejects native
+Executable SMP requires explicit all-Hart instruction qualification; the Loader
+CI exercises 1/2/4 Harts in both profiles. Local-only qualification still rejects SMP. The unqualified normal Vanllia platform still rejects native
 Publish. Neither boundary may be bypassed by inventing completion proof.
 The [entry guest](tests/guest/entry/README.md) also exercises the production
 entry, native DTB/initrd projections and internal-service bootstrap. The broad

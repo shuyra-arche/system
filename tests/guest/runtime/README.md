@@ -26,8 +26,8 @@ acceptance.
 ## Reproduce
 
 Select the repository's nightly and RV64 target. Build the explicit CPU-only
-QEMU platform fixture, which pins Vanllia `a6f4fc0d1aaa45fef598fdf4d3a73a7cd7d0b09a`
-and Kernel `2cfb581a7ef767ebae0fda4864ed5da625ef067e`:
+QEMU platform fixture, which pins Vanllia `58498c13f41ad64a1fc09af338802b279347c9c8`
+and Kernel `684f479c45dc2d94d405b32b4ffc6334a4233fc9`:
 
 ```sh
 RUSTFLAGS='-Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium' cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --release --target riscv64gc-unknown-none-elf
@@ -51,7 +51,8 @@ and generation-bound acknowledgements on all ever-online Harts. Only complete
 CPU rounds permit reclamation; Busy or bounded failure retains ownership.
 Twine explicitly continues a retained Release(Busy) with a fresh request while
 preserving the original failed receipt. CI exercises this data-only fixture on
-one and four Harts. Executable SMP remains Unsupported.
+one and four Harts. This data-only platform still rejects executable memory;
+the separate `instructions` feature qualifies the Loader 1/2/4-Hart scenario.
 The unqualified normal Vanllia platform rejects native Publish as Unsupported.
 Preserve both fail-closed boundaries; do not synthesize completion evidence.
 

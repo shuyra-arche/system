@@ -18,22 +18,29 @@ reservations and closed metadata Pends must return to the caller baseline.
 Controller allocations are dropped before comparing the production heap's Pend
 inventory.
 
-Build the explicit single-Hart instruction-qualified test platform:
+Build the explicit all-Hart instruction-qualified test platform:
 
 ```sh
 export RUSTFLAGS='-Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium -Dwarnings'
 cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --release --target riscv64gc-unknown-none-elf
 export QEMU_RISCV64=/path/to/qemu-system-riscv64
 export QEMU_OPENSBI=/path/to/fw_dynamic.bin
-python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
+python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1 2 4
 ```
 
 The runner builds both fixture and image with `--locked`, requires the Loader
 marker and Kernel's all-tasks-exited shutdown, and bounds execution to 120
-seconds. Its default includes four Harts; that topology remains rejected, as
-tracked in Kernel #179. The instruction qualification covers the paired
-one-Hart coherent QEMU invocation with no External requester, using local
-FENCE.I. No SMP or physical-hardware claim follows.
+seconds. Its default includes 1/2/4 Harts. Run `--profile debug` with the debug
+platform ELF to exercise both Kernel/Loader profiles. The ordinary User ELF
+is always the original release fixture, so payload size and cancellation points
+stay comparable; `inputs.json` records both profile selections. A large debug
+User ELF is not part of this bounded component scenario. Evidence under `target/evidence/` keeps
+commands, toolchain/firmware/image hashes, resolved locks, serial logs and results.
+The instruction qualification covers paired coherent QEMU virt CPUs with no
+External requester, hotplug or unmanaged executable aliases. Kernel completes
+an independent all-Hart FENCE.I round before installing executable PTEs. It
+retains a page-wide W/X guard throughout that wait and revalidates authorization
+before publication. Hardware and device instruction fetch remain unverified.
 
 This is independent-User-Team **Loader component** evidence. Public Control,
 Operation/Instance ownership, authenticated Create policy, initial service

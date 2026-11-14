@@ -10,12 +10,12 @@ path = "main.rs"
 test = false
 bench = false
 [dependencies]
-kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "2cfb581a7ef767ebae0fda4864ed5da625ef067e" }
-kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "2cfb581a7ef767ebae0fda4864ed5da625ef067e" }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "684f479c45dc2d94d405b32b4ffc6334a4233fc9" }
+kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "684f479c45dc2d94d405b32b4ffc6334a4233fc9" }
 talc = { version = "5.1.1", default-features = false }
 system-protocol = { package = "system-api", path = "../../../api" }
 system-client = { path = "../../../client" }
-twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "7c75c62d15d173032d99fed54ca7fd00337d787b" }
+twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "8c68cbeffd024b4105a6a7c2f4baaab330994ca1" }
 weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }
 erra = { version = "0.2.0", default-features = false }
 [profile.release]
