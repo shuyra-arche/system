@@ -156,6 +156,14 @@ pub fn run(license: PendId) {
     drop(running);
     kernel_client::call::pend::return_(signal).unwrap();
     fixture::until(|| loader.clear_images().unwrap());
+    let mut empty = prepare(&mut loader, &[]);
+    ready(&mut empty, &mut loader);
+    empty.resume().unwrap();
+    finish(&mut empty);
+    assert_eq!(empty.result().unwrap().result, Some(17));
+    assert!(empty.result().unwrap().reclaimed);
+    drop(empty);
+    fixture::until(|| loader.clear_images().unwrap());
     assert_eq!(
         fixture::active(),
         baseline,

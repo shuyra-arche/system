@@ -5,7 +5,7 @@ production heap. It creates actual independent ordinary User Teams from a
 separately compiled RV64 ELF. The root fixture uses the public Kernel startup
 ledger; it does not run the complete System application.
 
-The image checks copied arguments, writable initialized DATA and zeroed BSS,
+The image checks copied and empty argument blocks, writable initialized DATA and zeroed BSS,
 then uses the production native-memory result owner to Create/Delete a Flat.
 Its first mutation uses RequestId 1: parent construction cannot consume or reset
 the new Task's native journal. Two instances reuse immutable RX while retaining

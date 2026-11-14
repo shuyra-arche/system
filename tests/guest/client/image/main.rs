@@ -26,13 +26,12 @@ fn exit(value: u64, reason: u64) -> ! {
 }
 #[unsafe(no_mangle)]
 extern "C" fn start(words: *const usize, count: usize, stack: usize) -> ! {
-    if count != 2 || stack & 15 != 0 {
+    if ![0, 2].contains(&count) || stack & 15 != 0 {
         exit(0, 1);
     }
     // SAFETY: Kernel supplies copied argument words and initialized PT_LOADs.
     unsafe {
-        if *words != 0xa5
-            || ![0x5a, 0x5b].contains(&*words.add(1))
+        if (count == 2 && (*words != 0xa5 || ![0x5a, 0x5b].contains(&*words.add(1))))
             || core::ptr::read_volatile(&raw const DATA) != 0x12345678
         {
             exit(0, 2);
@@ -89,7 +88,7 @@ extern "C" fn start(words: *const usize, count: usize, stack: usize) -> ! {
         .unwrap();
     kernel_client::call::pend::return_(token).unwrap();
     // SAFETY: the argument block remains this Task's Kernel-owned stack.
-    if unsafe { *words.add(1) } == 0x5b {
+    if count == 2 && unsafe { *words.add(1) } == 0x5b {
         let mut after = PendId::NONE;
         loop {
             let mut bytes = [0; PendInfo::SIZE];

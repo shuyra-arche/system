@@ -246,7 +246,11 @@ impl Job {
             let request = UnitCreate::Task {
                 team: self.team,
                 entry: VirtAddr::new(self.entry),
-                args: VirtAddr::new(self.args.as_ptr().addr()),
+                args: VirtAddr::new(if self.args.is_empty() {
+                    0
+                } else {
+                    self.args.as_ptr().addr()
+                }),
                 count: self.args.len() as u64,
                 stack: VirtAddr::new(self.stack),
             }
