@@ -82,11 +82,5 @@ impl core::fmt::Display for Error {
 }
 
 fn abort(note: &'static str) -> ! {
-    kernel_client::call::unit::exit(
-        0,
-        0x4c4f_4144,
-        kernel_api::address::VirtAddr::new(note.as_ptr().addr()),
-        note.len(),
-        kernel_api::model::unit::ExitScope::Team,
-    )
+    crate::runtime::termination::abort(0x4c4f_4144, note)
 }

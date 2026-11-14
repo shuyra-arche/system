@@ -290,7 +290,7 @@ extern "C" fn worker(arguments: usize, count: usize) -> ! {
         dependency: native(GRANTS[2].load(Ordering::Acquire)),
         epoch,
     };
-    let mut service = match Service::create(config) {
+    let mut service = match Service::create(config, || {}) {
         Ok(service) => {
             assert_ne!(mode, 2);
             service

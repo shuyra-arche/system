@@ -2,4 +2,5 @@
 pub mod heap;
 
 pub mod memory;
+pub mod termination;
 pub(crate) mod view;

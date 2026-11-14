@@ -8,8 +8,11 @@ pub mod native_heap;
 pub mod native_memory;
 #[path = "../../../server/src/runtime/view.rs"]
 pub(crate) mod native_view;
+#[path = "../../../server/src/runtime/termination.rs"]
+pub mod termination;
 pub mod runtime {
     pub(crate) use crate::native_view as view;
+    pub use crate::termination;
     pub use crate::{native_heap as heap, native_memory as memory};
 }
 mod fixture;

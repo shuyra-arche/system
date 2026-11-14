@@ -44,7 +44,6 @@ impl Services {
         }
     }
     pub fn start(&mut self) {
-        let deadline = room::clock().saturating_add(LIMIT_NS);
         loop {
             heap::poll();
             match self.workers.advance() {
@@ -62,9 +61,13 @@ impl Services {
                     return;
                 }
                 Ok(false) => (),
-                Err(_) => fatal("system: native service bootstrap failed"),
+                Err(error) => {
+                    crate::debug::put(&alloc::format!("system: service bootstrap: {error}\n"));
+                    fatal("system: native service bootstrap failed")
+                }
             }
-            bound(deadline, "system: native service bootstrap timeout");
+            // Workers owns the deadline for its current bootstrap phase.
+            room::yield_();
         }
     }
     pub fn health(&mut self) {
@@ -248,13 +251,7 @@ pub(crate) fn bound(deadline: u64, note: &'static str) {
     room::yield_();
 }
 pub(crate) fn fatal(note: &'static str) -> ! {
-    unit::exit(
-        0,
-        4,
-        VirtAddr::new(note.as_ptr().addr()),
-        note.len(),
-        kernel_api::model::unit::ExitScope::Team,
-    )
+    crate::runtime::termination::abort(4, note)
 }
 
 /// Untrusted coordinates and caller observations fail admission, not System.

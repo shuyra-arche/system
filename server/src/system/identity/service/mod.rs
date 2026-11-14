@@ -100,11 +100,13 @@ pub struct Failure {
 }
 
 impl Service {
+    /// Report only completed initialization steps to the bootstrap owner.
+    /// Polling or retrying a blocked operation does not report progress.
     #[allow(
         clippy::result_large_err,
         reason = "return acquired resources without allocating on failure"
     )]
-    pub fn create(config: Config) -> Result<Self, Failure> {
+    pub fn create(config: Config, mut progress: impl FnMut()) -> Result<Self, Failure> {
         let revision = revision::Publisher::new(config.epoch.clone());
         let mut service = Self {
             config,
@@ -116,7 +118,7 @@ impl Service {
             revision,
             cursor: 0,
         };
-        match service.initialize() {
+        match service.initialize(&mut progress) {
             Ok(()) => {
                 service.phase = Phase::Running;
                 Ok(service)
@@ -125,7 +127,7 @@ impl Service {
         }
     }
 
-    fn initialize(&mut self) -> Result<(), Error> {
+    fn initialize(&mut self, progress: &mut impl FnMut()) -> Result<(), Error> {
         use kernel_api::model::{
             pend::Operations,
             sign::SignRights,
@@ -164,10 +166,13 @@ impl Service {
         self.book = Some(
             IdentityBook::new(task.into(), self.config.controller.into()).map_err(Error::Book)?,
         );
+        progress();
         self.faces
             .try_reserve_exact(Grant::ALL.len())
             .map_err(|_| Error::Capacity)?;
+        progress();
         self.waiting = Some(Waiting::new(self.config.license).map_err(Error::Waiting)?);
+        progress();
         for grant in Grant::ALL {
             self.faces.push(Face::new(grant));
             self.faces
@@ -179,6 +184,7 @@ impl Service {
                     self.config.context.clone(),
                 )
                 .map_err(Error::Face)?;
+            progress();
         }
         let mut reads = Vec::new();
         reads

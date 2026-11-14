@@ -37,7 +37,10 @@ pub fn space() -> PendId {
     PendId::mint(SPACE.load(Ordering::Acquire))
 }
 pub fn exit(code: u64) -> ! {
-    unit::exit(code, 0, VirtAddr::new(0), 0, ExitScope::Team)
+    if code != 0 {
+        crate::termination::abort(code, "system: fixture failure");
+    }
+    unit::exit(code, 0, VirtAddr::new(0), 0, ExitScope::Task)
 }
 pub fn until(mut progress: impl FnMut() -> bool) {
     let deadline = room::clock().saturating_add(20_000_000_000);

@@ -66,6 +66,7 @@ cargo test --locked --manifest-path tests/identity-state/Cargo.toml --target x86
 cargo test --locked --manifest-path tests/operator-policy/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo test --locked --manifest-path tests/declarations/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo test --locked --manifest-path tests/loader-image/Cargo.toml --target x86_64-unknown-linux-gnu
+cargo test --locked --manifest-path tests/native-memory/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo clippy --locked -p system-client -p system-support --lib --target riscv64gc-unknown-none-elf -- -D warnings
 ```
 
@@ -109,6 +110,12 @@ but the User ELF is not a Toolchain std Unit. The initial Task now switches to
 a separate 1 MiB Capsule-owned stack before Rust, preserving the Kernel word
 arguments and an unmapped lower guard. This fixes the observed 64 KiB bootstrap
 stack overflow. CI runs both System profiles against its recorded release
-Kernel. Debug Kernel and complete multi-Hart application failures remain
-separate from the provider component acceptance. Public S1/S2 lifecycle
+Kernel. The application runner also requires Kernel's admitted initial-Task
+exit, not only a Complete event. Heap backing retires through whole-Reservation
+Release, including explicit retained Busy continuation. Fatal exits stop owned
+same-Team workers and observe reclamation before releasing the root's backing;
+normal completion uses Task scope. Bootstrap's five-second inactivity deadline
+renews only on actual acquired resources, acknowledged phases or completed
+worker initialization steps. Full SMP/debug-Kernel verification is recorded in
+the application scenario and System #13, separately from provider acceptance. Public S1/S2 lifecycle
 contracts and S3/V0 are not accepted on this revision.

@@ -6,8 +6,9 @@ Operator/Identity bootstrap, Loader and Supply backend. There is no ECS or old
 Env/Wire/Mold adapter in the production graph.
 
 - `services` owns bootstrap publications and uses one submitted Pending followed
-  by explicit reply cleanup. An indeterminate effect terminates the Team while
-  owners remain present; it never invents a successful rollback.
+  by explicit reply cleanup. An indeterminate effect stops owned workers and
+  observes their reclamation before the root Task exits; it never invents a
+  successful rollback or assumes membership authorizes Team exit.
 - `endpoints` owns authenticated ingress for existing v4 Control, construction,
   export and Supply roles. Queue access is narrowed to Push/Peek. Caller Task
   metadata comes from the native transport, independently of body IDs.
@@ -39,15 +40,18 @@ These v4 routes are implementation candidates, not a frozen S2 contract.
 
 Normal startup respects selected dependencies. Failure closes dynamic attempts
 before canonical providers; declared consumers retain providers until retirement
-settles. Unsettled safety gates fail closed. Cleanup time bounds cause a Team
-exit with its owners retained, not early source retirement.
+settles. Unsettled safety gates fail closed. Fatal cleanup retains shared backing until owned workers are actually
+reclaimed. If administrative stop/reclamation itself cannot settle, the owner
+stays alive for diagnosis. Startup uses a five-second inactivity deadline
+renewed only by actual acquisitions, acknowledged phases and finite worker
+initialization steps; polling and Busy do not extend a stall.
 
 The complete binary builds in both profiles. Both System profiles run under
 the qualified one-Hart release Kernel after the production entry switches to
 its Capsule-owned stack. The 64 KiB Kernel bootstrap stack was insufficient for
 the unoptimized application; fault addresses in transport/allocator code were
 not evidence of a transport defect. Complete SMP and debug-Kernel application
-execution remain unaccepted (see the [application scenario](../../../../tests/guest/system/README.md)).
+verification is kept separately (see the [application scenario](../../../../tests/guest/system/README.md)).
 Public operation/instance identity and lifetime semantics, returned UnitRoot,
 Create cancellation/replay pressure, selected-owner death, retirement-provider
 failure, supervision recovery, and std User integration require further focused

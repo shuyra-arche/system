@@ -25,11 +25,30 @@ fn main() {
                 )
             })
             .collect();
-        assert!(matches!(events.first(), Some(Event::Started { .. })));
+        let Some(Event::Started { system }) = events.first() else {
+            panic!("missing System identity")
+        };
         let expected: usize = args[2].to_str().unwrap().parse().unwrap();
         let expected_reason = if expected == 1 { 4 } else { 0 };
         assert!(
-            matches!(events.last(), Some(Event::Complete { reason, .. }) if *reason == expected_reason)
+            matches!(events.last(), Some(Event::Complete { system: owner, reason }) if owner == system && *reason == expected_reason)
+        );
+        // Complete is emitted before the terminal call. It cannot prove that
+        // Kernel admitted that call or that the root avoided a fault exit.
+        let note = if expected == 1 {
+            "system: supervision failed"
+        } else {
+            "system: complete"
+        };
+        let root_exit = format!("exit tid={system} reason={expected_reason:#x} note: {note}");
+        let serial = String::from_utf8_lossy(&log);
+        assert!(
+            serial.lines().any(|line| line.trim_end() == root_exit),
+            "missing admitted root exit: {root_exit}"
+        );
+        assert!(
+            !serial.contains("reason=4294967295"),
+            "a Task exited through a fault"
         );
         let bound: Vec<_> = events
             .iter()
@@ -63,7 +82,7 @@ fn main() {
             assert_ne!(bound[0].0, bound[1].0);
             assert_ne!(bound[0].1, bound[1].1);
         }
-        println!("PASS system-app production=1 users={expected} events=1 exit=1 retire=1");
+        println!("PASS system-app production=1 users={expected} events=1 exit=1 retire=1 root=1");
         return;
     }
     assert_eq!(args.len(), 5);

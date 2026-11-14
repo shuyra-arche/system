@@ -3,12 +3,11 @@ use crate::runtime::view::Mapping;
 use crate::support::machine::Machine;
 use alloc::{boxed::Box, vec::Vec};
 use kernel_api::{
-    address::{PAGE_SIZE, VirtAddr},
+    address::PAGE_SIZE,
     boot::ledger::{Name, Page},
     model::cell::Placement,
-    model::unit::ExitScope,
 };
-use kernel_client::call::{room, unit};
+use kernel_client::call::room;
 
 // One immutable initial-Task snapshot, retained for the System Team lifetime.
 // Machine's existing static borrows cannot outlive this storage. The temporary
@@ -123,11 +122,5 @@ fn snapshot(accounts: &Accounts<'_>) -> Result<Box<[u8]>, Fail> {
     result.map(Vec::into_boxed_slice)
 }
 fn abort(note: &'static str) -> ! {
-    unit::exit(
-        0,
-        5,
-        VirtAddr::new(note.as_ptr().addr()),
-        note.len(),
-        ExitScope::Team,
-    )
+    crate::runtime::termination::abort(5, note)
 }

@@ -12,10 +12,13 @@ pub mod native_heap;
 pub mod native_memory;
 #[path = "../../../server/src/runtime/view.rs"]
 pub(crate) mod native_view;
+#[path = "../../../server/src/runtime/termination.rs"]
+pub mod termination;
 pub mod runtime {
     pub use crate::native_heap as heap;
     pub use crate::native_memory as memory;
     pub(crate) use crate::native_view as view;
+    pub use crate::termination;
 }
 pub mod boot {
     pub use crate::bootstrap::{Boot, Fail, take};
@@ -58,8 +61,12 @@ pub mod system {
     }
 }
 mod data;
+mod failure;
 mod services;
 pub fn run(boot: boot::Boot) -> Result<(), usize> {
+    if cfg!(feature = "abort") {
+        failure::run();
+    }
     unsafe extern "C" {
         static __system_stack_bottom: u8;
         static __system_stack_top: u8;

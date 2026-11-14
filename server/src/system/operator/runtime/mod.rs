@@ -104,11 +104,13 @@ pub struct Failure {
     pub service: Service,
 }
 impl Service {
+    /// Report only completed initialization steps to the bootstrap owner.
+    /// Polling or retrying a blocked operation does not report progress.
     #[allow(
         clippy::result_large_err,
         reason = "return partial ownership without allocating on failure"
     )]
-    pub fn create(config: Config) -> Result<Self, Failure> {
+    pub fn create(config: Config, mut progress: impl FnMut()) -> Result<Self, Failure> {
         let mut service = Self {
             config,
             task: TaskId::new(0),
@@ -123,7 +125,7 @@ impl Service {
             processing: None,
             publication: None,
         };
-        match service.initialize() {
+        match service.initialize(&mut progress) {
             Ok(()) => {
                 service.phase = Phase::Running;
                 Ok(service)
@@ -131,7 +133,7 @@ impl Service {
             Err(error) => Err(Failure { error, service }),
         }
     }
-    fn initialize(&mut self) -> Result<(), Error> {
+    fn initialize(&mut self, progress: &mut impl FnMut()) -> Result<(), Error> {
         let mut bytes = [0; UnitInfo::WIDTH];
         if !unit::inspect(UnitQuery::Caller, VirtAddr::new(bytes.as_mut_ptr().addr()))
             .map_err(Error::Unit)?
@@ -158,14 +160,18 @@ impl Service {
         self.book =
             Some(Operator::new(self.config.controller.into(), task.into()).map_err(Error::Book)?);
         self.watchers = Some(Watchers::new().map_err(Error::Book)?);
+        progress();
         self.faces
             .try_reserve_exact(259)
             .map_err(|_| Error::Capacity)?;
         self.faces.resize_with(259, || None);
+        progress();
         self.retiring
             .try_reserve_exact(256)
             .map_err(|_| Error::Capacity)?;
+        progress();
         self.waiting = Some(Waiting::new(self.config.license).map_err(Error::Waiting)?);
+        progress();
         for (index, role) in [Role::Discovery, Role::Root, Role::Setup]
             .into_iter()
             .enumerate()
@@ -176,6 +182,7 @@ impl Service {
                 .map_err(Error::Face)?;
             face.deliver(self.config.controller, Distributable::Yes)
                 .map_err(Error::Face)?;
+            progress();
         }
         self.reconcile()?;
         self.publication = Some(Publication {

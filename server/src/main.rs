@@ -66,12 +66,16 @@ extern "C" fn system_start(pointer: *const usize, count: usize) -> ! {
 }
 fn finish(reason: usize, note: &str) -> ! {
     let _ = writeln!(Console, "{note} ({reason})");
+    if reason != 0 {
+        // Early run/boot errors may still own live same-Team workers.
+        system_server::runtime::termination::abort(reason as u64, note);
+    }
     unit::exit(
         0,
         reason as u64,
         VirtAddr::new(note.as_ptr().addr()),
         note.len(),
-        ExitScope::Team,
+        ExitScope::Task,
     )
 }
 struct Console;
@@ -94,5 +98,8 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     // Formatting stays on the initial/worker guarded stack; no heap allocation
     // is needed even when the allocator itself reports a fatal ownership error.
     let _ = writeln!(Console, "system: {info}");
-    finish(kernel_api::model::exit::EXIT_PANIC, "system: panic")
+    system_server::runtime::termination::abort(
+        kernel_api::model::exit::EXIT_PANIC as u64,
+        "system: panic",
+    )
 }

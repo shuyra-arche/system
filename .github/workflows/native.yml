@@ -25,6 +25,7 @@ jobs:
           cargo test --locked --manifest-path tests/operator-policy/Cargo.toml --target x86_64-unknown-linux-gnu
           cargo test --locked --manifest-path tests/declarations/Cargo.toml --target x86_64-unknown-linux-gnu
           cargo test --locked --manifest-path tests/loader-image/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo test --locked --manifest-path tests/native-memory/Cargo.toml --target x86_64-unknown-linux-gnu
       - name: Complete RV64 Server in both profiles
         run: |
           cargo build --locked -p system-server --bin system --target riscv64gc-unknown-none-elf
@@ -85,14 +86,28 @@ jobs:
           cat .evidence/runtime.log
       - name: Production entry, immutable boot data and native services on one Hart
         run: python3 tests/guest/entry/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
+      - name: Fatal root retirement and stalled bootstrap
+        run: |
+          python3 tests/guest/entry/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1 4 --abort > .evidence/entry-abort.log 2>&1
+          cat .evidence/entry-abort.log
+          python3 tests/guest/entry/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1 --stall > .evidence/entry-stall.log 2>&1
+          cat .evidence/entry-stall.log
       - name: Build all-Hart instruction test platform
         run: cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --release --target riscv64gc-unknown-none-elf
       - name: Native ELF construction and User Team retirement on 1/2/4 Harts
         run: python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1 2 4
       - name: Complete release System application and ordinary User Teams
-        run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform
+        run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1 2 4
       - name: Complete debug System application and ordinary User Teams
-        run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --profile debug
+        run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --profile debug --harts 1 2 4
+      - name: Debug Loader and instruction platform on 1/2/4 Harts
+        run: |
+          cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --target riscv64gc-unknown-none-elf
+          python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform --profile debug --harts 1 2 4
+      - name: Complete System with debug Kernel on 1/2/4 Harts
+        run: |
+          python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform --profile debug --harts 1 2 4
+          python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform --profile release --harts 1 2 4
       - name: Preserve complete application execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -100,10 +115,6 @@ jobs:
           name: system-application
           path: tests/guest/system/target/evidence/
           if-no-files-found: error
-      - name: Debug Loader and instruction platform on 1/2/4 Harts
-        run: |
-          cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --target riscv64gc-unknown-none-elf
-          python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform --profile debug --harts 1 2 4
       - name: Preserve Loader execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -125,6 +136,7 @@ jobs:
           name: native-runtime
           path: |
             .evidence/
+            tests/guest/entry/target/evidence/
             tests/guest/runtime/Cargo.lock
             tests/guest/runtime/platform/Cargo.lock
             tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform

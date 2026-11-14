@@ -4,6 +4,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use kernel_api::abi::memory::{
     Action, Call, Failure, Outcome, Query, Request, RequestId, Snapshot, Value,
 };
+use kernel_api::model::nest::{MemoPosition, ReservationPhase};
 use kernel_client::{call::room, memory::Response};
 
 // All native-memory owners in the System Team share this monotonic allocator.
@@ -53,6 +54,80 @@ impl Memory {
     }
 
     pub(crate) fn mutate(&mut self, action: Action) -> Result<Value, Failure> {
+        match self.complete(action) {
+            Outcome::Committed(value) => Ok(value),
+            Outcome::Rejected(failure) => Err(failure),
+            _ => (self.abort)("memory result unsettled"),
+        }
+    }
+
+    /// Close this entire private Reservation, including partial publication.
+    /// A terminal Release(Busy) retains the Reservation. Only this explicit
+    /// continuation may use a fresh identity and current version; Pending and
+    /// lost deliveries always settle through the original journal entry.
+    pub(crate) fn release(&mut self, memo: MemoPosition) -> Result<(), Failure> {
+        let deadline = room::clock().saturating_add(5_000_000_000);
+        let mut minimum = None;
+        loop {
+            if room::clock() >= deadline {
+                (self.abort)("reservation retirement timed out");
+            }
+            let Snapshot::Reservation(status) = self.inspect(Query::Reservation {
+                token: memo.token(),
+                nest: memo.nest(),
+                reservation: memo.reservation(),
+            }) else {
+                (self.abort)("invalid reservation observation")
+            };
+            if status.nest != memo.nest()
+                || status.reservation != memo.reservation()
+                || minimum.is_some_and(|version| status.version < version)
+            {
+                (self.abort)("reservation observation regressed");
+            }
+            minimum = Some(status.version);
+            let action = Action::Release {
+                token: memo.token(),
+                nest: memo.nest(),
+                reservation: memo.reservation(),
+                expected: status.version,
+            };
+            match self.complete(action) {
+                Outcome::Committed(Value::ReservationLifecycle {
+                    nest,
+                    reservation,
+                    version,
+                    phase: ReservationPhase::Released,
+                }) if nest == memo.nest()
+                    && reservation == memo.reservation()
+                    && version >= status.version =>
+                {
+                    return Ok(());
+                }
+                Outcome::Rejected(Failure::Busy | Failure::Stale) => (),
+                Outcome::Rejected(failure) => return Err(failure),
+                Outcome::Failed {
+                    failure: Failure::Busy,
+                    retained:
+                        Some(Value::ReservationLifecycle {
+                            nest,
+                            reservation,
+                            version,
+                            phase: ReservationPhase::Releasing,
+                        }),
+                } if nest == memo.nest()
+                    && reservation == memo.reservation()
+                    && version >= status.version =>
+                {
+                    minimum = Some(version)
+                }
+                _ => (self.abort)("reservation retirement unsettled"),
+            }
+            room::yield_();
+        }
+    }
+
+    fn complete(&mut self, action: Action) -> Outcome {
         let id =
             next_request().unwrap_or_else(|| (self.abort)("memory request sequence exhausted"));
         let original = Request::new(Some(id), action)
@@ -65,14 +140,8 @@ impl Memory {
                     (self.abort)("uncorrelated memory result");
                 }
                 match reply.outcome() {
-                    Outcome::Committed(value) => return Ok(value),
-                    Outcome::Rejected(failure) => return Err(failure),
                     Outcome::Pending(_) => {}
-                    // Failed may retain hardware obligations. Team termination
-                    // leaves their reclamation with Kernel rather than reusing them.
-                    Outcome::Failed { .. } | Outcome::Expired => {
-                        (self.abort)("memory result unsettled")
-                    }
+                    terminal => return terminal,
                 }
             }
             if room::clock() >= deadline {

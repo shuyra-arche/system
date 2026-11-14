@@ -251,21 +251,7 @@ impl Mapping {
         }
         match self.phase {
             Phase::Release => {
-                let Snapshot::Reservation(status) = self.memory.inspect(Query::Reservation {
-                    token: memo.token(),
-                    nest: memo.nest(),
-                    reservation: memo.reservation(),
-                }) else {
-                    return Err(Error::Invalid);
-                };
-                self.memory
-                    .mutate(Action::Release {
-                        token: memo.token(),
-                        nest: memo.nest(),
-                        reservation: memo.reservation(),
-                        expected: status.version,
-                    })
-                    .map_err(Error::Native)?;
+                self.memory.release(memo).map_err(Error::Native)?;
                 self.phase = Phase::Return;
                 Ok(false)
             }

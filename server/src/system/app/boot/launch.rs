@@ -6,7 +6,7 @@ use crate::system::{
     operator::runtime as operator,
 };
 use alloc::boxed::Box;
-use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use kernel_api::{
     address::VirtAddr,
     model::{
@@ -39,6 +39,12 @@ pub(super) struct Handoff {
     armed: AtomicBool,
     pub ready: AtomicBool,
     pub failed: AtomicBool,
+    pub progress: AtomicU64,
+}
+impl Handoff {
+    fn advanced(&self) {
+        self.progress.store(room::clock(), Ordering::Release);
+    }
 }
 
 pub(super) struct Slot {
@@ -58,6 +64,7 @@ impl Slot {
             armed: AtomicBool::new(false),
             ready: AtomicBool::new(false),
             failed: AtomicBool::new(false),
+            progress: AtomicU64::new(0),
         });
         let words = [(&*handoff as *const Handoff).addr()];
         // SAFETY: Slot retains this stable allocation until Kernel reclamation.
@@ -178,6 +185,7 @@ fn operator(handoff: &Handoff) -> bool {
         Err(_) => return false,
     };
     handoff.health.store(published.get(), Ordering::Release);
+    handoff.advanced();
     let Some(context) = context(handoff) else {
         return false;
     };
@@ -187,7 +195,7 @@ fn operator(handoff: &Handoff) -> bool {
         controller: handoff.controller,
         shutdown: native(handoff.grants[1].load(Ordering::Acquire)),
     };
-    let mut service = match operator::Service::create(config) {
+    let mut service = match operator::Service::create(config, || handoff.advanced()) {
         Ok(value) => value,
         Err(mut failure) => {
             system_support::debug::put(&alloc::format!(
@@ -245,7 +253,7 @@ fn identity(handoff: &Handoff) -> bool {
         dependency: native(handoff.grants[3].load(Ordering::Acquire)),
         epoch: handoff.epoch.clone(),
     };
-    let mut service = match identity::Service::create(config) {
+    let mut service = match identity::Service::create(config, || handoff.advanced()) {
         Ok(value) => value,
         Err(mut failure) => {
             system_support::debug::put(&alloc::format!(

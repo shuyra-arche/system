@@ -9,9 +9,9 @@ actual DTB with native Reserve/Insert/Publish and explicitly retires that tempor
 Operator and Identity workers complete Root/Wired and retire through native
 Task reclaim observations on that same heap.
 
-Its library supplies a bounded contract-test application body in place of the
-unmigrated complete supervisor. It does not replace the production application,
-claim a buildable full Server, launch a std User Unit or prove M4 recovery.
+Its library supplies a bounded contract-test application body. This tests entry
+and runtime contracts separately from the complete production application and
+does not launch a std User Unit or prove supervision recovery.
 
 ```sh
 export QEMU_RISCV64=/path/to/qemu-system-riscv64
@@ -24,8 +24,14 @@ Requires boot-data, entry and actual-service markers within 90 seconds per guest
 Boot-data checks immutable DTB/initrd grants, rejection of writable Publish and
 permission widening, the complete initrd contents and zeroed tail padding, and
 restored Pend count after projection retirement. Use the runtime component
-platform and pass `--harts 1` for the supported single-Hart gate. The default
-still includes four Harts; Kernel rejects that memory topology before entry
-([Kernel #179](https://github.com/shuyra-arche/kernel/issues/179)). The manifest explicitly names the fixture package, its library and
-the production binary source; no production feature disables old dependencies
-or swaps out the complete Server for this test.
+platform with an explicitly qualified CPU topology. The default includes one
+and four Harts; this does not qualify hardware or External requesters.
+
+`--abort --harts 1 4` starts two real workers reading root-owned heap storage,
+then invokes production fatal retirement. Kernel must admit the root's intended
+exit, all Tasks must finish, and no worker may page-fault. `--stall --harts 1`
+freezes the startup Operator and requires the unchanged five-second inactivity
+bound to expire despite continued polling; fatal retirement must then reclaim
+that worker. All modes require Kernel's actual root exit, not just fixture
+markers, within the original 90-second guest bound. Test features affect only
+this fixture package; the production binary and termination owner are shared.

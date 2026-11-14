@@ -19,7 +19,9 @@ The same scenarios run with either System build profile:
 
 The host pack/check helper decodes the actual typed lifecycle event frames and
 checks ordering and independent Task/Team identities. The runner also requires
-Kernel shutdown, the appropriate System outcome, and no guest page fault/panic.
+Kernel shutdown, the appropriate System outcome, Kernel's admitted root Task
+exit with that same reason/note, and no guest page fault/panic. A Complete event
+printed before a rejected terminal call is insufficient.
 These observations are backed by the production state owners' native checks;
 log text alone is not a physical-retirement proof.
 
@@ -50,13 +52,28 @@ changes neither ABI arguments nor the memory request sequence. The entry
 fixture checks the actual current stack; this runner checks the ELF guard/load
 layout and executes the full application without relaxing its assertions.
 
-Both System profiles pass all three one-Hart scenarios with the selected release
-Kernel. Broader exploratory runs of the current SMP increment remain failing:
-a two-Hart complete debug application timed out after constructing its first
-Task; a debug-Kernel composition faulted during internal-service startup. These
-are retained failures, not the already-completed Kernel #179 data/instruction
-component contract. Their causes are not yet established. They are not promoted
-to required passing CI gates or described as complete application acceptance.
+Heap backing now retires its entire private Reservation through Release,
+retaining its Pend and Flat until a committed Released receipt. A terminal
+Failed(Busy, Releasing) keeps that owner and failed journal receipt; the next
+explicit Release uses a fresh request and observed version. Pending or lost
+delivery instead queries the original ID. It never returns storage early.
+This avoids the old per-page Retract failure while the root held Talc's lock.
+
+Normal completion exits only the initial Task after service retirement. Fatal
+retirement allocates no memory: it stops the caller's administratively owned
+same-Team workers, observes actual reclamation, then exits the Task. It does not
+assume that Capsule Team membership permits ExitScope::Team. An unexpected
+stop/reclaim failure leaves the owner and shared backing alive for diagnosis.
+
+Bootstrap keeps its five-second inactivity bound. Completed resource/grant
+acquisitions, acknowledged phases and finite worker initialization steps renew
+that bound. The worker publishes its completion time; repeated reads, Busy,
+yields and stale wakeups do not renew it. The entry scenario also freezes a
+startup worker to prove that a stalled bootstrap still times out.
+
+Run both System profiles against both recorded Kernel profiles with
+`--harts 1 2 4`. The full matrix and CI preserve separate receipts; passing
+these native User ELF scenarios does not complete S1/S2 or Toolchain acceptance.
 
 `target/evidence/<profile>/` retains each serial log and JSON result, exact
 System/User/Kernel/firmware hashes, profile selection, locks, ELFs and archives.

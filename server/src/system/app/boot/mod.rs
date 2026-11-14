@@ -52,7 +52,7 @@ pub enum Error {
     WorkerFailed,
     Invalid,
     Capacity,
-    TimedOut,
+    TimedOut(Phase),
     Phase,
     Client(system_client::Error),
     Cleanup(system_client::CleanupError),
@@ -186,7 +186,25 @@ impl Workers {
         if matches!(self.phase, Phase::Closing | Phase::Closed | Phase::Failed) {
             return Err(Error::Phase);
         }
+        // A completed initialization step is progress, even while the worker
+        // is not ready. Use its publication time, not this polling time: Busy,
+        // stale notifications and repeated observations cannot renew a lease.
+        if self.phase != Phase::Ready {
+            for slot in [&self.operator, &self.identity].into_iter().flatten() {
+                let completed = slot.handoff().progress.load(Ordering::Acquire);
+                if completed != 0 {
+                    self.deadline = self.deadline.max(completed.saturating_add(BOOT_NS));
+                }
+            }
+        }
+        let previous = self.phase;
+        let acquired = self.acquisitions();
         let result = self.progress();
+        // Acquiring a signal, worker or recipient grant is also finite forward
+        // progress. A retry may have acquired a prefix before returning Busy.
+        if self.phase != previous || self.acquisitions() > acquired {
+            self.deadline = room::clock().saturating_add(BOOT_NS);
+        }
         match result {
             Err(error) if error.busy() => Ok(false),
             Err(error) => {
@@ -196,10 +214,28 @@ impl Workers {
             other => other,
         }
     }
+    fn acquisitions(&self) -> usize {
+        self.signals.iter().flatten().count()
+            + [&self.operator, &self.identity]
+                .into_iter()
+                .flatten()
+                .map(|slot| {
+                    1 + slot
+                        .handoff()
+                        .grants
+                        .iter()
+                        .filter(|grant| grant.load(Ordering::Acquire) != 0)
+                        .count()
+                })
+                .sum::<usize>()
+            + self.wired.iter().flatten().count()
+            + usize::from(self.root.is_some())
+            + usize::from(self.wiring.is_some())
+    }
     fn progress(&mut self) -> Result<bool, Error> {
         if (self.phase != Phase::Ready || self.cleanup.is_some()) && room::clock() >= self.deadline
         {
-            return Err(Error::TimedOut);
+            return Err(Error::TimedOut(self.phase));
         }
         if let Some(cleanup) = self.cleanup.as_mut() {
             if cleanup.finish().is_err() {
@@ -213,7 +249,7 @@ impl Workers {
             return Ok(true);
         }
         if room::clock() >= self.deadline {
-            return Err(Error::TimedOut);
+            return Err(Error::TimedOut(self.phase));
         }
         match self.phase {
             Phase::Preparing => {
@@ -541,7 +577,7 @@ impl core::fmt::Display for Error {
             Self::WorkerFailed => f.write_str("bootstrap worker exited or failed"),
             Self::Invalid => f.write_str("invalid bootstrap caller"),
             Self::Capacity => f.write_str("bootstrap capacity exhausted"),
-            Self::TimedOut => f.write_str("bootstrap deadline elapsed"),
+            Self::TimedOut(phase) => write!(f, "bootstrap {phase:?} deadline elapsed"),
             Self::Phase => f.write_str("invalid bootstrap phase"),
         }
     }

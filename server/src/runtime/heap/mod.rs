@@ -13,7 +13,7 @@ use kernel_api::{
     model::{
         identity::{PendId, TaskId},
         pend::{CreationRights, Operations, PendInfo, PendStatus},
-        unit::{ExitScope, UnitInfo, UnitQuery, UnitTarget},
+        unit::{UnitInfo, UnitQuery, UnitTarget},
     },
 };
 use kernel_client::call::{pend, room, unit};
@@ -166,13 +166,9 @@ fn space() -> PendId {
     PendId::from_bytes(&(SPACE.load(Acquire) as u64).to_le_bytes()).unwrap_or_else(|| fatal())
 }
 fn fatal() -> ! {
-    let note = b"system: heap ownership failed";
-    unit::exit(
-        0,
+    crate::runtime::termination::abort(
         kernel_api::model::exit::EXIT_PANIC as u64,
-        VirtAddr::new(note.as_ptr().addr()),
-        note.len(),
-        ExitScope::Team,
+        "system: heap ownership failed",
     )
 }
 #[derive(Debug)]

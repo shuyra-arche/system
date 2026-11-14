@@ -10,6 +10,8 @@ use kernel_api::{
         unit::ExitScope,
     },
 };
+// This User fixture exercises Flat journals, not private Reservation cleanup.
+#[allow(dead_code)]
 #[path = "../../../../server/src/runtime/memory.rs"]
 mod memory;
 static mut DATA: usize = 0x12345678;

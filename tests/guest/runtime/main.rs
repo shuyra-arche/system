@@ -7,9 +7,12 @@ mod heap;
 pub mod memory;
 #[path = "../../../server/src/runtime/view.rs"]
 pub(crate) mod native_view;
+#[path = "../../../server/src/runtime/termination.rs"]
+pub mod termination;
 pub mod runtime {
     pub use crate::memory;
     pub(crate) use crate::native_view as view;
+    pub use crate::termination;
 }
 #[path = "../../../server/src/system/supply/native.rs"]
 mod native_supply;
@@ -55,7 +58,10 @@ impl fmt::Write for Console {
     }
 }
 fn exit(code: u64) -> ! {
-    unit::exit(code, 0, VirtAddr::new(0), 0, ExitScope::Team)
+    if code != 0 {
+        crate::termination::abort(code, "system: fixture failure");
+    }
+    unit::exit(code, 0, VirtAddr::new(0), 0, ExitScope::Task)
 }
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {

@@ -9,7 +9,7 @@ use kernel_api::{
         cell::{CellLevel, Placement},
         flat::SlotPosition,
         identity::PendId,
-        nest::{MemoPhase, MemoPosition, NestId},
+        nest::{MemoPosition, NestId},
         pend::{PendInfo, Target},
     },
 };
@@ -24,7 +24,6 @@ pub(super) struct Pages {
 struct Header {
     flat: SlotPosition,
     memo: MemoPosition,
-    count: usize,
 }
 
 impl Pages {
@@ -165,14 +164,14 @@ impl Pages {
                 })
             });
             if published.is_err() {
-                self.retire(memo, count);
+                self.retire(memo);
                 self.delete(flat);
                 return 0;
             }
         }
         let data = base.get() + prefix;
         unsafe {
-            ((data - size_of::<Header>()) as *mut Header).write(Header { flat, memo, count });
+            ((data - size_of::<Header>()) as *mut Header).write(Header { flat, memo });
         }
         data
     }
@@ -206,69 +205,19 @@ impl Pages {
         }
     }
 
-    fn retire(&mut self, first: MemoPosition, count: usize) {
-        for page in 0..count {
-            let memo =
-                MemoPosition::new(first.token(), first.nest(), first.reservation(), page).unwrap();
-            let Snapshot::Memo(status) = self.memory.inspect(Query::Memo(memo)) else {
-                super::fatal()
-            };
-            if status.phase == MemoPhase::Published {
-                // Poll the exact accepted Retract, never reconstruct it from
-                // an intermediate generation or infer retirement from a wake.
-                self.change(|memory| {
-                    let Snapshot::Memo(status) = memory.inspect(Query::Memo(memo)) else {
-                        super::fatal()
-                    };
-                    Action::Retract {
-                        memo,
-                        expected: status.generation,
-                    }
-                })
-                .unwrap_or_else(|_| super::fatal());
-            }
-            let Snapshot::Memo(status) = self.memory.inspect(Query::Memo(memo)) else {
-                super::fatal()
-            };
-            if status.phase == MemoPhase::Associated {
-                self.change(|memory| {
-                    let Snapshot::Memo(status) = memory.inspect(Query::Memo(memo)) else {
-                        super::fatal()
-                    };
-                    Action::Remove {
-                        memo,
-                        expected: status.generation,
-                    }
-                })
-                .unwrap_or_else(|_| super::fatal());
-            } else if status.phase != MemoPhase::Empty {
-                super::fatal();
-            }
-        }
-        self.change(|memory| {
-            let Snapshot::Reservation(status) = memory.inspect(Query::Reservation {
-                token: first.token(),
-                nest: first.nest(),
-                reservation: first.reservation(),
-            }) else {
-                super::fatal()
-            };
-            Action::Release {
-                token: first.token(),
-                nest: first.nest(),
-                reservation: first.reservation(),
-                expected: status.version,
-            }
-        })
-        .unwrap_or_else(|_| super::fatal());
-        self.withdraw(first.token());
+    fn retire(&mut self, memo: MemoPosition) {
+        // Release owns retraction, association removal and hardware drain for
+        // the entire Reservation. Retain its Pend and Flat until it commits;
+        // a failed Busy receipt is continued explicitly by Memory::release.
+        self.memory.release(memo).unwrap_or_else(|_| super::fatal());
+        self.withdraw(memo.token());
     }
 
     fn free(&mut self, data: usize) {
         // Copy every retained authority before withdrawing its containing mapping.
-        let Header { flat, memo, count } =
+        let Header { flat, memo } =
             unsafe { ((data - size_of::<Header>()) as *const Header).read() };
-        self.retire(memo, count);
+        self.retire(memo);
         self.delete(flat);
     }
 }
