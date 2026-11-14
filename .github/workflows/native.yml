@@ -3,7 +3,7 @@ name: Native System contracts
 on:
   pull_request:
   push:
-    branches: [refactor/weave-api]
+    branches: [main]
 
 permissions:
   contents: read

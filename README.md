@@ -4,8 +4,9 @@ System boots and supervises Vanllia Units. It owns execution, identity,
 publication and retirement; hardware enumeration and driver policy belong to Hub.
 The host Vanllia CLI selects Unit records and images for the boot archive.
 
-This is the ongoing migration in [System #13](https://github.com/shuyra-arche/system/issues/13),
-continuing [Draft PR #12](https://github.com/shuyra-arche/system/pull/12).
+This is the ongoing migration in [System #13](https://github.com/shuyra-arche/system/issues/13).
+[PR #17](https://github.com/shuyra-arche/system/pull/17) consolidates the native
+application, provider selection and retirement fixes from #12, #15 and #16.
 [Vanllia #39](https://github.com/shuyra-arche/vanllia/issues/39) owns Track S
 progress and assembled-system acceptance. **The complete Server now builds in
 RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**

@@ -73,4 +73,4 @@ policy hooks and test callback injections are not compatibility layers here.
 
 This mapping does not imply full behavioral parity. The old private callback
 harness, hardware hooks and SDK clients remain historical. The remaining public
-semantic and runtime gaps listed above keep the PR Draft.
+semantic and runtime gaps listed above remain tracked in System #13 and Vanllia #39.
