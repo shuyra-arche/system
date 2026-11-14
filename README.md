@@ -68,6 +68,11 @@ The [runtime guest](tests/guest/runtime/README.md) exercises the production heap
 Supply lease backend and Client/Ingress with real requests, replies and Task
 reclamation on an explicitly qualified CPU-only QEMU platform. This is a
 component test, not the complete System or a Toolchain User Unit.
+The [Loader guest](tests/guest/loader/README.md) separately creates independent
+ordinary User Teams from a native ELF, with private DATA/BSS, cached RX, fresh
+Task request journals, cancellation and explicit retirement on that same heap.
+Its explicit test-platform feature qualifies local instruction visibility only
+for the paired one-Hart QEMU invocation.
 
 The selected Kernel's native memory backend rejects multiple Harts at
 qualification: remote translation acknowledgements do not prove remote CPU data

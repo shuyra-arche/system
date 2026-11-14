@@ -1,0 +1,19 @@
+[package]
+name = "system-loader-guest"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[workspace]
+[[bin]]
+name = "system-loader-guest"
+path = "main.rs"
+test = false
+bench = false
+[dependencies]
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
+kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
+system-protocol = { package = "system-api", path = "../../../api" }
+erra = { version = "0.2.0", default-features = false }
+talc = { version = "5.1.1", default-features = false }
+[profile.release]
+panic = "abort"

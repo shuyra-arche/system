@@ -5,7 +5,14 @@ extern crate alloc;
 
 mod bootstrap;
 mod loader;
-use native_loader::memory as loader_memory;
+#[path = "../../../server/src/runtime/view.rs"]
+pub(crate) mod loader_memory;
+#[path = "../../../server/src/runtime/memory.rs"]
+pub mod native_memory;
+pub mod runtime {
+    pub(crate) use crate::loader_memory as view;
+    pub use crate::native_memory as memory;
+}
 mod memory;
 #[path = "../../../server/src/system/loader/mod.rs"]
 mod native_loader;

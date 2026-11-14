@@ -240,9 +240,14 @@ pub fn run(license: PendId) {
     for rounds in 0..=4 {
         // SAFETY: trusted same-Task Space; the private read projection is not
         // transferred to any other Task and keeps its borrowed source alive.
-        let mut read =
-            unsafe { crate::runtime::view::Read::new(space, delivered, |why| panic!("{why}")) }
-                .unwrap();
+        let mut read = crate::runtime::view::Mapping::new(
+            space,
+            delivered,
+            Placement::lowest(PAGE_SIZE).unwrap(),
+            2,
+            |why| panic!("{why}"),
+        )
+        .unwrap();
         for _ in 0..rounds {
             advance(&mut read);
         }
@@ -260,16 +265,22 @@ pub fn run(license: PendId) {
             kernel_api::model::pend::PendStatus::Active
         );
     }
-    let mut read =
-        unsafe { crate::runtime::view::Read::new(space, delivered, |why| panic!("{why}")) }
-            .unwrap();
+    let mut read = crate::runtime::view::Mapping::new(
+        space,
+        delivered,
+        Placement::lowest(PAGE_SIZE).unwrap(),
+        2,
+        |why| panic!("{why}"),
+    )
+    .unwrap();
     let deadline = room::clock() + 5_000_000_000;
     while !advance(&mut read) {
         assert!(room::clock() < deadline);
     }
     // SAFETY: our borrowed source is immutable throughout this access and no
     // other owner can replace this private, settled read-only reservation.
-    let bytes = unsafe { read.bytes() }.unwrap();
+    let (address, span) = read.span().unwrap();
+    let bytes = unsafe { core::slice::from_raw_parts(address.get() as *const u8, span) };
     assert_eq!(bytes.len(), PAGE_SIZE);
     assert_eq!(bytes[0], 3);
     assert_eq!(bytes[PAGE_SIZE - 1], 3);
@@ -297,14 +308,14 @@ pub fn run(license: PendId) {
     pend::return_(token).unwrap();
 }
 
-fn advance(read: &mut crate::runtime::view::Read) -> bool {
+fn advance(read: &mut crate::runtime::view::Mapping) -> bool {
     match read.advance() {
         Ok(ready) => ready,
         Err(error) if error.busy() => false,
         Err(error) => panic!("view open: {error:?}"),
     }
 }
-fn finish(read: &mut crate::runtime::view::Read) -> bool {
+fn finish(read: &mut crate::runtime::view::Mapping) -> bool {
     match read.finish() {
         Ok(done) => done,
         Err(error) if error.busy() => false,

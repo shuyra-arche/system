@@ -54,7 +54,9 @@ The unqualified normal Vanllia platform rejects native Publish as Unsupported.
 Preserve both fail-closed boundaries; do not synthesize completion evidence.
 
 Full Supply RPC/provider collections, Control/Instance/UnitRoot integration,
-Loader and Toolchain startup, complete System and device retirement remain
-separate gates in System #13 / Vanllia #39. The entry guest separately checks the production entry, native DTB/initrd and
+Toolchain startup, complete System and device retirement remain
+separate gates in System #13 / Vanllia #39. The [Loader guest](../loader/README.md) separately checks native ELF construction
+and independent User Team retirement; its explicit platform feature additionally
+qualifies single-Hart local instruction visibility. The entry guest checks the production entry, native DTB/initrd and
 internal-service lifecycle. The broad client guest still needs migration.
 Neither fixture substitutes for the complete System application.

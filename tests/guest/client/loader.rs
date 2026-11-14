@@ -8,7 +8,7 @@ use kernel_api::model::{
     unit::{ControlId, ExitCause, UnitState},
 };
 static IMAGE: &[u8] = include_bytes!(env!("SYSTEM_LOADER_IMAGE"));
-fn prepare(loader: &mut Loader) -> Job {
+fn prepare(loader: &mut Loader, args: &[usize]) -> Job {
     loader
         .prepare(
             Image {
@@ -16,10 +16,12 @@ fn prepare(loader: &mut Loader) -> Job {
                 kind: ProgramKind::User,
             },
             Spawn {
-                args: &[0xa5, 0x5a],
+                args,
                 stack: 128 * 1024,
                 guard: ControlId::NONE,
                 member_exit: true,
+                creation: kernel_api::model::pend::CreationRights::FLAT
+                    | kernel_api::model::pend::CreationRights::SIGN,
             },
         )
         .unwrap()
@@ -42,26 +44,10 @@ fn finish(job: &mut Job) {
     });
     assert!(job.finish().unwrap());
 }
-fn initialized(job: &mut Job) {
-    fixture::until(|| {
-        match job.initialized() {
-            Ok(true) => return true,
-            Ok(false) => (),
-            Err(error) if error.busy() => (),
-            Err(error) => panic!("initializer {error:?}"),
-        }
-        let info = job.observe().unwrap().unwrap();
-        assert_ne!(
-            info.state,
-            UnitState::Exited,
-            "initializer exited before ready: {info:?}"
-        );
-        false
-    });
-}
 pub fn run(license: PendId) {
+    // SAFETY: the fixture takes Space from its trusted initial-Task ledger.
+    let mut loader = unsafe { Loader::new(license, fixture::space()) }.unwrap();
     let baseline = fixture::active();
-    let mut loader = Loader::new(license).unwrap();
     assert!(
         loader
             .prepare(
@@ -73,18 +59,23 @@ pub fn run(license: PendId) {
                     args: &[],
                     stack: 128 * 1024,
                     guard: ControlId::NONE,
-                    member_exit: true
+                    member_exit: true,
+                    creation: kernel_api::model::pend::CreationRights::FLAT
+                        | kernel_api::model::pend::CreationRights::SIGN,
                 }
             )
             .is_err()
     );
-    for rounds in [0, 1, 4, 8] {
-        let mut partial = prepare(&mut loader);
+    for rounds in [0, 1, 4, 8, 16, 32, 64, 128] {
+        let mut partial = prepare(&mut loader, &[0xa5, 0x5a]);
         for _ in 0..rounds {
-            assert!(!partial.advance(&mut loader).unwrap());
+            if partial.advance(&mut loader).unwrap() {
+                break;
+            }
         }
         partial.cancel().unwrap();
         finish(&mut partial);
+        drop(partial);
         fixture::until(|| loader.clear_images().unwrap());
         assert_eq!(
             fixture::active(),
@@ -92,11 +83,11 @@ pub fn run(license: PendId) {
             "partial ELF construction left resources at round {rounds}"
         );
     }
-    let mut first = prepare(&mut loader);
+    let mut first = prepare(&mut loader, &[0xa5, 0x5a]);
     ready(&mut first, &mut loader);
     let entries = loader.cached_entries();
     assert!(entries > 0);
-    let mut second = prepare(&mut loader);
+    let mut second = prepare(&mut loader, &[0xa5, 0x5a]);
     ready(&mut second, &mut loader);
     assert_eq!(
         loader.cached_entries(),
@@ -104,7 +95,6 @@ pub fn run(license: PendId) {
         "identical RX bytes must reuse the immutable cache"
     );
     first.resume().unwrap();
-    initialized(&mut first);
     finish(&mut first);
     let receipt = first.result().unwrap();
     assert_eq!(receipt.exit, Some((ExitCause::Reap, 0)));
@@ -113,7 +103,6 @@ pub fn run(license: PendId) {
     fixture::until(|| loader.clear_images().unwrap());
     assert_eq!(loader.cached_entries(), 0);
     second.resume().unwrap();
-    initialized(&mut second);
     finish(&mut second);
     let receipt = second.result().unwrap();
     assert_eq!(
@@ -123,10 +112,54 @@ pub fn run(license: PendId) {
     );
     assert_eq!(receipt.result, Some(17));
     assert!(receipt.reclaimed);
+    drop(first);
+    drop(second);
+    let mut running = prepare(&mut loader, &[0xa5, 0x5b]);
+    ready(&mut running, &mut loader);
+    let signal = kernel_client::call::sign::create(license).unwrap();
+    let request = kernel_api::model::pend::AccordRequest {
+        src: signal,
+        target: kernel_api::model::pend::AccordTarget::Task(running.task().unwrap()),
+        mark: kernel_api::model::identity::Mark::of("system-loader/hold"),
+        limits: kernel_api::model::pend::Limits {
+            operations: kernel_api::model::pend::Operations::Sign(
+                kernel_api::model::sign::SignRights::TRIGGER,
+            ),
+            modifiable: kernel_api::model::modifiable::Modifiable::No,
+            distributable: kernel_api::model::pend::Distributable::No,
+            scope: kernel_api::model::pend::PendScope::Object,
+        },
+    }
+    .to_bytes();
+    kernel_client::call::pend::accord(kernel_api::address::VirtAddr::new(request.as_ptr().addr()))
+        .unwrap();
+    running.resume().unwrap();
+    // A real Trigger from the image proves it entered and finished its first
+    // native allocation, before the parent requests Stop rather than waiting.
+    fixture::until(|| {
+        match kernel_client::call::sign::listen(signal, kernel_api::model::wait::Wait::Poll)
+            .unwrap()
+        {
+            kernel_api::abi::call::sign::SignReply::Pending => false,
+            kernel_api::abi::call::sign::SignReply::Triggered { sequence } => {
+                kernel_client::call::sign::consume(signal, sequence).unwrap();
+                true
+            }
+            reply => panic!("unexpected image signal: {reply:?}"),
+        }
+    });
+    running.cancel().unwrap();
+    finish(&mut running);
+    let receipt = running.result().unwrap();
+    assert_eq!(receipt.state, UnitState::Exited);
+    assert!(receipt.reclaimed);
+    drop(running);
+    kernel_client::call::pend::return_(signal).unwrap();
+    fixture::until(|| loader.clear_images().unwrap());
     assert_eq!(
         fixture::active(),
         baseline,
         "native ELF/Team retirement leaked caller grants"
     );
-    writeln!(Console, "PASS loader-elf native=1 user=1 arguments=1 private=1 cache=1 eviction=1 cancel=1 reclaim=1").unwrap();
+    writeln!(Console, "PASS loader-elf native=1 user=1 arguments=1 private=1 cache=1 eviction=1 cancel=1 running-stop=1 journal=1 reclaim=1").unwrap();
 }

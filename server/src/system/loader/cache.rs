@@ -63,9 +63,10 @@ impl Cache {
         let index = self.cursor % self.closing.len();
         let result = self.closing[index].borrow_mut().finish();
         match result {
-            Ok(()) => {
+            Ok(true) => {
                 self.closing.swap_remove(index);
             }
+            Ok(false) => (),
             Err(error) if error.busy() => (),
             Err(error) => return Err(error),
         }

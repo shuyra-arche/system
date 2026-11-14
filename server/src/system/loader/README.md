@@ -1,51 +1,45 @@
 # Native image construction
 
-`Loader` owns a bounded immutable-source cache. `Job` owns one construction,
-its Team/Task records, sources, CPU Memos and initializer resources. Each
-`advance` performs bounded progress and retains acquired objects on failure.
-`Mapping` observes generations immediately before Insert/Publish. No legacy
-Memory/Transfer call or untyped Task/Team operation participates.
+`Loader` owns a bounded immutable-source cache and borrows the creation license
+and its actual current Internal Nest. Its unsafe constructor requires that
+current-Nest proof: source staging dereferences private writable projections.
+`Job` owns one ELF construction, its Team/Task receipts, source references and
+target reservations. Every `advance`/`finish` performs finite progress and keeps
+acquired objects after Busy, failure or cancellation.
 
-Writable mappings follow Kernel 10's receiving-Task rule. The parent installs
-only read-only executable projections. It creates the initial Task dormant,
-then grants its private RW sources, the actual Whole Nest INSPECT|RESERVE authority and authenticated read-only metadata. The initializer uses that received Pend for Nest.Reserve; descriptive Team IDs never authorize memory operations. Source preparation uses a private writable Share, closes it and narrows immutable cache roots before publication. The
-initial Task runs `bootstrap::enter`, associates/publishes RW DATA/BSS in its own
-space, releases every metadata borrow and triggers a fresh initializer Sign
-before tail-jumping with the original arguments and Kernel stack bounds. The
-one-time metadata search verifies actual creator, owner, lender, Mark, native
-kind, status and limits. It is not service discovery or a persistent session.
-Temporary Share Open mappings are closed before reserving a program DATA range:
-the temporary mapping may otherwise occupy precisely that target address.
+Source preparation uses native CreateFlat/Occupy, a private writable reservation,
+a bounded copy into zeroed backing, then explicit Release/Return. A derived Share
+is read-only for immutable segments; writable DATA/BSS gets a private source.
+The backing Flat stays owned through every target projection and live source
+reference. Final cleanup returns the Share, closes the Flat and returns its
+closed metadata Pend. No retired Cell or Share Open/Shut call participates.
 
-The native entry linker must expose the complete immutable `__code_start` to
-`__code_end` span. The initializer and its Rust/SDK callees share that RX span
-at the same VA in the target, never the System's writable data. The entry code
-is placed at a high VA; ELF ranges colliding with this reserved bootstrap span
-are rejected. This is currently a whole-RX projection, not a small standalone
-trampoline. It conveys no administrative capabilities. An initializer failure
-uses reason `0x4c4f4144`; its diagnostic result identifies the failing source
-location or Kernel Cell error and is not a stable public protocol code.
+The common runtime `Mapping` owns Reserve/Insert/Publish/Release/Return and
+observes actual versions before mutation. Flat slots and Share windows retain
+their original source coordinates. All owners use the Team's shared monotonic
+native request allocator and query accepted operations by their original ID.
+An address in a foreign Nest is descriptive; only the trusted local staging
+owner may dereference its own mapping.
 
-Application readiness is distinct from initializer quiescence. `initialized`
-retains Sign consumption and cleanup progress and lets the creator release its
-metadata only after all target-side borrows end. The application may already
-have exited; no debug line substitutes for a Kernel receipt.
+ABI 11 permits the creator's genuine Nest authority to prepare the complete
+image before Task creation. The child starts at the ELF entry with its original
+arguments and Kernel stack, with no injected System initializer or consumed
+native RequestIds. Application readiness remains a separate supervisor/service
+fact. Trusted construction policy explicitly selects the creation rights handed
+to the child; the child also receives only Whole-Nest INSPECT/RESERVE. The ordinary
+Team path rejects Supervisor images.
 
-RX cache entries compare the exact bytes, prefix, span and flags. Every live
-Job retains its source, so eviction cannot withdraw another Unit's code. RW
-sources are private. Retirement releases the native root Task receipt only
-through the completed Team deletion path. ABI 10 does not set Team
-`UnitInfo.reclaimed`: that field is meaningful for Tasks. Successful Team Delete
-coordinates Nest retirement, returning Busy until safe, and clears the caller's
-retained descendant receipts. Job preserves its Task result before deletion,
-then finishes creator-owned Memos, sources and initializer resources. Stop alone
-is not reclaim evidence.
+RX cache keys compare exact bytes, prefix, span and flags. Every Job retains a
+source reference, so eviction cannot withdraw another instance's code. RW
+sources are private. Stop requests termination; Task `reclaimed`, explicit
+mapping retirement and successful Team Delete are separate completion facts.
+The Job preserves its Task result before Team Delete clears descendant receipts.
+Only after these facts may the last source owner close backing. Team
+`UnitInfo.reclaimed` is not used as a Task reclamation substitute.
 
-The QEMU guest runs actual User Teams with a separate compiled RV64 image. It
-checks copied arguments, initialized/private DATA, zero/private BSS, execution
-from reused RX, cache eviction while another Unit remains dormant, partial
-construction cancellation, native exit result 17, Task reclamation and caller
-capability baseline recovery. One/four-Hart runs include every previous service
-and bootstrap test. This is production Loader component evidence, not an
-assembled System or Toolchain `std` acceptance result. Loader RPC admission,
-image import and remaining Control/Assembly integration still need migration.
+The [Loader guest](../../../../tests/guest/loader/README.md) runs actual User
+Teams, partial/dormant cancellation, arguments, private DATA/BSS, RX reuse and
+live eviction, first native RequestId, result 17, Task/Team retirement and Pend
+baseline recovery on the production heap. It is not assembled System or Toolchain
+std acceptance. Loader RPC/image admission and Control/Assembly integration
+remain to be migrated.

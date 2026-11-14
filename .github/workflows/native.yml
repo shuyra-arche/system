@@ -30,6 +30,10 @@ jobs:
         run: cargo clippy --locked --manifest-path tests/guest/runtime/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
       - name: RV64 production entry contract
         run: cargo clippy --locked --manifest-path tests/guest/entry/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: RV64 native Loader and ordinary image
+        run: |
+          cargo build --locked --manifest-path tests/guest/client/image/Cargo.toml --release --target riscv64gc-unknown-none-elf
+          SYSTEM_LOADER_IMAGE="$GITHUB_WORKSPACE/tests/guest/client/image/target/riscv64gc-unknown-none-elf/release/system-loader-image" cargo clippy --locked --manifest-path tests/guest/loader/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
       - name: Build qualified single-Hart component platform
         env:
           RUSTFLAGS: -Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium
@@ -65,3 +69,7 @@ jobs:
         run: python3 tests/guest/runtime/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
       - name: Production entry, immutable boot data and native services on one Hart
         run: python3 tests/guest/entry/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
+      - name: Build single-Hart local-instruction test platform
+        run: cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --release --target riscv64gc-unknown-none-elf
+      - name: Native ELF construction and User Team retirement on one Hart
+        run: python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1

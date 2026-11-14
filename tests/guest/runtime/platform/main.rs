@@ -43,6 +43,20 @@ extern "C" fn main(hart: usize, dtp: usize) -> ! {
             }])
         }
         .unwrap();
+        // The instruction fixture is paired only with one-Hart QEMU. Kernel
+        // fences local executable publication; SMP admission still fails below.
+        #[cfg(feature = "instructions")]
+        let topology = {
+            if tree.cpus().count() != 1 {
+                return Err(boot::BootError::Description(
+                    "local instruction qualification requires one Hart",
+                ));
+            }
+            // SAFETY: the paired QEMU invocation has one Hart, coherent normal
+            // RAM and no external requester/hotplug. Local FENCE.I completes
+            // instruction visibility; no remote completion is claimed.
+            unsafe { topology.with_local_instructions() }
+        };
         boot::qualify_memory(topology).map_err(|_| {
             boot::BootError::Description(
                 "native CPU memory qualification unsupported (requires one Hart)",

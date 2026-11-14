@@ -1,10 +1,11 @@
 use crate::boot::{Accounts, Catalog};
-use crate::runtime::view::Read;
+use crate::runtime::view::Mapping;
 use crate::support::machine::Machine;
 use alloc::{boxed::Box, vec::Vec};
 use kernel_api::{
-    address::VirtAddr,
+    address::{PAGE_SIZE, VirtAddr},
     boot::ledger::{Name, Page},
+    model::cell::Placement,
     model::unit::ExitScope,
 };
 use kernel_client::call::{room, unit};
@@ -59,9 +60,15 @@ fn snapshot(accounts: &Accounts<'_>) -> Result<Box<[u8]>, Fail> {
     };
     let deadline = room::clock().saturating_add(5_000_000_000);
     let mut view = loop {
-        // SAFETY: both grants come from this initial Task's trusted ledger;
+        // Both grants come from this initial Task's trusted ledger;
         // Space is its current Internal Nest and Dtb is immutable Kernel data.
-        match unsafe { Read::new(space, token, abort) } {
+        match Mapping::new(
+            space,
+            token,
+            Placement::lowest(PAGE_SIZE).ok_or(Fail::Machine)?,
+            2,
+            abort,
+        ) {
             Ok(view) => break view,
             Err(error) if error.busy() && room::clock() < deadline => room::yield_(),
             Err(_) => return Err(Fail::Machine),
@@ -83,7 +90,8 @@ fn snapshot(accounts: &Accounts<'_>) -> Result<Box<[u8]>, Fail> {
         // SAFETY: the borrowed Kernel boot source is immutable, held by this
         // Task and cannot be withdrawn by another Unit during bootstrap. This
         // private read-only projection remains published through the copy.
-        let bytes = unsafe { view.bytes() }.map_err(|_| Fail::Machine)?;
+        let (address, span) = view.span().ok_or(Fail::Machine)?;
+        let bytes = unsafe { core::slice::from_raw_parts(address.get() as *const u8, span) };
         if bytes.len() < 40 {
             return Err(Fail::Machine);
         }

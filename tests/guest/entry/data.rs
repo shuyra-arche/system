@@ -1,7 +1,7 @@
 //! Kernel boot data must be native read-only RAM, not an unauthorised region.
 use crate::{
     boot::{Accounts, Resource},
-    runtime::{memory::Memory, view::Read},
+    runtime::{memory::Memory, view::Mapping},
 };
 use kernel_api::{
     abi::{
@@ -59,7 +59,14 @@ pub fn run(accounts: &Accounts<'_>) {
     let source = accounts.page(Page::Initrd).unwrap();
     let baseline = pends();
     // SAFETY: grants are this initial Task's trusted Space and immutable initrd.
-    let mut read = unsafe { Read::new(space, source, |why| panic!("{why}")) }.unwrap();
+    let mut read = Mapping::new(
+        space,
+        source,
+        Placement::lowest(PAGE_SIZE).unwrap(),
+        2,
+        |why| panic!("{why}"),
+    )
+    .unwrap();
     let deadline = room::clock() + 20_000_000_000;
     loop {
         match read.advance() {
@@ -72,7 +79,8 @@ pub fn run(accounts: &Accounts<'_>) {
     }
     // SAFETY: Kernel retains these immutable boot bytes. This private projection
     // remains published until the comparison finishes and before explicit close.
-    let bytes = unsafe { read.bytes() }.unwrap();
+    let (address, span) = read.span().unwrap();
+    let bytes = unsafe { core::slice::from_raw_parts(address.get() as *const u8, span) };
     assert_eq!(&bytes[..accounts.view().len()], accounts.view());
     assert!(bytes[accounts.view().len()..].iter().all(|byte| *byte == 0));
     loop {

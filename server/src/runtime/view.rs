@@ -1,4 +1,4 @@
-//! A borrowed Share source and one owned, read-only CPU reservation.
+//! A borrowed Flat/Share source and one independently owned CPU reservation.
 use crate::runtime::memory::Memory;
 use core::marker::PhantomData;
 use kernel_api::{
@@ -9,12 +9,13 @@ use kernel_api::{
     address::{PAGE_SIZE, PageCount, VirtAddr},
     model::{
         cell::{CellLevel, Placement},
+        flat::SlotPosition,
         identity::PendId,
         nest::{MemoPosition, NestId, ReserveRequest},
         pend::{
-            Operations, PendInfo, PendRange, PendScope, PendStatus, ShareRights, Target, ViewTarget,
+            FlatRights, Operations, PendInfo, PendRange, PendScope, PendStatus, ShareRights,
+            Target, ViewTarget,
         },
-        view::ViewId,
     },
 };
 use kernel_client::call::pend;
@@ -45,10 +46,12 @@ enum Phase {
 /// borrowed source or Space grants. An unresolved native result is settled by
 /// Memory with its original request identity before another transition occurs.
 #[must_use = "finish the private reservation, retaining this owner on failure"]
-pub(crate) struct Read {
+pub(crate) struct Mapping {
     memory: Memory,
     source: PendId,
-    view: ViewId,
+    target: Target,
+    placement: Placement,
+    access: u64,
     origin: usize,
     count: usize,
     space: PendId,
@@ -59,13 +62,14 @@ pub(crate) struct Read {
     phase: Phase,
     task: PhantomData<*mut ()>,
 }
-impl Read {
-    /// # Safety
-    /// Space must be this Task's actual Internal Nest. Use this object only in
-    /// that Task; control of a foreign Nest does not map its VA into the caller.
-    pub unsafe fn new(
+impl Mapping {
+    /// Foreign Nest addresses are observations; they cannot be dereferenced in
+    /// this Task. The caller must retain the actual source throughout use.
+    pub fn new(
         space: PendId,
         source: PendId,
+        placement: Placement,
+        access: u64,
         abort: fn(&'static str) -> !,
     ) -> Result<Self, Error> {
         let space_info = inspect(space)?;
@@ -73,19 +77,26 @@ impl Read {
             return Err(Error::Invalid);
         };
         let info = inspect(source)?;
-        let (
-            Target::View(ViewTarget::Share(view)),
-            PendScope::Pages(PendRange::Pages { offset, count }),
-        ) = (info.target, info.limits.scope)
-        else {
+        let PendScope::Pages(PendRange::Pages { offset, count }) = info.limits.scope else {
             return Err(Error::Invalid);
         };
         if info.status != PendStatus::Active
             || space_info.status != PendStatus::Active
-            || !info
-                .limits
-                .operations
-                .contains(Operations::Share(ShareRights::ASSOCIATE))
+            || !match info.target {
+                Target::Flat(_) => info
+                    .limits
+                    .operations
+                    .contains(Operations::Flat(FlatRights::ASSOCIATE)),
+                Target::View(ViewTarget::Share(_)) => info
+                    .limits
+                    .operations
+                    .contains(Operations::Share(ShareRights::ASSOCIATE)),
+                _ => false,
+            }
+            || access & 2 == 0
+            || access & !14 != 0
+            || access & 12 == 12
+            || offset.checked_add(count).is_none()
             || count
                 .checked_mul(PAGE_SIZE)
                 .is_none_or(|n| n == 0 || n > isize::MAX as usize)
@@ -95,7 +106,9 @@ impl Read {
         Ok(Self {
             memory: Memory::new(abort),
             source,
-            view,
+            target: info.target,
+            placement,
+            access,
             origin: offset,
             count,
             space,
@@ -128,10 +141,10 @@ impl Read {
                         nest: self.nest,
                         expected: status.version,
                         reservation: ReserveRequest {
-                            placement: Placement::lowest(PAGE_SIZE).ok_or(Error::Invalid)?,
+                            placement: self.placement,
                             count: PageCount::new(self.count).ok_or(Error::Invalid)?,
                             level: CellLevel::BASE,
-                            access: 2,
+                            access: self.access,
                         },
                     })
                     .map_err(Error::Native)?;
@@ -159,12 +172,7 @@ impl Read {
                     .mutate(Action::Insert {
                         target,
                         expected: status.generation,
-                        source: Source::Share {
-                            token: self.source,
-                            view: self.view,
-                            page: self.origin.checked_add(self.page).ok_or(Error::Invalid)?,
-                            count: 1,
-                        },
+                        source: self.selected_source()?,
                     })
                     .map_err(Error::Native)?;
                 self.phase = Phase::Publish;
@@ -193,20 +201,43 @@ impl Read {
         }
         Ok(false)
     }
-    /// # Safety
-    /// The source is immutable and held against withdrawal throughout this
-    /// borrow. The caller's current Nest is the one proven in new(). No Kernel
-    /// call or other owner may replace/release this private reservation.
-    pub unsafe fn bytes(&self) -> Result<&[u8], Error> {
-        if !matches!(self.phase, Phase::Ready) {
-            return Err(Error::Invalid);
+    fn selected_source(&self) -> Result<Source, Error> {
+        let page = self.origin.checked_add(self.page).ok_or(Error::Invalid)?;
+        match self.target {
+            Target::View(ViewTarget::Share(view)) => Ok(Source::Share {
+                token: self.source,
+                view,
+                page,
+                count: 1,
+            }),
+            Target::Flat(flat) => {
+                let position = SlotPosition::new(self.source, flat, page).ok_or(Error::Invalid)?;
+                let Snapshot::Slot(status) = self.memory.inspect(Query::Slot(position)) else {
+                    return Err(Error::Invalid);
+                };
+                Ok(Source::Flat {
+                    position,
+                    expected: status.version,
+                })
+            }
+            _ => Err(Error::Invalid),
         }
-        let base = self.address.ok_or(Error::Invalid)?.get();
-        let span = self.count.checked_mul(PAGE_SIZE).ok_or(Error::Invalid)?;
-        if base == 0 || base.checked_add(span).is_none() {
-            return Err(Error::Invalid);
+    }
+    pub fn is_ready(&self) -> bool {
+        matches!(self.phase, Phase::Ready)
+    }
+    pub fn address(&self) -> Option<VirtAddr> {
+        self.is_ready().then_some(self.address).flatten()
+    }
+    /// Descriptive virtual geometry only, including when the Nest is foreign.
+    /// Dereferencing requires the caller's own live projection/source proof.
+    pub fn span(&self) -> Option<(VirtAddr, usize)> {
+        let base = self.address()?;
+        let span = self.count.checked_mul(PAGE_SIZE)?;
+        if base.get() == 0 || base.get().checked_add(span).is_none() {
+            return None;
         }
-        Ok(unsafe { core::slice::from_raw_parts(base as *const u8, span) })
+        Some((base, span))
     }
     /// Release settles the entire private reservation, including partial opens.
     /// Returning its Pend is a separate successful transition. Busy retains both.

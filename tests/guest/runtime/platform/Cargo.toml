@@ -12,6 +12,9 @@ path = "main.rs"
 test = false
 bench = false
 
+[features]
+instructions = []
+
 [dependencies]
 kernel = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
 platform-riscv = { git = "https://github.com/shuyra-arche/vanllia.git", rev = "7895b5a581119cffb284e7c1433150e11dda2d81" }
