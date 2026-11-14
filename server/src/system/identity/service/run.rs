@@ -6,7 +6,7 @@ use system_protocol::{
 };
 use weave::{server::ServeError, transport::ReceiveError};
 
-use super::{Config, Error, Failure, Phase, Service, answer, inspect};
+use super::{Error, Phase, Service, answer, inspect};
 
 #[derive(Debug, Default)]
 pub struct Report {
@@ -15,39 +15,6 @@ pub struct Report {
     pub reply_failures: usize,
     pub first_reply_failure: Option<crate::protocol::ServeFailure>,
     pub stopped: bool,
-}
-
-/// Own one complete service lifecycle. Failures return the live resource owner
-/// so its caller can finish and retry cleanup rather than dropping obligations.
-#[allow(
-    clippy::result_large_err,
-    reason = "retain service resources without allocating on failure"
-)]
-pub fn serve(config: Config) -> Result<(), Failure> {
-    let mut service = Service::create(config)?;
-    loop {
-        match service.step(Wait::Infinite) {
-            Ok(report) if report.stopped => {
-                return match service.finish() {
-                    Ok(()) => Ok(()),
-                    Err(error) => Err(Failure {
-                        error: Error::Cleanup(error),
-                        service,
-                    }),
-                };
-            }
-            Ok(report) => {
-                if report.reply_failures != 0 {
-                    let text = b"identity: reply delivery failed\n";
-                    let _ = kernel_client::call::debug::put(
-                        kernel_api::address::VirtAddr::new(text.as_ptr().addr()),
-                        text.len(),
-                    );
-                }
-            }
-            Err(error) => return Err(Failure { error, service }),
-        }
-    }
 }
 
 pub(super) fn step(service: &mut Service, wait: Wait) -> Result<Report, Error> {

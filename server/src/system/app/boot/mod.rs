@@ -154,7 +154,8 @@ impl Workers {
         self.signals[2]
     }
     pub fn revision(&self) -> Result<u64, Error> {
-        revision::consume(self.changed().ok_or(Error::Phase)?, &self.epoch).map_err(Error::Revision)
+        revision::consume(self.changed().ok_or(Error::Phase)?, self.epoch())
+            .map_err(Error::Revision)
     }
     pub fn publication(&self) -> Option<Publication> {
         if self.phase != Phase::Ready || self.cleanup.is_some() {

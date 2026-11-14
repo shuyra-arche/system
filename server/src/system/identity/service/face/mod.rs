@@ -118,3 +118,22 @@ impl Face {
         Ok(())
     }
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Queue(error) => write!(f, "identity queue: {error:?}"),
+            Self::Bind(error) => write!(f, "identity binding: {error:?}"),
+            Self::Grant(error) => write!(f, "identity grant: {error:?}"),
+        }
+    }
+}
+
+impl core::fmt::Display for CleanupError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Ingress(error) => write!(f, "Ingress cleanup: {error:?}"),
+            Self::Return(error) => write!(f, "Return cleanup: {error:?}"),
+        }
+    }
+}

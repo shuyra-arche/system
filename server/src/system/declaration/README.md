@@ -20,8 +20,9 @@ become requirements. Old VNU1 records are rejected explicitly.
 
 `tests/declarations` verifies these policy/record boundaries; the native entry
 fixture decodes a genuine schema-2 VNI1 archive from Kernel's boot arguments.
-The legacy Control application still consumes its old runtime model: remaining
-callers must migrate before this becomes the complete application interpreter.
+The complete native Control application now consumes this interpreter. Its
+basic production startup is verified separately from the remaining public
+lifecycle and handoff semantics.
 
 On ABI 11 the interpreter assigns Object, Pages or Whole Nest scopes explicitly.
 Retired Share Open/Shut, Memo declarations, Nest Transfer and unqualified

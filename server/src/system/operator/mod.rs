@@ -5,4 +5,3 @@ pub(crate) mod authority;
 pub(crate) mod runtime;
 pub(crate) mod tree;
 mod watch;
-pub(crate) use runtime::serve as run;

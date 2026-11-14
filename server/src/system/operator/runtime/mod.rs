@@ -185,9 +185,7 @@ impl Service {
         });
         Ok(())
     }
-    pub fn task(&self) -> TaskId {
-        self.task
-    }
+
     pub fn publication(&self) -> Option<Publication> {
         if matches!(self.phase, Phase::Running) {
             self.publication
@@ -871,19 +869,6 @@ impl Drop for Service {
         let _ = self.finish();
     }
 }
-#[allow(clippy::result_large_err, reason = "return partial native ownership")]
-pub fn serve(config: Config) -> Result<(), Failure> {
-    let mut service = Service::create(config)?;
-    loop {
-        match service.step(Wait::Infinite) {
-            Ok(report) if report.stopped => {
-                return service.finish().map_err(|error| Failure { error, service });
-            }
-            Ok(_) => (),
-            Err(error) => return Err(Failure { error, service }),
-        }
-    }
-}
 fn inspect(token: PendId) -> Result<PendInfo, Error> {
     let mut words = [0; PendInfo::WORDS];
     pend::inspect(token, VirtAddr::new(words.as_mut_ptr().addr())).map_err(Error::Inspect)?;
@@ -919,5 +904,21 @@ fn transient(error: &face::Error) -> bool {
         face::Error::Queue(error) => error.source.is_busy(),
         face::Error::Grant(error) | face::Error::Return(error) => error.source.is_busy(),
         _ => false,
+    }
+}
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Inspect(error) => write!(f, "operator Pend: {error:?}"),
+            Self::Unit(error) => write!(f, "operator Task: {error:?}"),
+            Self::Face(error) => write!(f, "operator face: {error:?}"),
+            Self::Waiting(error) => write!(f, "operator waiting: {error:?}"),
+            Self::Book(error) => write!(f, "operator book: {error:?}"),
+            Self::Ingress(error) => write!(f, "operator ingress: {error:?}"),
+            Self::InvalidConfig => f.write_str("InvalidConfig"),
+            Self::Capacity => f.write_str("Capacity"),
+            Self::Inactive => f.write_str("Inactive"),
+        }
     }
 }

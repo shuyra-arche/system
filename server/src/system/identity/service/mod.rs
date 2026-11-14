@@ -51,7 +51,6 @@ pub enum Error {
     Dependency,
     Revision(revision::Error),
     Ingress(crate::protocol::Error),
-    Cleanup(CleanupError),
     Waiting(crate::system::app::waiting::Error),
     Inactive,
 }
@@ -231,9 +230,7 @@ impl Service {
     pub fn is_finished(&self) -> bool {
         matches!(self.phase, Phase::Closed)
     }
-    pub fn task(&self) -> TaskId {
-        self.task
-    }
+
     pub fn step(&mut self, wait: Wait) -> Result<run::Report, Error> {
         run::step(self, wait)
     }
@@ -253,6 +250,34 @@ impl Drop for Service {
     fn drop(&mut self) {
         if !self.is_finished() {
             let _ = self.finish();
+        }
+    }
+}
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Inspect(error) => write!(f, "identity Pend: {error:?}"),
+            Self::Unit(error) => write!(f, "identity Task: {error:?}"),
+            Self::Book(error) => write!(f, "identity book: {error:?}"),
+            Self::Face(error) => write!(f, "identity face: {error:?}"),
+            Self::Sign(error) => write!(f, "identity Sign: {error:?}"),
+            Self::Revision(error) => write!(f, "identity revision: {error:?}"),
+            Self::Ingress(error) => write!(f, "identity ingress: {error:?}"),
+            Self::Waiting(error) => write!(f, "identity waiting: {error:?}"),
+            Self::InvalidConfig => f.write_str("InvalidConfig"),
+            Self::Capacity => f.write_str("Capacity"),
+            Self::Dependency => f.write_str("Dependency"),
+            Self::Inactive => f.write_str("Inactive"),
+        }
+    }
+}
+
+impl core::fmt::Display for CleanupError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Mux(error) => write!(f, "Mux cleanup: {error:?}"),
+            Self::Face(error) => write!(f, "Face cleanup: {error:?}"),
         }
     }
 }

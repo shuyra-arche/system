@@ -82,3 +82,13 @@ pub fn consume(token: PendId, epoch: &Epoch) -> Result<u64, Error> {
 #[cfg(test)]
 #[path = "../../../../tests/identity-state/revision.rs"]
 mod tests;
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Sign(error) => write!(f, "revision notification: {error:?}"),
+            Self::Exhausted => f.write_str("Exhausted"),
+            Self::InvalidEvent => f.write_str("InvalidEvent"),
+        }
+    }
+}

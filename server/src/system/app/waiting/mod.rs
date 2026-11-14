@@ -176,3 +176,22 @@ impl Drop for Waiting {
         let _ = self.finish();
     }
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Create(error) => write!(f, "wait group creation: {error:?}"),
+            Self::Listen(error) => write!(f, "wait group listen: {error:?}"),
+            Self::Return(error) => write!(f, "wait group return: {error:?}"),
+            Self::Attach { interest, error } => {
+                write!(f, "wait group attach {interest:?}: {error}")
+            }
+            Self::Detach { interest, error } => {
+                write!(f, "wait group detach {interest:?}: {error}")
+            }
+            Self::Capacity => f.write_str("Capacity"),
+            Self::Conflict => f.write_str("Conflict"),
+            Self::Inactive => f.write_str("Inactive"),
+        }
+    }
+}

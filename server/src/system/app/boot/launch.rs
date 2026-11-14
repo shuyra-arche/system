@@ -190,6 +190,10 @@ fn operator(handoff: &Handoff) -> bool {
     let mut service = match operator::Service::create(config) {
         Ok(value) => value,
         Err(mut failure) => {
+            system_support::debug::put(&alloc::format!(
+                "system: service creation: {}\n",
+                failure.error
+            ));
             while failure.service.finish().is_err() {
                 room::yield_();
             }
@@ -213,7 +217,10 @@ fn operator(handoff: &Handoff) -> bool {
         match service.step(Wait::Infinite) {
             Ok(report) if report.stopped => break true,
             Ok(_) => (),
-            Err(_) => break false,
+            Err(error) => {
+                system_support::debug::put(&alloc::format!("system: service progress: {error}\n"));
+                break false;
+            }
         }
     };
     while service.finish().is_err() {
@@ -241,6 +248,10 @@ fn identity(handoff: &Handoff) -> bool {
     let mut service = match identity::Service::create(config) {
         Ok(value) => value,
         Err(mut failure) => {
+            system_support::debug::put(&alloc::format!(
+                "system: service creation: {}\n",
+                failure.error
+            ));
             while failure.service.finish().is_err() {
                 room::yield_();
             }
@@ -256,7 +267,10 @@ fn identity(handoff: &Handoff) -> bool {
         match service.step(Wait::Infinite) {
             Ok(report) if report.stopped => break true,
             Ok(_) => (),
-            Err(_) => break false,
+            Err(error) => {
+                system_support::debug::put(&alloc::format!("system: service progress: {error}\n"));
+                break false;
+            }
         }
     };
     while service.finish().is_err() {

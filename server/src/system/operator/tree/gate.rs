@@ -25,9 +25,6 @@ pub enum Code {
     Unjudged,
 }
 impl Code {
-    pub const fn passed(self) -> bool {
-        matches!(self, Self::Ok)
-    }
     pub const fn failure(self) -> Option<Fail> {
         match self {
             Self::Ok => None,

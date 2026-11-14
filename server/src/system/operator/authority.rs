@@ -47,12 +47,6 @@ pub enum CleanupStage {
     Returned,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct CleanupProgress {
-    pub attached: bool,
-    pub stage: CleanupStage,
-}
-
 /// Completion receipts from the service owner, after each native operation
 /// succeeds. Returning an entrance retires its whole Pend branch; Busy must
 /// keep the owner at Detached for the next attempt.
@@ -338,7 +332,7 @@ impl Authority {
                         && r.identity.issuer == key.caller
                         && r.grant.spec.id == key.id
                 })
-                .and_then(|r| r.cleanup.remote)
+                .and_then(|r| self.remote(r.identity.key))
         } else {
             None
         };
@@ -538,31 +532,6 @@ impl Authority {
             .map(|r| (r.identity.key, Some(&r.grant.spec)))
     }
 
-    pub fn entrance(&self, key: GrantRef) -> Option<PendId> {
-        self.records
-            .iter()
-            .find(|r| {
-                r.identity.via == key.via
-                    && r.identity.issuer == key.caller
-                    && r.grant.spec.id == key.id
-            })
-            .and_then(|r| r.cleanup.entrance)
-    }
-
-    pub fn root_entrance(&self) -> Option<PendId> {
-        self.entrance
-    }
-
-    pub fn by_entrance(&self, entrance: PendId) -> Option<GrantKey> {
-        if self.entrance == Some(entrance) {
-            return Some(GrantKey::Root);
-        }
-        self.records
-            .iter()
-            .find(|r| r.cleanup.entrance == Some(entrance))
-            .map(|r| r.identity.key)
-    }
-
     pub fn live(&self, key: GrantKey) -> bool {
         if key == GrantKey::Root {
             return self.entrance.is_some();
@@ -571,27 +540,6 @@ impl Authority {
             .iter()
             .any(|r| r.identity.key == key && r.grant.state == GrantState::Granted)
             && self.ancestors_live(key)
-    }
-
-    pub fn by_id(&self, key: GrantKey, caller: TaskId) -> Option<(GrantId, &GrantSpec)> {
-        let record = self.records.iter().find(|r| {
-            r.identity.key == key
-                && r.grant.state == GrantState::Granted
-                && r.grant.spec.holder == caller
-        })?;
-        self.ancestors_live(key)
-            .then_some((record.grant.spec.id, &record.grant.spec))
-    }
-
-    pub fn cleanup_progress(&self, key: GrantKey) -> Option<CleanupProgress> {
-        let r = self
-            .records
-            .iter()
-            .find(|record| record.identity.key == key)?;
-        Some(CleanupProgress {
-            attached: r.cleanup.attached,
-            stage: r.cleanup.stage,
-        })
     }
 
     pub fn attached(&mut self, key: GrantKey) -> Result<(), AuthorityError> {

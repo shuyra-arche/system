@@ -157,3 +157,15 @@ impl Face {
         Ok(())
     }
 }
+
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Queue(error) => write!(f, "operator queue: {error:?}"),
+            Self::Bind(error) => write!(f, "operator binding: {error:?}"),
+            Self::Grant(error) => write!(f, "operator grant: {error:?}"),
+            Self::Cleanup(error) => write!(f, "operator cleanup: {error:?}"),
+            Self::Return(error) => write!(f, "operator return: {error:?}"),
+        }
+    }
+}

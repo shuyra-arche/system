@@ -323,3 +323,41 @@ fn endpoint_aliasing_parent_mismatch_and_key_exhaustion_fail_before_publication(
     );
     assert!(!auth.live(other));
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CleanupProgress {
+    pub attached: bool,
+    pub stage: CleanupStage,
+}
+
+impl Authority {
+    pub fn entrance(&self, key: GrantRef) -> Option<PendId> {
+        self.records
+            .iter()
+            .find(|r| {
+                r.identity.via == key.via
+                    && r.identity.issuer == key.caller
+                    && r.grant.spec.id == key.id
+            })
+            .and_then(|r| r.cleanup.entrance)
+    }
+    pub fn by_id(&self, key: GrantKey, caller: TaskId) -> Option<(GrantId, &GrantSpec)> {
+        let record = self.records.iter().find(|r| {
+            r.identity.key == key
+                && r.grant.state == GrantState::Granted
+                && r.grant.spec.holder == caller
+        })?;
+        self.ancestors_live(key)
+            .then_some((record.grant.spec.id, &record.grant.spec))
+    }
+    pub fn cleanup_progress(&self, key: GrantKey) -> Option<CleanupProgress> {
+        let r = self
+            .records
+            .iter()
+            .find(|record| record.identity.key == key)?;
+        Some(CleanupProgress {
+            attached: r.cleanup.attached,
+            stage: r.cleanup.stage,
+        })
+    }
+}
