@@ -38,8 +38,8 @@ reply-cross-team and grant-cross-team success markers. The fixed registration
 limits are supplied by Kernel; no identity or creator is forged.
 
 Validated component inputs: Kernel/API/Client
-`6d78ff68b95602deac2480a5addf7e693fd88fcc`, Twine
-`37c75f5bbb0794b4e9daf61bf0a93e81492e3daf`, Rust nightly-2026-11-13
+`8b3586206a4795fc8289031887bb62d6d7598a69`, Twine
+`447871e10f2e110a43c01752fc3b70773c1fa47b`, Rust nightly-2026-11-13
 (`8eb778d04094d3af4b26580cab327e0413eb1e02`), QEMU 10.0.13 and OpenSBI 1.6.
 The guest uses normal locked Git dependencies; no local SDK patch is needed.
 Production Server/Support SDK pins are aligned to the same provider. The legacy
