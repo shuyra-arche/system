@@ -8,7 +8,7 @@ use kernel_api::{
         identity::{Mark, PendId, TaskId},
         modifiable::Modifiable,
         pend::{
-            AccordRequest, AccordTarget, CloneRights, Distributable, Limits, Operations, PendRange,
+            AccordRequest, AccordTarget, CloneRights, Distributable, Limits, Operations, PendScope,
         },
     },
 };
@@ -116,7 +116,7 @@ impl Face {
                 operations: Operations::Clone(CloneRights::PUSH | CloneRights::PEEK),
                 modifiable: Modifiable::Yes,
                 distributable,
-                range: PendRange::Inherit,
+                scope: PendScope::Object,
             },
         };
         self.remote = Some(

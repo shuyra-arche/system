@@ -194,12 +194,12 @@ impl<T: Codec, const SERVICE: u16> Codec for Request<T, SERVICE> {
     }
 }
 
-/// Kernel v9 authority is encoded through the provider's checked word contract.
+/// Kernel v10 authority is encoded through the provider's checked word contract.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Rights(pub kernel_api::model::pend::Limits);
 impl Codec for Rights {
     type Decoded = Self;
-    const SIZE: EncodedSize = EncodedSize::Fixed(56);
+    const SIZE: EncodedSize = EncodedSize::Fixed(72);
     fn encode(&self, out: &mut [u8]) -> Option<usize> {
         if !self.0.valid() {
             return None;
@@ -207,8 +207,8 @@ impl Codec for Rights {
         self.0.words().map(|word| word as u64).encode(out)
     }
     fn decode(bytes: &[u8]) -> Option<(Self, usize)> {
-        let (words, used) = <[u64; 7]>::decode(bytes)?;
-        let mut native = [0; 7];
+        let (words, used) = <[u64; 9]>::decode(bytes)?;
+        let mut native = [0; 9];
         for (target, word) in native.iter_mut().zip(words) {
             *target = usize::try_from(word).ok()?;
         }

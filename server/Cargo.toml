@@ -43,9 +43,9 @@ talc = { version = "5.1.1", default-features = false }
 
 # Protocol v2 ingress is staged while the legacy service state is ported.
 system-protocol = { package = "system-api", path = "../api" }
-kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }
-kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "23dec6b30e1ec08f42d3701e2613acd8c562c459" }
-twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "8144be4286c36a6d20271aac9e44ca56049a2430" }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "8b3586206a4795fc8289031887bb62d6d7598a69" }
+kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "8b3586206a4795fc8289031887bb62d6d7598a69" }
+twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "447871e10f2e110a43c01752fc3b70773c1fa47b" }
 weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }
 
 unit-contract = { package = "unit", git = "https://github.com/shuyra-arche/unit.git", rev = "aaa2b58c1ef0b40428dcc71d1321736156551109", default-features = false }

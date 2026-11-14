@@ -6,9 +6,9 @@ its Team/Task records, sources, CPU Memos and initializer resources. Each
 `Mapping` observes generations immediately before Insert/Publish. No legacy
 Memory/Transfer call or untyped Task/Team operation participates.
 
-Writable mappings follow Kernel 9's receiving-Task rule. The parent installs
+Writable mappings follow Kernel 10's receiving-Task rule. The parent installs
 only read-only executable projections. It creates the initial Task dormant,
-then grants its private RW sources and authenticated read-only metadata. The
+then grants its private RW sources, the actual Whole Nest INSPECT|RESERVE authority and authenticated read-only metadata. The initializer uses that received Pend for Nest.Reserve; descriptive Team IDs never authorize memory operations. Source preparation uses a private writable Share, closes it and narrows immutable cache roots before publication. The
 initial Task runs `bootstrap::enter`, associates/publishes RW DATA/BSS in its own
 space, releases every metadata borrow and triggers a fresh initializer Sign
 before tail-jumping with the original arguments and Kernel stack bounds. The
@@ -34,7 +34,7 @@ have exited; no debug line substitutes for a Kernel receipt.
 RX cache entries compare the exact bytes, prefix, span and flags. Every live
 Job retains its source, so eviction cannot withdraw another Unit's code. RW
 sources are private. Retirement releases the native root Task receipt only
-through the completed Team deletion path. ABI 9 does not set Team
+through the completed Team deletion path. ABI 10 does not set Team
 `UnitInfo.reclaimed`: that field is meaningful for Tasks. Successful Team Delete
 coordinates Nest retirement, returning Busy until safe, and clears the caller's
 retained descendant receipts. Job preserves its Task result before deletion,

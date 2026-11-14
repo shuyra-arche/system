@@ -1,6 +1,6 @@
-# System Client v2
+# System Client v3
 
-The task-local SDK uses the workspace protocol v2 API, Kernel ABI 9, Twine and
+The task-local SDK uses the workspace protocol v3 API, Kernel ABI 10, Twine and
 Weave. Each service has a typed `Client` and accepts its Weave operation markers.
 Trusted Identity export has a separate client from ordinary Identity calls.
 
@@ -13,6 +13,7 @@ let mut pending = client.begin::<State>(Named { name }, Wait::At(deadline))?;
 let result = pending.wait();
 // Inspect both outcomes. If cleanup fails, retain pending and retry finish.
 let cleanup = pending.finish();
+// CleanupError::is_busy() permits bounded yield/retry on the retained owner.
 ```
 
 `entry` borrows a Clone grant owned by the expected serving Task, with PUSH,

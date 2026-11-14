@@ -1,16 +1,14 @@
 //! Real Cell association/publication, Share ownership and target Memo cleanup.
 use crate::{
-    fixture::{self, Console, addr},
+    fixture::{self, Console},
     loader_memory::Mapping,
 };
 use core::fmt::Write as _;
 use kernel_api::{
     address::{PAGE_SIZE, VirtAddr},
     model::{
-        cell::{
-            Allocation, CellCreate, CellObject, CellSource, CreatedCell, Placement, ReferenceRange,
-        },
-        identity::{PendId, TeamId},
+        cell::{Allocation, CellObject, CellPosition, Placement},
+        identity::PendId,
         modifiable::Modifiable,
     },
 };
@@ -30,17 +28,15 @@ fn finish(mapping: &mut Mapping) {
 }
 pub fn run(license: PendId) {
     let baseline = fixture::active();
-    let request = CellCreate::Slot(Allocation::new(2 * PAGE_SIZE, PAGE_SIZE).unwrap()).to_bytes();
-    let CreatedCell::Slot(slot) = cell::create(license, addr(&request)).unwrap() else {
-        unreachable!()
-    };
+    let slot = cell::create(license, Allocation::new(2 * PAGE_SIZE, PAGE_SIZE).unwrap()).unwrap();
     let mut writer = Mapping::new(
-        CellSource::Slot(ReferenceRange {
-            reference: slot,
-            offset: 0,
-            count: 2,
-        }),
-        TeamId::new(0),
+        CellPosition {
+            object: CellObject::Slot(slot),
+            page: 0,
+            generation: 0,
+        },
+        2,
+        fixture::space(),
         Placement::lowest(PAGE_SIZE).unwrap(),
         6,
     )
@@ -54,14 +50,15 @@ pub fn run(license: PendId) {
     }
     let share = share_view::create(license, slot, Modifiable::No).unwrap();
     finish(&mut writer);
-    cell::delete(addr(&CellObject::Slot(slot).to_bytes())).unwrap();
+    cell::delete(slot).unwrap();
     let mut reader = Mapping::new(
-        CellSource::Pend {
-            token: share,
-            offset: 0,
-            count: 2,
+        CellPosition {
+            object: CellObject::Pend(share),
+            page: 0,
+            generation: 0,
         },
-        TeamId::new(0),
+        2,
+        fixture::space(),
         Placement::lowest(PAGE_SIZE).unwrap(),
         2,
     )
@@ -78,33 +75,32 @@ pub fn run(license: PendId) {
     pend::return_(share).unwrap();
     assert_eq!(fixture::active(), baseline);
 
-    let request = CellCreate::Slot(Allocation::new(PAGE_SIZE, PAGE_SIZE).unwrap()).to_bytes();
-    let CreatedCell::Slot(slot) = cell::create(license, addr(&request)).unwrap() else {
-        unreachable!()
-    };
+    let slot = cell::create(license, Allocation::new(PAGE_SIZE, PAGE_SIZE).unwrap()).unwrap();
     let mut partial = Mapping::new(
-        CellSource::Slot(ReferenceRange {
-            reference: slot,
-            offset: 0,
-            count: 1,
-        }),
-        TeamId::new(0),
+        CellPosition {
+            object: CellObject::Slot(slot),
+            page: 0,
+            generation: 0,
+        },
+        1,
+        fixture::space(),
         Placement::lowest(PAGE_SIZE).unwrap(),
         6,
     )
     .unwrap();
     assert!(!partial.advance().unwrap());
     finish(&mut partial);
-    cell::delete(addr(&CellObject::Slot(slot).to_bytes())).unwrap();
+    cell::delete(slot).unwrap();
     assert_eq!(fixture::active(), baseline);
     assert!(
         Mapping::new(
-            CellSource::Pend {
-                token: license,
-                offset: 0,
-                count: 1
+            CellPosition {
+                object: CellObject::Pend(license),
+                page: 0,
+                generation: 0
             },
-            TeamId::new(0),
+            1,
+            fixture::space(),
             Placement::exact(VirtAddr::new(0x10000), PAGE_SIZE).unwrap(),
             14
         )

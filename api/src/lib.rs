@@ -82,4 +82,4 @@ pub mod supply;
 pub mod value;
 
 pub use value::{EntryId, Mark, Name, Path, PendId, TaskId, TeamId};
-pub const VERSION: u16 = 2;
+pub const VERSION: u16 = 3;

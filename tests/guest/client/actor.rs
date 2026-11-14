@@ -16,7 +16,7 @@ use kernel_api::{
         modifiable::Modifiable,
         pend::{
             AccordRequest, AccordTarget, CreationRights, Distributable, Limits, Operations,
-            PendRange,
+            PendScope,
         },
         sign::SignRights,
         unit::{UnitCreate, UnitQuery, UnitTarget},
@@ -100,10 +100,11 @@ fn scenario(license: PendId, root: TaskId, mode: usize) {
         count: 3,
         stack: VirtAddr::new(128 * 1024),
     };
-    let target = unit::create(addr(&create.to_bytes())).unwrap();
-    let UnitTarget::Task(task) = target else {
+    let created = unit::create(addr(&create.to_bytes())).unwrap();
+    let kernel_api::model::unit::CreatedUnit::Task(task) = created else {
         unreachable!()
     };
+    let target = UnitTarget::Task(task);
     let rights = if mode == 2 {
         CreationRights::CLONE
     } else {
@@ -163,7 +164,7 @@ fn scenario(license: PendId, root: TaskId, mode: usize) {
                 .unwrap();
             GO.store(true, Ordering::Release);
             assert!(matches!(first.wait().unwrap().value, Outcome::Success(_)));
-            first.finish().unwrap();
+            fixture::cleanup(|| first.finish());
             until(|| HANDLED.load(Ordering::Acquire) >= 1);
             assert!(MAX_REJECTED.load(Ordering::Acquire) <= 1);
             assert_eq!(revision::consume(notify, &epoch).unwrap(), 1);
@@ -177,7 +178,7 @@ fn scenario(license: PendId, root: TaskId, mode: usize) {
                         Client::bind(endpoint(id::Grant::$grant), task, license).unwrap();
                     let mut pending = client.begin::<$op>($body, Wait::At(deadline())).unwrap();
                     let response = pending.wait().unwrap();
-                    pending.finish().unwrap();
+                    fixture::cleanup(|| pending.finish());
                     response.value
                 }};
             }
@@ -349,7 +350,7 @@ extern "C" fn operator_worker() -> ! {
             operations: Operations::Sign(SignRights::LISTEN),
             modifiable: Modifiable::No,
             distributable: Distributable::Yes,
-            range: PendRange::Inherit,
+            scope: PendScope::Object,
         },
     };
     let granted = pend::accord(addr(&request.to_bytes())).unwrap();

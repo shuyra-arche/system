@@ -7,7 +7,7 @@ use kernel_api::{
         identity::{Mark, PendId, TaskId},
         modifiable::Modifiable,
         pend::{
-            AccordRequest, AccordTarget, CloneRights, Distributable, Limits, Operations, PendRange,
+            AccordRequest, AccordTarget, CloneRights, Distributable, Limits, Operations, PendScope,
         },
     },
 };
@@ -80,7 +80,7 @@ impl Face {
                 operations: Operations::Clone(CloneRights::PUSH | CloneRights::PEEK),
                 modifiable: Modifiable::Yes,
                 distributable: Distributable::Yes,
-                range: PendRange::Inherit,
+                scope: PendScope::Object,
             },
         };
         let token = pend::accord(VirtAddr::new(request.to_bytes().as_ptr().addr()))

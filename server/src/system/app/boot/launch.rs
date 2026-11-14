@@ -12,7 +12,9 @@ use kernel_api::{
     model::{
         identity::{Mark, PendId, TaskId},
         modifiable::Modifiable,
-        pend::{AccordRequest, AccordTarget, Distributable, Limits, Operations, PendRange},
+        pend::{
+            AccordRequest, AccordTarget, Distributable, Limits, Operations, PendRange, PendScope,
+        },
         sign::SignRights,
         unit::ExitScope,
         wait::Wait,
@@ -88,7 +90,12 @@ impl Slot {
                 operations,
                 modifiable,
                 distributable: Distributable::No,
-                range: PendRange::Inherit,
+                scope: match operations {
+                    Operations::Share(_) | Operations::Flat(_) => {
+                        PendScope::Pages(PendRange::Inherit)
+                    }
+                    _ => PendScope::Object,
+                },
             },
         }
         .to_bytes();
@@ -144,7 +151,7 @@ fn signal_health(license: PendId, controller: TaskId) -> Result<(PendId, PendId)
             operations: Operations::Sign(SignRights::LISTEN),
             modifiable: Modifiable::No,
             distributable: Distributable::Yes,
-            range: PendRange::Inherit,
+            scope: PendScope::Object,
         },
     }
     .to_bytes();
