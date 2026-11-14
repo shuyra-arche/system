@@ -57,7 +57,8 @@ def main():
     kernel = args.kernel.resolve(strict=True)
     firmware = os.environ.get('QEMU_OPENSBI', 'default')
     qemu = os.environ.get('QEMU_RISCV64', 'qemu-system-riscv64')
-    output = guest / 'target/evidence' / args.profile
+    output = (guest / 'target/evidence' / args.profile
+              / f'kernel-{digest(kernel)[:16]}-system-{digest(system)[:16]}')
     output.mkdir(parents=True, exist_ok=True)
     check_stack(system.read_bytes())
     boot = output / 'capsule'
