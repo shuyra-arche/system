@@ -7,8 +7,8 @@ The host Vanllia CLI selects Unit records and images for the boot archive.
 This is the ongoing migration in [System #13](https://github.com/shuyra-arche/system/issues/13),
 continuing [Draft PR #12](https://github.com/shuyra-arche/system/pull/12).
 [Vanllia #39](https://github.com/shuyra-arche/vanllia/issues/39) owns Track S
-progress and assembled-system acceptance. **The complete Server still does not
-build. S0–S3 are not complete.**
+progress and assembled-system acceptance. **The complete Server now builds in
+RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**
 
 ## Code map
 
@@ -45,11 +45,12 @@ rights. A client or ingress receives an explicit shared memory context backed by
 its actual Internal Nest. Its allocator must also serve the Task's other native
 memory users. See [Client lifecycle](client/README.md).
 
-These pins describe the migrated components. The complete workspace still has
-legacy Env/Wire/Mold/IPC/Resource/Execution dependencies, Cargo replacements and
-a System API self Git pin. Do not mistake a clean component tree for S0's clean
-production graph. Preserve the existing Identity/Operator/Loader/Supply work
-while migrating the remaining Control/Assembly and application callers.
+The complete production graph selects these native providers and pure Unit
+schema 2. Old Env/Wire/Mold/IPC/Resource/Execution dependencies, Cargo
+replacements and the System API self Git pin have been removed. The original
+Identity/Operator/Loader/Supply mechanisms are retained and composed by the
+[native application](server/src/system/app/README.md). Inactive SDK harnesses
+remain explicitly [historical](tests/historical/README.md).
 
 ## Verification
 
@@ -83,8 +84,7 @@ The [entry guest](tests/guest/entry/README.md) also exercises the production
 entry, native DTB/initrd projections and internal-service bootstrap. The broad
 Client guest still needs migration and must not inherit older runtime evidence.
 
-The full Server gates remain reproducible failing checks until integration is
-ported:
+Full Server build and dependency checks:
 
 ```sh
 cargo build --locked -p system-server --bin system --target riscv64gc-unknown-none-elf
@@ -96,3 +96,12 @@ cargo tree --locked -p system-server -e normal,build --target riscv64gc-unknown-
 Host tests, target compilation, QEMU execution and hardware execution are
 separate evidence. Full System + Toolchain ordinary-Unit lifecycle acceptance
 belongs to Vanllia and has not passed on this revision.
+
+The [production application scenarios](tests/guest/system/README.md) boot the
+complete release Server with an empty catalog, two transient native User Teams
+with namespace/Supply installation, and a rejected resource installation with
+explicit retirement. This is stronger than the separate component fixtures,
+but the User ELF is not a Toolchain std Unit. Debug compilation passes; debug
+application execution exposes an unresolved Operator/native-transport page
+fault. Public S1/S2 lifecycle contracts and S3/V0 are not accepted on this
+revision. CI keeps those distinctions explicit.

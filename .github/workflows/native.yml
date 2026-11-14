@@ -1,4 +1,4 @@
-name: Native component contracts
+name: Native System contracts
 
 on:
   pull_request:
@@ -25,6 +25,15 @@ jobs:
           cargo test --locked --manifest-path tests/operator-policy/Cargo.toml --target x86_64-unknown-linux-gnu
           cargo test --locked --manifest-path tests/declarations/Cargo.toml --target x86_64-unknown-linux-gnu
           cargo test --locked --manifest-path tests/loader-image/Cargo.toml --target x86_64-unknown-linux-gnu
+      - name: Complete RV64 Server in both profiles
+        run: |
+          cargo build --locked -p system-server --bin system --target riscv64gc-unknown-none-elf
+          cargo build --locked -p system-server --bin system --release --target riscv64gc-unknown-none-elf
+          cargo clippy --locked -p system-server --bin system --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: Complete production dependency graph
+        run: |
+          cargo metadata --locked --format-version 1
+          cargo tree --locked -p system-server -e normal,build --target riscv64gc-unknown-none-elf
       - name: RV64 native libraries
         run: cargo clippy --locked -p system-api -p system-client -p system-support --lib --target riscv64gc-unknown-none-elf -- -D warnings
       - name: RV64 runtime component guest
@@ -74,3 +83,5 @@ jobs:
         run: cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --release --target riscv64gc-unknown-none-elf
       - name: Native ELF construction and User Team retirement on one Hart
         run: python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
+      - name: Complete release System application and ordinary User Teams
+        run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform
