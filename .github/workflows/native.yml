@@ -1,0 +1,34 @@
+name: Native component contracts
+
+on:
+  pull_request:
+  push:
+    branches: [refactor/weave-api]
+
+permissions:
+  contents: read
+
+jobs:
+  components:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install declared toolchain
+        run: rustup show
+      - name: Host API, client and boot contracts
+        run: cargo test --locked -p system-api -p system-client -p system-support --tests --target x86_64-unknown-linux-gnu
+      - name: Host ownership and declaration contracts
+        run: |
+          cargo test --locked --manifest-path tests/identity-state/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo test --locked --manifest-path tests/operator-policy/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo test --locked --manifest-path tests/declarations/Cargo.toml --target x86_64-unknown-linux-gnu
+      - name: RV64 native libraries
+        run: cargo clippy --locked -p system-api -p system-client -p system-support --lib --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: RV64 runtime component guest
+        run: cargo clippy --locked --manifest-path tests/guest/runtime/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: Build qualified single-Hart component platform
+        env:
+          RUSTFLAGS: -Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium
+        run: cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --release --target riscv64gc-unknown-none-elf
