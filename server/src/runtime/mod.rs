@@ -2,3 +2,4 @@
 pub mod heap;
 
 pub mod memory;
+pub(crate) mod view;

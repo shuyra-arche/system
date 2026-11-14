@@ -30,10 +30,15 @@ Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
 
 | Provider | Exact revision |
 | --- | --- |
-| Kernel API/Client | `b2eb37e2af134e4bb4248df454c437b06c1f93c0` (ABI/Ledger 11/11, Capsule 2) |
-| Twine | `bbab13f5df3e4bad24314cd5a18f19f26452ce66` |
+| Kernel API/Client | `0ee104ddf94ca74a18135bf216b888a2437bd6f8` (ABI/Ledger 11/11, Capsule 2) |
+| Twine | `80158211d8232c789c4609a3ea490bd16bbdac7b` |
 | Weave | `7a7d67fb3f190aeb43049d051b0972bcd53213bc` |
 | Unit declarations | `aaa2b58c1ef0b40428dcc71d1321736156551109` (schema 2, runtime disabled) |
+
+Kernel [#180](https://github.com/shuyra-arche/kernel/pull/180) and Twine
+[#9](https://github.com/shuyra-arche/twine/pull/9) are published candidate pins;
+they must land before this consumer. The test platform selects matching Vanllia
+[#40](https://github.com/shuyra-arche/vanllia/pull/40). No new release is implied.
 
 API/Client 0.4 and protocol v4 reject v2/v3 envelopes and retired Share Open/Shut
 rights. A client or ingress receives an explicit shared memory context backed by
@@ -68,8 +73,9 @@ The selected Kernel's native memory backend rejects multiple Harts at
 qualification: remote translation acknowledgements do not prove remote CPU data
 accesses have drained. The unqualified normal Vanllia platform also rejects
 native Publish. Neither boundary may be bypassed by inventing completion proof.
-The old Client/Entry guests still need their remaining ABI 11 migration and
-must not inherit older successful runtime evidence.
+The [entry guest](tests/guest/entry/README.md) also exercises the production
+entry, native DTB/initrd projections and internal-service bootstrap. The broad
+Client guest still needs migration and must not inherit older runtime evidence.
 
 The full Server gates remain reproducible failing checks until integration is
 ported:

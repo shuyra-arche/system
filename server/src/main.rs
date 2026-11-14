@@ -60,6 +60,7 @@ extern "C" fn system_start(pointer: *const usize, count: usize) -> ! {
     }
 }
 fn finish(reason: usize, note: &str) -> ! {
+    let _ = writeln!(Console, "{note} ({reason})");
     unit::exit(
         0,
         reason as u64,

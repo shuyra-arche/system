@@ -11,7 +11,9 @@ Supply checks real rights, caller/recipient scope, identical versus conflicting
 replay, cancellation before/after derivation, delayed IDs, original-source
 retention and complete withdrawal. Eight distinct page contents verify that two
 relative narrowing steps deliver original page 2, once, through an actual native
-read-only publication. Publication retirement precedes lease withdrawal.
+read-only publication. Publication retirement precedes lease withdrawal. The production read-only
+projection owner is also cancelled at each partial-open phase; each close
+restores the Pend baseline and leaves its borrowed source active.
 
 RPC makes two actual protocol-v4 calls using production Client/Ingress and a
 production native Worker. The caller and worker explicitly share their Team's
@@ -24,8 +26,8 @@ acceptance.
 ## Reproduce
 
 Select the repository's nightly and RV64 target. Build the explicit CPU-only
-QEMU platform fixture, which pins Vanllia `b5468739f2d7e36d64198de743a13d6ccabc6666`
-and Kernel `b2eb37e2af134e4bb4248df454c437b06c1f93c0`:
+QEMU platform fixture, which pins Vanllia `7895b5a581119cffb284e7c1433150e11dda2d81`
+and Kernel `0ee104ddf94ca74a18135bf216b888a2437bd6f8`:
 
 ```sh
 RUSTFLAGS='-Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium' cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --release --target riscv64gc-unknown-none-elf
@@ -53,5 +55,6 @@ Preserve both fail-closed boundaries; do not synthesize completion evidence.
 
 Full Supply RPC/provider collections, Control/Instance/UnitRoot integration,
 Loader and Toolchain startup, complete System and device retirement remain
-separate gates in System #13 / Vanllia #39. Older entry/client guest evidence
-must be rerun after those fixtures and their production owners finish migration.
+separate gates in System #13 / Vanllia #39. The entry guest separately checks the production entry, native DTB/initrd and
+internal-service lifecycle. The broad client guest still needs migration.
+Neither fixture substitutes for the complete System application.

@@ -50,7 +50,7 @@ checksum = "784a4df722dc6267a04af36895398f59d21d07dce47232adf31ec0ff2fa45e67"
 [[package]]
 name = "kernel-api"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=b2eb37e2af134e4bb4248df454c437b06c1f93c0#b2eb37e2af134e4bb4248df454c437b06c1f93c0"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=0ee104ddf94ca74a18135bf216b888a2437bd6f8#0ee104ddf94ca74a18135bf216b888a2437bd6f8"
 dependencies = [
  "bitflags",
  "erra",
@@ -60,7 +60,7 @@ dependencies = [
 [[package]]
 name = "kernel-api-macros"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=b2eb37e2af134e4bb4248df454c437b06c1f93c0#b2eb37e2af134e4bb4248df454c437b06c1f93c0"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=0ee104ddf94ca74a18135bf216b888a2437bd6f8#0ee104ddf94ca74a18135bf216b888a2437bd6f8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -70,7 +70,7 @@ dependencies = [
 [[package]]
 name = "kernel-client"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=b2eb37e2af134e4bb4248df454c437b06c1f93c0#b2eb37e2af134e4bb4248df454c437b06c1f93c0"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=0ee104ddf94ca74a18135bf216b888a2437bd6f8#0ee104ddf94ca74a18135bf216b888a2437bd6f8"
 dependencies = [
  "erra",
  "kernel-api",
@@ -152,6 +152,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "spin"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "023a211cb3138dbc438680b32560ad89f699977624c9f8dbb95a47d5b4c07dd3"
+
+[[package]]
 name = "syn"
 version = "2.0.119"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -200,6 +206,7 @@ dependencies = [
  "erra",
  "kernel-api",
  "kernel-client",
+ "spin",
  "system-api",
  "system-client",
  "system-support",
@@ -253,7 +260,7 @@ dependencies = [
 [[package]]
 name = "twine"
 version = "0.4.0"
-source = "git+https://github.com/shuyra-arche/twine.git?rev=bbab13f5df3e4bad24314cd5a18f19f26452ce66#bbab13f5df3e4bad24314cd5a18f19f26452ce66"
+source = "git+https://github.com/shuyra-arche/twine.git?rev=80158211d8232c789c4609a3ea490bd16bbdac7b#80158211d8232c789c4609a3ea490bd16bbdac7b"
 dependencies = [
  "erra",
  "kernel-api",

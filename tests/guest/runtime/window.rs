@@ -16,7 +16,7 @@ use kernel_api::{
         nest::{MemoPosition, NestId, ReserveRequest},
         pend::{
             AccordRequest, AccordTarget, Distributable, Limits, Operations, PendInfo, PendRange,
-            PendScope, ShareRights, Target, ViewTarget,
+            PendScope, ShareRights, Target,
         },
         unit::{UnitQuery, UnitTarget},
     },
@@ -236,23 +236,47 @@ pub fn run(license: PendId) {
         delivered_info.limits.scope,
         PendScope::Pages(PendRange::pages(2, 1).unwrap())
     );
-    let Target::View(ViewTarget::Share(view)) = delivered_info.target else {
-        panic!("Share")
-    };
-    let (read, address) = reserve(&mut memory, space, nest, 1, 2);
-    publish(
-        &mut memory,
-        read,
-        Source::Share {
-            token: delivered,
-            view,
-            page: 2,
-            count: 1,
-        },
-    );
-    // SAFETY: this settled read-only publication is within the delivered window.
-    assert_eq!(unsafe { (address.get() as *const u8).read_volatile() }, 3);
-    release(&mut memory, read);
+    let baseline = crate::pends();
+    for rounds in 0..=4 {
+        // SAFETY: trusted same-Task Space; the private read projection is not
+        // transferred to any other Task and keeps its borrowed source alive.
+        let mut read =
+            unsafe { crate::runtime::view::Read::new(space, delivered, |why| panic!("{why}")) }
+                .unwrap();
+        for _ in 0..rounds {
+            advance(&mut read);
+        }
+        let deadline = room::clock() + 5_000_000_000;
+        while !finish(&mut read) {
+            assert!(room::clock() < deadline);
+        }
+        assert_eq!(
+            crate::pends(),
+            baseline,
+            "partial view cleanup retained a Pend"
+        );
+        assert_eq!(
+            info(delivered).status,
+            kernel_api::model::pend::PendStatus::Active
+        );
+    }
+    let mut read =
+        unsafe { crate::runtime::view::Read::new(space, delivered, |why| panic!("{why}")) }
+            .unwrap();
+    let deadline = room::clock() + 5_000_000_000;
+    while !advance(&mut read) {
+        assert!(room::clock() < deadline);
+    }
+    // SAFETY: our borrowed source is immutable throughout this access and no
+    // other owner can replace this private, settled read-only reservation.
+    let bytes = unsafe { read.bytes() }.unwrap();
+    assert_eq!(bytes.len(), PAGE_SIZE);
+    assert_eq!(bytes[0], 3);
+    assert_eq!(bytes[PAGE_SIZE - 1], 3);
+    while !finish(&mut read) {
+        assert!(room::clock() < deadline);
+    }
+    assert_eq!(crate::pends(), baseline);
     source.release(root, id).unwrap();
     let deadline = room::clock() + 5_000_000_000;
     while !source.finish().unwrap() {
@@ -271,4 +295,19 @@ pub fn run(license: PendId) {
         }
     });
     pend::return_(token).unwrap();
+}
+
+fn advance(read: &mut crate::runtime::view::Read) -> bool {
+    match read.advance() {
+        Ok(ready) => ready,
+        Err(error) if error.busy() => false,
+        Err(error) => panic!("view open: {error:?}"),
+    }
+}
+fn finish(read: &mut crate::runtime::view::Read) -> bool {
+    match read.finish() {
+        Ok(done) => done,
+        Err(error) if error.busy() => false,
+        Err(error) => panic!("view retirement: {error:?}"),
+    }
 }

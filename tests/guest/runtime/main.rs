@@ -5,8 +5,11 @@ extern crate alloc;
 mod heap;
 #[path = "../../../server/src/runtime/memory.rs"]
 pub mod memory;
+#[path = "../../../server/src/runtime/view.rs"]
+pub(crate) mod native_view;
 pub mod runtime {
     pub use crate::memory;
+    pub(crate) use crate::native_view as view;
 }
 #[path = "../../../server/src/system/supply/native.rs"]
 mod native_supply;
