@@ -31,7 +31,10 @@ python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructio
 The runner builds both fixture and image with `--locked`, requires the Loader
 marker and Kernel's all-tasks-exited shutdown, and bounds execution to 120
 seconds. Its default includes 1/2/4 Harts. Run `--profile debug` with the debug
-platform ELF to exercise both profiles. Evidence under `target/evidence/` keeps
+platform ELF to exercise both Kernel/Loader profiles. The ordinary User ELF
+is always the original release fixture, so payload size and cancellation points
+stay comparable; `inputs.json` records both profile selections. A large debug
+User ELF is not part of this bounded component scenario. Evidence under `target/evidence/` keeps
 commands, toolchain/firmware/image hashes, resolved locks, serial logs and results.
 The instruction qualification covers paired coherent QEMU virt CPUs with no
 External requester, hotplug or unmanaged executable aliases. Kernel completes

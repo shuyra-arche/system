@@ -31,11 +31,15 @@ def main():
     profile = ["--release"] if args.profile == "release" else []
     inputs = {"rustc": subprocess.check_output(["rustc", "-Vv"], text=True),
               "qemu": subprocess.check_output([os.environ.get("QEMU_RISCV64", "qemu-system-riscv64"), "--version"], text=True),
-              "profile": args.profile, "build": []}
-    image_elf = target / triple / args.profile / "system-loader-image"
+              "profile": args.profile, "image_profile": "release", "build": []}
+    # Keep the ordinary User ELF identical across Loader/kernel profiles.
+    # The fixture's cancellation points and payload are the original release
+    # image; debug here exercises the production Loader and Kernel themselves.
+    image_elf = target / triple / "release" / "system-loader-image"
     environment = {**os.environ, "SYSTEM_LOADER_IMAGE": str(image_elf)}
     for root in [guest.parent / "client/image", guest]:
-        command = ["cargo", "build", "--locked", *profile, "--target", triple,
+        selected = profile if root == guest else ["--release"]
+        command = ["cargo", "build", "--locked", *selected, "--target", triple,
                    "--manifest-path", str(root / "Cargo.toml"), "--target-dir", str(target)]
         inputs["build"].append(command)
         subprocess.run(command, check=True, env=environment)
