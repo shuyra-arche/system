@@ -26,14 +26,14 @@ acceptance.
 ## Reproduce
 
 Select the repository's nightly and RV64 target. Build the explicit CPU-only
-QEMU platform fixture, which pins Vanllia `7895b5a581119cffb284e7c1433150e11dda2d81`
-and Kernel `0ee104ddf94ca74a18135bf216b888a2437bd6f8`:
+QEMU platform fixture, which pins Vanllia `a6f4fc0d1aaa45fef598fdf4d3a73a7cd7d0b09a`
+and Kernel `2cfb581a7ef767ebae0fda4864ed5da625ef067e`:
 
 ```sh
 RUSTFLAGS='-Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium' cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --release --target riscv64gc-unknown-none-elf
 export QEMU_RISCV64=/path/to/qemu-system-riscv64
 export QEMU_OPENSBI=/path/to/fw_dynamic.bin
-python3 tests/guest/runtime/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
+python3 tests/guest/runtime/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1 4
 cargo clippy --locked --manifest-path tests/guest/runtime/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
 ```
 
@@ -46,10 +46,12 @@ executable publication. This is not production platform admission.
 
 ## Remaining gates
 
-The selected Kernel rejects all native memory qualification with four Harts in
-`server/src/metal/riscv/memory.rs::install`: remote SFENCE acknowledgements alone
-cannot prove remote data accesses have drained. Consequently `--harts 4` fails
-before the guest starts, and the default combined run is not passing acceptance.
+The selected Kernel uses explicit remote data fences, translation invalidation
+and generation-bound acknowledgements on all ever-online Harts. Only complete
+CPU rounds permit reclamation; Busy or bounded failure retains ownership.
+Twine explicitly continues a retained Release(Busy) with a fresh request while
+preserving the original failed receipt. CI exercises this data-only fixture on
+one and four Harts. Executable SMP remains Unsupported.
 The unqualified normal Vanllia platform rejects native Publish as Unsupported.
 Preserve both fail-closed boundaries; do not synthesize completion evidence.
 

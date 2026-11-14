@@ -75,8 +75,14 @@ jobs:
           "$HOME/.cargo/bin/rustup" show
       - name: Build qualified single-Hart component platform
         run: cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --release --target riscv64gc-unknown-none-elf
-      - name: Native heap, Supply and RPC on one Hart
-        run: python3 tests/guest/runtime/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
+      - name: Native heap, Supply and RPC on one and four Harts
+        run: |
+          mkdir -p .evidence
+          rustc -Vv > .evidence/rustc.txt
+          qemu-system-riscv64 --version > .evidence/qemu.txt
+          sha256sum "$QEMU_OPENSBI" > .evidence/firmware.txt
+          python3 tests/guest/runtime/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1 4 > .evidence/runtime.log 2>&1
+          cat .evidence/runtime.log
       - name: Production entry, immutable boot data and native services on one Hart
         run: python3 tests/guest/entry/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
       - name: Build single-Hart local-instruction test platform
@@ -85,3 +91,15 @@ jobs:
         run: python3 tests/guest/loader/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1
       - name: Complete release System application and ordinary User Teams
         run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform
+      - name: Preserve runtime composition evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-runtime
+          path: |
+            .evidence/
+            tests/guest/runtime/Cargo.lock
+            tests/guest/runtime/platform/Cargo.lock
+            tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform
+          include-hidden-files: true
+          if-no-files-found: error

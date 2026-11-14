@@ -13,10 +13,10 @@ doctest = false
 [dependencies]
 system-protocol = { package = "system-api", path = "../../api" }
 system-client = { path = "../../client" }
-kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "2cfb581a7ef767ebae0fda4864ed5da625ef067e" }
 weave = { git = "https://github.com/shuyra-arche/weave.git", rev = "7a7d67fb3f190aeb43049d051b0972bcd53213bc", features = ["alloc"] }
 
-kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "0ee104ddf94ca74a18135bf216b888a2437bd6f8" }
+kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "2cfb581a7ef767ebae0fda4864ed5da625ef067e" }
 
-twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "80158211d8232c789c4609a3ea490bd16bbdac7b" }
+twine = { git = "https://github.com/shuyra-arche/twine.git", rev = "7c75c62d15d173032d99fed54ca7fd00337d787b" }
 erra = { version = "0.2.0", default-features = false }
