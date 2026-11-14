@@ -35,12 +35,13 @@ Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
 | Weave | `7a7d67fb3f190aeb43049d051b0972bcd53213bc` |
 | Unit declarations | `aaa2b58c1ef0b40428dcc71d1321736156551109` (schema 2, runtime disabled) |
 
-Kernel [#183](https://github.com/shuyra-arche/kernel/pull/183) and Twine
-[#11](https://github.com/shuyra-arche/twine/pull/11) are published candidate pins;
-they must land before this consumer. The test platform selects matching Vanllia
-[#42](https://github.com/shuyra-arche/vanllia/pull/42). No new release is implied.
-Twine continues retained Release(Busy) explicitly, preserving the failed receipt
-and owner until a new Release completes. API/Client/Server share one Kernel source.
+Kernel [#183](https://github.com/shuyra-arche/kernel/pull/183), Twine
+[#11](https://github.com/shuyra-arche/twine/pull/11) and Vanllia
+[#42](https://github.com/shuyra-arche/vanllia/pull/42) have merged. This increment
+selects their validated SMP data/instruction pins. Twine continues retained
+Release(Busy) explicitly, preserving its failed receipt and owner until a new
+Release completes. API/Client/Server share one Kernel source. No new release
+is implied.
 
 API/Client 0.4 and protocol v4 reject v2/v3 envelopes and retired Share Open/Shut
 rights. A client or ingress receives an explicit shared memory context backed by
@@ -104,7 +105,10 @@ The [production application scenarios](tests/guest/system/README.md) boot the
 complete release Server with an empty catalog, two transient native User Teams
 with namespace/Supply installation, and a rejected resource installation with
 explicit retirement. This is stronger than the separate component fixtures,
-but the User ELF is not a Toolchain std Unit. Debug compilation passes; debug
-application execution exposes an unresolved Operator/native-transport page
-fault. Public S1/S2 lifecycle contracts and S3/V0 are not accepted on this
-revision. CI keeps those distinctions explicit.
+but the User ELF is not a Toolchain std Unit. The initial Task now switches to
+a separate 1 MiB Capsule-owned stack before Rust, preserving the Kernel word
+arguments and an unmapped lower guard. This fixes the observed 64 KiB bootstrap
+stack overflow. CI runs both System profiles against its recorded release
+Kernel. Debug Kernel and complete multi-Hart application failures remain
+separate from the provider component acceptance. Public S1/S2 lifecycle
+contracts and S3/V0 are not accepted on this revision.
