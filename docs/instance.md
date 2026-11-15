@@ -1,6 +1,6 @@
 # Instance handoff v1
 
-This is the bounded caller-owned subset of System #13 for the Hub handoff in
+This is the bounded instance-control subset of System #13 for the Hub handoff in
 Vanllia #39. It adds `shuyra.system.control.instance.v1` (envelope domain 10)
 and `shuyra.system.operator.unit.v1` operations. The enclosing SYS2 version
 remains 4; existing domain/tag meanings are unchanged. Select API, Client and
@@ -10,6 +10,8 @@ pins remain those in the root README and Cargo locks.
 | Surface | Caller and authority | Commit and result | Completion / cleanup |
 | --- | --- | --- | --- |
 | `instance::Create` | Real declared Unit with a delivered `system/control:instance` Clone grant; matching construction policy, caller ownership and subject policy | Reserves an operation record before construction; returns a receipt with a System InstanceId | Completed means dormant native Task plus identity, namespace and declared Supply installation prepared; it does not mean Running or Ready |
+| `CreateFor` | Same authenticated requester and source checks, plus the declaration's Caller/Selected/fixed-Task/fixed-Unit owner policy and a live selected owner | Records the complete owner selection in the requester's journal; the Instance and optional UnitRoot belong to the admitted owner | Request correlation stays with the requester; only the owner can Inspect/Start/Stop/Retire/Publish. This creates a new attempt, not a transfer of an existing one |
+| `Owned` | Actual caller with a delivered Instance endpoint | One current observation for that caller's exact management ownership, after an optional InstanceId cursor | Includes retained retired attempts; other Tasks in the same Team gain no management authority. Foreign System cursors return Unknown |
 | `Start` | Actual instance owner, authenticated by ingress | Records intent, then the shared Instance owner resumes execution | Completed means native resume committed; `Inspect.ready` separately reports readiness |
 | `Stop` | Actual instance owner | Requests irreversible closing through the same Instance/Gate | Completed means native stop admitted (or already retired); mappings, grants and backing may still be retained |
 | `Retire` | Actual instance owner | Requests closing and retains the operation through cleanup | Completed requires Task reclamation, installation/grant/lease retirement, mapping release, Team deletion and Operator UnitRoot retirement |
@@ -44,7 +46,7 @@ steps or a 250 ms quantum per supervisor round, checking the clock after each
 step. A step may itself await its bounded native result. This amortizes ingress
 polling without using elapsed time or Busy as proof of completion.
 
-Operation IDs are scoped to the actual System service and native caller. Create,
+Operation IDs are scoped to the actual System service and native caller. Create/CreateFor,
 Start, Stop, Retire and Publish share one journal. The exact original intent
 returns its original receipt without repeating effects; a changed intent returns
 Conflict. A terminal failure is retained too. There are 256 instance slots and
@@ -58,6 +60,23 @@ Query its original operation on the original peer. Unknown means no acceptance
 record was observed; it does not prove that an already submitted frame cannot
 arrive later. A new operation ID is appropriate for a new intent, including
 Retire after a completed Create. Transport timeouts do not undo native commits.
+
+CreateFor does not deliver an Instance endpoint to the selected owner: that
+Task still needs its independently admitted service grant. Ownership is fixed
+at accepted construction admission. The requester may inspect and cancel its
+own pending operation, but gains no management authority over the selected
+owner's Instance. Pending cancellation closes only that journal's attached
+attempt and becomes Cancelled after physical retirement. Completed receipts
+cannot be cancelled, even after the owner retires the instance. Requester exit
+does not itself close a selected-owner attempt; positive owner-exit evidence
+does. System-wide shutdown still closes every dynamic attempt.
+Identity still follows the requester's trusted construction identity policy,
+independently of management ownership.
+
+CreateFor and Owned add operation codes 9 and 10. Existing codes 1–8, their
+fields, domain 10 and envelope version 4 are unchanged. Old clients can keep
+using their existing operations; new operations require a Server from this
+increment. Continue selecting API, Client and Server from one full commit.
 
 ## Root ownership and publication
 
@@ -123,8 +142,9 @@ and Clone queues; it supplies no PCI/BAR/IRQ/External-device proof.
 ## Remaining acceptance
 
 S1/S2 remain open until their complete checklists and downstream signing in
-System #13 / Vanllia #39 pass. This v1 subset does not implement selected-owner
-transfer, extra-Task root-grant admission, lifecycle Watch, live System takeover,
+System #13 / Vanllia #39 pass. Declaration-selected construction is supported;
+this v1 subset does not transfer an existing instance between owners or implement
+extra-Task root-grant admission, lifecycle Watch, live System takeover,
 or a complete queue/recipient-budget and source-failure campaign. The anonymous
 image path retains native source validation but this new handoff fixture covers
 declared Unit inputs. It is a no_std native ELF fixture, not a Toolchain std Unit.

@@ -639,6 +639,33 @@ impl Control {
                     Action::Create(alloc::boxed::Box::new(value))
                 )
             ),
+            Q::CreateFor(value) => answer!(
+                CreateFor,
+                self.submit(
+                    services,
+                    caller,
+                    value.id,
+                    Action::CreateFor(alloc::boxed::Box::new(value))
+                )
+            ),
+            Q::Owned(query) => {
+                let result = if query
+                    .after
+                    .0
+                    .is_some_and(|id| id.system != services.caller.into())
+                {
+                    Err(wire::Fail::Unknown)
+                } else {
+                    let after = query.after.0.map_or(0, |id| id.sequence.get());
+                    Ok(Optional(
+                        self.instances
+                            .iter()
+                            .find(|instance| instance.owner == caller && instance.id.get() > after)
+                            .map(|instance| instance.snapshot(services.caller.into())),
+                    ))
+                };
+                answer!(Owned, result)
+            }
             Q::Start(value) => answer!(
                 Start,
                 self.submit(services, caller, value.id, Action::Start(value.instance))
@@ -676,11 +703,16 @@ impl Control {
                         .find(caller, id)
                         .ok_or(wire::Fail::Unknown)?;
                     if let Some(target) = self.operations.cancel(at) {
-                        let instance = self.owned_instance(services, caller, target)?;
-                        if !self.instances[instance].retired() {
-                            self.instances[instance]
-                                .request(Intent::Stop)
-                                .map_err(instance_fail)?;
+                        // The actual caller's accepted journal entry selects
+                        // the work being cancelled. CreateFor's requester need
+                        // not be its management owner; no body ID is trusted.
+                        let instance = self
+                            .instances
+                            .iter_mut()
+                            .find(|instance| instance.id == target.sequence)
+                            .ok_or(wire::Fail::Unknown)?;
+                        if !instance.retired() {
+                            instance.request(Intent::Stop).map_err(instance_fail)?;
                         }
                     }
                     self.advance_operations();
@@ -743,6 +775,20 @@ impl Control {
                         caller.into(),
                         &request.subject,
                         true,
+                    )
+                    .map(|sequence| wire::InstanceId {
+                        system: services.caller.into(),
+                        sequence,
+                    })
+                    .map_err(construction_fail),
+                Action::CreateFor(request) => self
+                    .admit(
+                        services,
+                        caller,
+                        &request.input,
+                        request.owner,
+                        &request.subject,
+                        false,
                     )
                     .map(|sequence| wire::InstanceId {
                         system: services.caller.into(),
@@ -832,8 +878,8 @@ impl Control {
         })
     }
     // One construction admission path for both interfaces. The new public
-    // contract only admits caller-owned policy; the historical construction
-    // endpoint retains its explicit owner-selection checks.
+    // Create admits caller-owned policy. CreateFor and historical Build both
+    // require the declaration's explicit owner-selection checks below.
     fn admit(
         &mut self,
         services: &Services,

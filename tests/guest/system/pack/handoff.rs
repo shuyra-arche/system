@@ -3,6 +3,13 @@ use unit_contract::{
     event::{Cause, Event},
 };
 
+pub fn scenario(value: &str) -> bool {
+    matches!(
+        value,
+        "handoff" | "auth" | "death" | "cancel" | "owner" | "owner-cancel" | "owner-death"
+    )
+}
+
 pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
     let mut catalog = vec![
         d::v2::Unit {
@@ -92,10 +99,32 @@ pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
         observer.control.construction.clear();
         catalog.insert(1, observer);
     }
+    if matches!(scenario, "owner" | "owner-cancel" | "owner-death") {
+        catalog[0].loader.args = vec![match scenario {
+            "owner" => 7,
+            "owner-cancel" => 10,
+            _ => 12,
+        }];
+        catalog[0].control.construction[0].owner = d::Owner::Selected;
+        catalog[0].control.construction[0].stack.max = 1024 * 1024;
+        let mut state = catalog[0].supply.bindings[0].clone();
+        state.resource = "state".into();
+        state.slot = 8;
+        catalog[0].supply.bindings.push(state);
+        let mut owner = catalog[0].clone();
+        owner.id = "owner".into();
+        owner.loader.args = vec![match scenario {
+            "owner" => 8,
+            "owner-cancel" => 11,
+            _ => 13,
+        }];
+        owner.control.construction.clear();
+        catalog.insert(1, owner);
+    }
     catalog
 }
 pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
-    if !matches!(scenario, "handoff" | "auth" | "death" | "cancel") {
+    if !self::scenario(scenario) {
         return false;
     }
     let Some(Event::Started { system }) = events.first() else {
@@ -110,6 +139,9 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
         "death" => "PASS handoff owner-death accepted=1",
         "cancel" => "PASS handoff lost-reply=1 pending-cancel=1",
         "auth" => "PASS handoff create=1 replay=1 conflict=1 root-grants=1 stale=1",
+        "owner" => "PASS handoff selected-owner creator-exit=1 lifecycle=1 root=1",
+        "owner-cancel" => "PASS handoff selected-cancel requester=1 cleanup=1",
+        "owner-death" => "PASS handoff selected-death receipt=1 isolation=1",
         _ => {
             "PASS handoff recovery=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
         }
@@ -134,12 +166,56 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
     }
     assert!(
         bound.len()
-            >= if matches!(scenario, "handoff" | "auth") {
+            >= if matches!(scenario, "handoff" | "auth" | "owner") {
                 3
+            } else if matches!(scenario, "owner-cancel" | "owner-death") {
+                2
             } else {
                 1
             }
     );
+    if matches!(scenario, "owner" | "owner-cancel" | "owner-death") {
+        let task = |name: &str| {
+            events
+                .iter()
+                .find_map(|event| match event {
+                    Event::Bound { unit, task, .. } if unit == name => Some(*task),
+                    _ => None,
+                })
+                .unwrap()
+        };
+        let exit = |task| {
+            events.iter().position(|event| matches!(event, Event::Exited { task: observed, .. } if *observed == task)).unwrap()
+        };
+        if scenario == "owner" {
+            assert!(serial.contains("PASS handoff selected-requester replay=1 isolation=1"));
+            let driver = task("driver");
+            let ready = events
+                .iter()
+                .position(|event| matches!(event, Event::Ready { task } if *task == driver))
+                .unwrap();
+            assert!(
+                exit(task("controller")) < ready,
+                "Driver must start after requester exit"
+            );
+        } else if scenario == "owner-cancel" {
+            assert!(serial.contains("PASS handoff selected-owner cancelled=1"));
+        } else {
+            assert!(serial.contains("PASS handoff selected-owner-death accepted=1"));
+            for event in events {
+                if let Event::Bound {
+                    unit,
+                    task: driver_task,
+                    ..
+                } = event
+                    && unit == "driver"
+                {
+                    let retired = events.iter().position(|event| matches!(event, Event::Retired { task: observed } if observed == driver_task)).unwrap();
+                    assert!(exit(task("owner")) < retired);
+                }
+            }
+        }
+    }
     // Typed Complete precedes the terminal native call. Require Kernel's
     // actual acceptance even after every application assertion has passed.
     let root_exit = format!("exit tid={system} reason=0x0 note: system: complete");

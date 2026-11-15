@@ -94,7 +94,7 @@ fn main() {
     let system = std::fs::read(&args[1]).unwrap();
     let image = std::fs::read(&args[2]).unwrap();
     let scenario = args[4].to_str().unwrap();
-    let count: usize = if matches!(scenario, "handoff" | "auth" | "death" | "cancel") {
+    let count: usize = if handoff::scenario(scenario) {
         0
     } else {
         scenario.parse().unwrap()
@@ -109,7 +109,7 @@ fn main() {
         },
         ..Default::default()
     }];
-    if matches!(scenario, "handoff" | "auth" | "death" | "cancel") {
+    if handoff::scenario(scenario) {
         declarations.extend(handoff::catalog(scenario));
     }
     for i in 0..count {
