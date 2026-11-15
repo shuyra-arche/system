@@ -39,10 +39,14 @@ Consumers reject a mismatch before running any guest. Native evidence
 artifacts include the full shared platform directory and metadata so the
 actual input ELF and its provenance remain available with each result.
 
-`tests/ci/action.yml` provides the shared Rust installation and cache. The
-cache contains only Cargo registry/git data and rustup downloads, keyed by
-runner OS, checked-in toolchain and lockfiles, plus the RV64 flags/features/
-profiles. It does not contain Cargo target output or guest evidence. The local
+`tests/ci/action.yml` provides the shared Rust installation and cache. Before
+the cache action starts, `cache-input-hash.sh` asks Git for only tracked
+`rust-toolchain.toml` and `Cargo.lock` paths and hashes those files inside the
+job container. The cache key uses that step output, runner OS, and the RV64
+flags/features/profiles. It contains Cargo registry/git data and rustup's
+installed toolchains; it does not contain Cargo target output or guest
+evidence. Computing the digest from tracked inputs avoids traversing generated
+`target/` directories when the cache action's post-job save runs. The local
 `verify-platforms.sh` checks source identity, locks, toolchain, flags,
 feature/profile metadata, compiler identity and all artifact hashes.
 

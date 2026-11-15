@@ -8,6 +8,10 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Hash tracked toolchain and lock inputs
+      id: cache-inputs
+      shell: bash
+      run: bash tests/ci/cache-input-hash.sh
     - name: Restore Rust dependencies and toolchain
       uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
       with:
@@ -15,7 +19,7 @@ runs:
           ~/.cargo/registry
           ~/.cargo/git
           ~/.rustup
-        key: native-rust-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', '**/Cargo.lock') }}-rv64-default-instructions-debug-release-static-frame-medium-warnings
+        key: native-rust-${{ runner.os }}-${{ steps.cache-inputs.outputs.hash }}-rv64-default-instructions-debug-release-static-frame-medium-warnings
     - name: Install declared Rust toolchain
       shell: bash
       run: |
