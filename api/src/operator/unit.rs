@@ -1,7 +1,6 @@
 //! UnitRoot registry v1, backed by ordinary Operator Panes and explicit Grants.
-use super::{Binding, Entry, GrantId, Ops, Scope};
+use super::{Binding, Entry, GrantSpec};
 use crate::{Mark, Name, PendId, TaskId, TeamId, control::instance::InstanceId, value::Optional};
-use alloc::vec::Vec;
 request_id!(AssociationId);
 
 #[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
@@ -40,18 +39,23 @@ pub struct Advance {
 }
 #[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
 pub struct Grant {
-    pub id: GrantId,
-    pub anchor: Entry,
-    pub scope: Scope,
-    pub ops: Ops,
+    /// Complete admission constraints, observed at this query's serial turn.
+    pub spec: GrantSpec,
     /// A delivered coordinate in the actual querying Task's table.
     pub entrance: PendId,
 }
 #[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
 pub struct Access {
     pub root: Root,
-    #[frame(sequence(prefix = u8, max = 32))]
-    pub grants: Vec<Grant>,
+    pub grant: Grant,
+    /// Opaque, non-reusing cursor for the next page, not a grant identity.
+    pub cursor: u64,
+}
+#[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
+pub struct After {
+    /// Zero starts enumeration. Revocation can remove later pages; each
+    /// returned grant is independently checked against the actual caller.
+    pub cursor: u64,
 }
 #[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
 pub struct Associate {

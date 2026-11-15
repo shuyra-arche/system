@@ -57,6 +57,22 @@ pub(crate) struct Instance {
     supplied: bool,
 }
 impl Instance {
+    fn construct(&mut self, loader: &mut Loader) -> Result<bool, crate::system::loader::Error> {
+        // Amortize the supervisor's ingress/health round over a small native
+        // quantum. One page per full scheduler round made ordinary large ELFs
+        // compete with every poll and worker yield during startup. Each step
+        // still commits through Job; no Busy or elapsed time proves completion.
+        let until = kernel_client::call::room::clock().saturating_add(250_000_000);
+        for _ in 0..8 {
+            if self.job.advance(loader)? {
+                return Ok(true);
+            }
+            if kernel_client::call::room::clock() >= until {
+                break;
+            }
+        }
+        Ok(false)
+    }
     pub fn new(
         id: InstanceId,
         owner: TaskId,
@@ -90,6 +106,12 @@ impl Instance {
     }
     pub fn task(&self) -> Option<TaskId> {
         self.job.task()
+    }
+    /// Monotonic native exit evidence survives Job/Team deletion. An unavailable
+    /// fresh query must not be interpreted as proof that an owner has died.
+    pub(super) fn exited_task(&self) -> Option<TaskId> {
+        self.exited
+            .then(|| TaskId::new(self.last.task.get() as usize))
     }
     pub fn anchor(&self, index: usize) -> Option<system_protocol::operator::Entry> {
         self.installation.namespaces.anchors.get(index).cloned()
@@ -228,7 +250,7 @@ impl Instance {
         // Ownership applies before a native Task exists as well. A caller that
         // dies during image preparation must not leave a dormant orphan.
         if self.owner != services.caller
-            && lookup(self.owner).is_none_or(|info| info.state == UnitState::Exited)
+            && lookup(self.owner).is_some_and(|info| info.state == UnitState::Exited)
         {
             self.intent = Intent::Stop;
         }
@@ -253,7 +275,7 @@ impl Instance {
             self.stage = Stage::Retiring;
         }
         match self.stage {
-            Stage::Building => match self.job.advance(loader) {
+            Stage::Building => match self.construct(loader) {
                 Ok(true) => {
                     if self.job.phase() != crate::system::loader::Phase::Dormant {
                         return Err("invalid physical construction phase");

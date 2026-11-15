@@ -801,6 +801,7 @@ impl Operator {
     pub(crate) fn own_root(
         &self,
         caller: TaskId,
+        after: api::unit::After,
     ) -> Result<system_protocol::value::Optional<api::unit::Access>, Fail> {
         let Some(record) = self.units.records().iter().find(|record| {
             record.root().registration.task == caller
@@ -811,26 +812,32 @@ impl Operator {
         }) else {
             return Ok(system_protocol::value::Optional(None));
         };
-        let mut grants = Vec::new();
-        for key in record.grants() {
-            if let Some(grant) = self.authority.root_access(*key, caller) {
-                if grants.len() == 32 {
-                    return Err(Fail::Full);
-                }
-                grants.try_reserve(1).map_err(|_| Fail::Full)?;
-                grants.push(grant);
+        // Cursor values are ordered, non-reusing Authority keys. A revoked
+        // entry cannot shift another Task's grant into the caller's result.
+        let mut cursor = after.cursor;
+        loop {
+            let candidate = record
+                .grants()
+                .iter()
+                .filter_map(|key| match key {
+                    GrantKey::Issued(number) if number.get() > cursor => Some((number.get(), *key)),
+                    _ => None,
+                })
+                .min_by_key(|(number, _)| *number);
+            let Some((number, key)) = candidate else {
+                return Ok(system_protocol::value::Optional(None));
+            };
+            cursor = number;
+            if let Some(grant) = self.authority.root_access(key, caller) {
+                return Ok(system_protocol::value::Optional(Some(api::unit::Access {
+                    root: record.root().clone(),
+                    grant,
+                    cursor,
+                })));
             }
         }
-        // Registry membership is not a grant. Even the native instance Task
-        // needs an explicitly delivered, live authority entrance.
-        if grants.is_empty() {
-            return Ok(system_protocol::value::Optional(None));
-        }
-        Ok(system_protocol::value::Optional(Some(api::unit::Access {
-            root: record.root().clone(),
-            grants,
-        })))
     }
+
     pub(crate) fn permission(&self, context: Context, op: api::Ops) -> Result<(), Fail> {
         let (key, spec) = self
             .authority

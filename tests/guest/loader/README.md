@@ -47,3 +47,8 @@ Operation/Instance ownership, authenticated Create policy, initial service
 capability bundles, a Toolchain std image and the complete System/Vanllia product
 remain separate acceptance gates. Supervisor construction remains rejected by
 this ordinary-Team Loader path.
+
+The cache/independent-data pair also compares an owned image snapshot with a
+borrow of an immutable static image. Catalog borrowing avoids copying and
+retiring a complete ELF for every attempt; anonymous inputs still require an
+owned snapshot. Both use the same parser, native construction and retirement.

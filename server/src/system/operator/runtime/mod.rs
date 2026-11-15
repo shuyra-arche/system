@@ -405,7 +405,9 @@ impl Service {
         use api::operations::{DecodedRequest as Request, Response};
         let book = self.book.as_ref().unwrap();
         match request {
-            Request::OwnRoot(()) => Response::OwnRoot(outcome(book.own_root(caller.into()))),
+            Request::OwnRoot(after) => {
+                Response::OwnRoot(outcome(book.own_root(caller.into(), after)))
+            }
             Request::ResolveRoot(request) => {
                 Response::ResolveRoot(outcome(book.resolve_root(request)))
             }

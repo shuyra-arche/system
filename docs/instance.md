@@ -17,7 +17,7 @@ pins remain those in the root README and Cargo locks.
 | `InspectOperation` | Original actual caller, on the original System service | Historical receipt for that caller's nonzero OperationId | Never dispatches the original effect again |
 | `Cancel` | Original actual caller of a known operation | Pending work requests instance closing; completed receipts are unchanged | Pending cancellation becomes Cancelled only after native retirement. Unknown is not an unseen-ID cancellation tombstone |
 | `Publish` | Owner of the new instance and the stable name; name must be an instance namespace key declared for the target | Revision CAS against the Operator registry; only Active roots can be associated | Replacement changes discovery only; it does not transform, transfer or revoke old consumer Pends |
-| Operator `OwnRoot` | Actual querying Task with its independently delivered, live Grant | Returns registry metadata and only that Task's recipient-local authority entrances | Team membership and knowledge of an InstanceId/Mark do not mint a grant |
+| Operator `OwnRoot` | Actual querying Task with its independently delivered, live Grant | One cursor page of registry metadata, complete Grant constraints and the caller's recipient-local entrance | Team membership and knowledge of an InstanceId/Mark do not mint a grant |
 | Operator `ResolveRoot` / `Relative` / `Find` | Delivered discovery endpoint, permit judgment and native source admission | Resolves a stable association, then derives a constrained actual Pend | Subsequent Consumer-to-Driver RPC goes directly to the Driver |
 | Operator root register/advance/associate | Private root entrance, authenticated System controller | Operator owns registry identity, phase and revisions; ordinary Pane/Tile nodes remain unchanged | Operator proves its Pane/grant settlement; System attests execution settlement only after its native Job finishes |
 | Supply `Acquire/Inspect/Release/Cancel` | Provider-defined admission against an actual owned source and real caller/target | Existing v4 contract and retained native lease owner | A successful Return proves withdrawal; a device description, numeric target or discovery name grants no rights |
@@ -36,6 +36,13 @@ nonzero, non-reusing Instance sequence. Static and dynamic attempts use the same
 Instance storage and native lifecycle owner. A new attempt receives a new
 sequence; a replacement System has a different issuer. IDs are scoped to one
 Kernel boot. Unknown issuers and old instances cannot select a newer attempt.
+
+Catalog images borrow the immutable boot archive for its actual lifetime;
+caller-supplied images retain independent owned snapshots. Both paths use the
+same ELF validation and native Job. Construction advances at most eight native
+steps or a 250 ms quantum per supervisor round, checking the clock after each
+step. A step may itself await its bounded native result. This amortizes ingress
+polling without using elapsed time or Busy as proof of completion.
 
 Operation IDs are scoped to the actual System service and native caller. Create,
 Start, Stop, Retire and Publish share one journal. The exact original intent
@@ -67,6 +74,13 @@ the authenticated System root entrance. Ordinary scoped entrances cannot
 register or advance a root. Each actual Task still needs an explicit Grant;
 this version installs grants for the initial Task only.
 
+Start OwnRoot with cursor zero and continue with the returned cursor until
+None. Cursors are opaque, ordered and never reused; each page checks the live
+holder independently. A page is an observation, not a multi-page authority
+snapshot. At most one Grant is encoded per response; the discovery response
+budget is 16 KiB. This avoids making every discovery call reserve a worst-case
+32-Grant response in its native reply owner.
+
 The registry advances Preparing → Active → Closing → Retiring → Retired;
 Preparing can close directly on failure. Active follows real readiness.
 Transitions use revision checks and retain their original replay receipts.
@@ -80,8 +94,10 @@ authority entrance. Operator retains references to its Authority grant records,
 not a duplicate grant state machine or the Kernel's full Pend inventory.
 Retired requires those grant records settled and the root Pane removed, plus
 System's authenticated execution-completion commit after native Job cleanup.
-Busy retains the corresponding owner. Owner death also closes an instance
-whose native Task has not yet been constructed. System's shutdown predicate
+Busy retains the corresponding owner. Positive native exit evidence, including
+a retained terminal observation, establishes owner death; an unavailable query
+does not. Owner death requests closing even before the target Task exists.
+System's shutdown predicate
 includes every dynamic instance, including unclaimed partial attempts.
 
 For recovery, create/start the replacement, observe readiness and Publish with

@@ -555,10 +555,7 @@ impl Authority {
             row.identity.key == key && row.grant.spec.holder == caller && self.live(key)
         })?;
         Some(system_protocol::operator::unit::Grant {
-            id: row.grant.spec.id,
-            anchor: row.grant.spec.anchor.clone(),
-            scope: row.grant.spec.scope.clone(),
-            ops: row.grant.spec.ops,
+            spec: row.grant.spec.clone(),
             entrance: self.remote(key)?,
         })
     }

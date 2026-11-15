@@ -55,6 +55,13 @@ impl Loader {
     pub fn prepare(&mut self, image: Image<'_>, spawn: Spawn<'_>) -> Result<Job, Error> {
         Job::new(image, spawn)
     }
+    pub fn prepare_immutable(
+        &mut self,
+        image: Image<'static>,
+        spawn: Spawn<'_>,
+    ) -> Result<Job, Error> {
+        Job::immutable(image, spawn)
+    }
     pub fn cached_entries(&self) -> usize {
         self.cache.count()
     }

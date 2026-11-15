@@ -34,6 +34,10 @@ use system_protocol::{
 use unit_contract::document as d;
 pub const E_PROGRAM: usize = 3;
 const CAPACITY: usize = 256;
+enum ImageSource<'a> {
+    Catalog(&'static [u8]),
+    Snapshot(&'a [u8]),
+}
 struct Program {
     declaration: Arc<Unit>,
     current: Option<InstanceId>,
@@ -129,7 +133,7 @@ impl Control {
         &mut self,
         owner: TaskId,
         program: Option<Arc<Unit>>,
-        bytes: &[u8],
+        image: ImageSource<'_>,
         args: &[usize],
         stack: usize,
         identity: id::Install,
@@ -154,22 +158,23 @@ impl Control {
         } else {
             ControlId::NONE
         };
-        let job = self
-            .loader
-            .prepare(
-                Image { bytes, kind },
-                Spawn {
-                    args,
-                    stack,
-                    guard,
-                    member_exit: true,
-                    creation: CreationRights::FLAT
-                        | CreationRights::SIGN
-                        | CreationRights::CLONE
-                        | CreationRights::SHARE,
-                },
-            )
-            .map_err(|_| api::Fail::BadImage)?;
+        let spawn = Spawn {
+            args,
+            stack,
+            guard,
+            member_exit: true,
+            creation: CreationRights::FLAT
+                | CreationRights::SIGN
+                | CreationRights::CLONE
+                | CreationRights::SHARE,
+        };
+        let job = match image {
+            ImageSource::Catalog(bytes) => {
+                self.loader.prepare_immutable(Image { bytes, kind }, spawn)
+            }
+            ImageSource::Snapshot(bytes) => self.loader.prepare(Image { bytes, kind }, spawn),
+        }
+        .map_err(|_| api::Fail::BadImage)?;
         self.next = next;
         self.instances
             .push(Instance::new(id, owner, program, job, identity, false));
@@ -199,7 +204,7 @@ impl Control {
         let id = self.spawn(
             services.caller,
             Some(program.clone()),
-            image,
+            ImageSource::Catalog(image),
             &program.loader().args,
             program.loader().stack,
             identity,
@@ -231,7 +236,7 @@ impl Control {
         for record in &self.creates {
             if !record.claimed
                 && (now >= record.expires
-                    || lookup(record.caller).is_none_or(|info| info.state == UnitState::Exited))
+                    || lookup(record.caller).is_some_and(|info| info.state == UnitState::Exited))
             {
                 let instance = self
                     .instances
@@ -244,8 +249,19 @@ impl Control {
             }
         }
         let mut progress = false;
-        for instance in &mut self.instances {
-            progress |= instance.progress(
+        for at in 0..self.instances.len() {
+            let owner = self.instances[at].owner;
+            if !self.instances[at].retired()
+                && self
+                    .instances
+                    .iter()
+                    .any(|instance| instance.exited_task() == Some(owner))
+            {
+                self.instances[at]
+                    .request(Intent::Stop)
+                    .map_err(|_| "owner retirement intent")?;
+            }
+            progress |= self.instances[at].progress(
                 &mut self.loader,
                 services,
                 &mut self.roster,
@@ -928,15 +944,15 @@ impl Control {
         let program = name.and_then(|name| self.catalog.find(name));
         let snapshot;
         let bytes = match input {
-            build::Input::Unit(_) => {
+            build::Input::Unit(_) => ImageSource::Catalog(
                 self.images
                     .find(program.as_ref().ok_or(build::Fail::Unknown)?.loader().image)
                     .ok_or(build::Fail::BadImage)?
-                    .bytes
-            }
+                    .bytes,
+            ),
             build::Input::Image(input) => {
                 snapshot = construction::snapshot(services, caller, input)?;
-                &snapshot
+                ImageSource::Snapshot(&snapshot)
             }
         };
         self.spawn(owner, program, bytes, &values, stack as usize, identity)

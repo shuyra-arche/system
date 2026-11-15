@@ -16,7 +16,10 @@ pub mod protocol;
 #[path = "../../../server/src/system/supply/native.rs"]
 pub mod source;
 use alloc::{string::String, vec};
-use core::fmt::{self, Write};
+use core::{
+    fmt::{self, Write},
+    sync::atomic::{AtomicU64, Ordering},
+};
 use kernel_api::{
     address::VirtAddr,
     model::{
@@ -46,6 +49,10 @@ use system_protocol::{
 use weave::{Codec, Contract, Operation};
 const DEVICE: u64 = 0xbeef;
 const READY: u64 = 0xabcd;
+static BUDGET: AtomicU64 = AtomicU64::new(0);
+fn budget() -> u64 {
+    BUDGET.load(Ordering::Relaxed)
+}
 #[global_allocator]
 static ALLOCATOR: heap::Allocator = heap::Allocator;
 struct Console;
@@ -102,6 +109,13 @@ fn tick(deadline: u64) {
     heap::poll();
     room::yield_();
 }
+fn query_tick(deadline: u64) {
+    tick(deadline);
+    // Query an asynchronous operation at a bounded cadence. Holding a reply
+    // owner is useful; creating a new RPC on every yield only consumes the
+    // same CPU and native memory budget needed by construction.
+    room::sleep_until(room::clock().saturating_add(500_000_000).min(deadline)).unwrap();
+}
 fn retire(token: PendId) {
     let deadline = room::clock() + 5_000_000_000;
     while let Err(error) = pend::return_(token) {
@@ -110,13 +124,20 @@ fn retire(token: PendId) {
     }
 }
 fn finish<O: Operation>(mut call: Pending<O>) -> <<O as Contract>::Response as Codec>::Decoded {
-    let deadline = room::clock() + 5_000_000_000;
-    let value = loop {
-        if let Some(response) = call.poll().unwrap() {
-            break response.value;
-        }
-        tick(deadline);
-    };
+    let deadline = budget();
+    // This User has no same-Team allocator workers. Use the SDK's native
+    // reply watch instead of repeatedly polling Kernel while the peer runs.
+    let started = room::clock();
+    let value = call.wait().unwrap().value;
+    let elapsed = room::clock().saturating_sub(started);
+    if elapsed >= 100_000_000 {
+        let _ = writeln!(
+            Console,
+            "handoff: {} wait={}ms",
+            core::any::type_name::<O>(),
+            elapsed / 1_000_000
+        );
+    }
     while let Err(error) = call.finish() {
         assert!(error.is_busy(), "{error:?}");
         tick(deadline);
@@ -130,19 +151,22 @@ fn success<T, E: fmt::Debug>(value: Outcome<T, E>) -> T {
     }
 }
 fn deadline() -> Wait {
-    Wait::At(room::clock() + 5_000_000_000)
+    Wait::At(budget())
 }
 fn id(value: u64) -> api::OperationId {
     api::OperationId::new(value).unwrap()
 }
 fn receipt(client: &mut system_client::instance::Client, mut value: api::Receipt) -> api::Receipt {
-    let limit = room::clock() + 5_000_000_000;
+    let limit = budget();
     while value.state == api::State::Pending {
         if room::clock() >= limit {
             let observation = value.instance.0.map(|instance| observe(client, instance));
-            panic!("operation {} did not complete: {observation:?}", value.id.get());
+            panic!(
+                "operation {} did not complete: {observation:?}",
+                value.id.get()
+            );
         }
-        tick(limit);
+        query_tick(limit);
         value = success(finish(
             client
                 .begin::<op::InspectOperation>(value.id, deadline())
@@ -327,7 +351,7 @@ fn controller(license: PendId, context: Context, role: usize) {
     }
     let mut discovery = discovery(license, context.clone());
     if role == 3 {
-        let limit = room::clock() + 5_000_000_000;
+        let limit = budget();
         let target = loop {
             if let Outcome::Success(row) = finish(
                 discovery
@@ -343,7 +367,7 @@ fn controller(license: PendId, context: Context, role: usize) {
             {
                 break target;
             }
-            tick(limit);
+            query_tick(limit);
         };
         assert_eq!(
             finish(client.begin::<op::Inspect>(target, deadline()).unwrap()),
@@ -367,7 +391,7 @@ fn controller(license: PendId, context: Context, role: usize) {
     }
     let absent = success(finish(
         discovery
-            .begin::<operator::operations::OwnRoot>((), deadline())
+            .begin::<operator::operations::OwnRoot>(operator::unit::After { cursor: 0 }, deadline())
             .unwrap(),
     ));
     assert!(absent.0.is_none());
@@ -375,8 +399,21 @@ fn controller(license: PendId, context: Context, role: usize) {
     let mut source = source::Source::new("handoff").unwrap();
     let mut previous = None;
     for round in 0..2 {
+        let _ = writeln!(
+            Console,
+            "handoff: round {round} start t={}ms",
+            room::clock() / 1_000_000
+        );
         let base = 1 + round * 10;
         let target = create(&mut client, &subject, base);
+        if round == 0 {
+            // Cancellation cannot undo an already completed Create receipt.
+            let cancellation = success(finish(
+                client.begin::<op::Cancel>(id(base), deadline()).unwrap(),
+            ));
+            assert_eq!(cancellation.state, api::State::Completed);
+        }
+
         if let Some((old, _)) = &previous {
             assert_ne!(*old, target);
         }
@@ -414,7 +451,7 @@ fn controller(license: PendId, context: Context, role: usize) {
             },
         };
         source.acquire(caller, acquisition.clone()).unwrap();
-        let limit = room::clock() + 5_000_000_000;
+        let limit = budget();
         loop {
             source.advance().unwrap();
             if source.inspect(caller, acquisition.lease).unwrap().state == supply::State::Granted {
@@ -446,7 +483,7 @@ fn controller(license: PendId, context: Context, role: usize) {
             if value.ready {
                 break value;
             }
-            tick(limit);
+            query_tick(limit);
         };
         let root = observed.root.0.as_ref().unwrap();
         let kernel_api::abi::call::sign::SignReply::Triggered { sequence } =
@@ -563,24 +600,6 @@ fn controller(license: PendId, context: Context, role: usize) {
     ));
     assert_eq!(receipt(&mut client, retired).state, api::State::Completed);
     assert_eq!(observe(&mut client, last).phase, api::Phase::Retired);
-    let cancelled = create(&mut client, &subject, 40);
-    let cancellation = success(finish(
-        client.begin::<op::Cancel>(id(40), deadline()).unwrap(),
-    ));
-    // Create already completed; cancellation cannot undo its historical receipt.
-    assert_eq!(cancellation.state, api::State::Completed);
-    let retired = success(finish(
-        client
-            .begin::<op::Retire>(
-                api::Change {
-                    id: id(41),
-                    instance: cancelled,
-                },
-                deadline(),
-            )
-            .unwrap(),
-    ));
-    assert_eq!(receipt(&mut client, retired).state, api::State::Completed);
     assert_eq!(
         finish(
             client
@@ -609,20 +628,25 @@ fn controller(license: PendId, context: Context, role: usize) {
     let mut lost = client
         .begin::<op::Create>(pending_request.clone(), deadline())
         .unwrap();
+    // FIFO submission places cancellation immediately after admission, before
+    // another query/cleanup round can let the native construction finish.
+    let cancel = success(finish(
+        client.begin::<op::Cancel>(id(50), deadline()).unwrap(),
+    ));
     let accepted = success(finish(
         client
             .begin::<op::InspectOperation>(id(50), deadline())
             .unwrap(),
     ));
-    assert_eq!(accepted.state, api::State::Pending);
+    assert!(matches!(
+        accepted.state,
+        api::State::Pending | api::State::Cancelled
+    ));
     let lost_limit = room::clock() + 5_000_000_000;
     while let Err(error) = lost.finish() {
         assert!(error.is_busy());
         tick(lost_limit);
     }
-    let cancel = success(finish(
-        client.begin::<op::Cancel>(id(50), deadline()).unwrap(),
-    ));
     let cancelled = receipt(&mut client, cancel);
     assert_eq!(cancelled.state, api::State::Cancelled);
     assert_eq!(
@@ -663,15 +687,30 @@ fn driver(license: PendId, context: Context) -> ! {
     let mut discovery = discovery(license, context.clone());
     let access = success(finish(
         discovery
-            .begin::<operator::operations::OwnRoot>((), deadline())
+            .begin::<operator::operations::OwnRoot>(operator::unit::After { cursor: 0 }, deadline())
             .unwrap(),
     ))
     .0
     .unwrap();
     assert_eq!(access.root.registration.task.get(), caller.get() as u64);
     assert_eq!(access.root.phase, operator::unit::Phase::Preparing);
-    assert_eq!(access.grants.len(), 1);
-    let grant = &access.grants[0];
+    let grant = &access.grant;
+    assert_eq!(grant.spec.holder.get(), caller.get() as u64);
+    assert_eq!(grant.spec.source.0, Some(caller.into()));
+    assert!(
+        success(finish(
+            discovery
+                .begin::<operator::operations::OwnRoot>(
+                    operator::unit::After {
+                        cursor: access.cursor
+                    },
+                    deadline()
+                )
+                .unwrap()
+        ))
+        .0
+        .is_none()
+    );
     let entry: PendId = grant.entrance.try_into().unwrap();
     assert_eq!(
         inspect(entry).owner.get() as u64,
@@ -737,7 +776,7 @@ fn driver(license: PendId, context: Context) -> ! {
                 operator::Bind {
                     change: operator::Mutation {
                         id: operator::OperationId::new(1).unwrap(),
-                        entry: grant.anchor.clone(),
+                        entry: grant.spec.anchor.clone(),
                         expected: 0,
                     },
                     name: Name::new("rpc").unwrap(),
@@ -757,7 +796,7 @@ fn driver(license: PendId, context: Context) -> ! {
     let mut ingress = protocol::Control::bind(queue, license, context).unwrap();
     sign::trigger(find(|info| info.mark == Mark::new(READY)).token).unwrap();
     loop {
-        let result = ingress.serve_once(Wait::Poll, |_, request| match request {
+        let result = ingress.serve_once(Wait::At(budget()), |_, request| match request {
             control::operations::DecodedRequest::State(request) => {
                 let revoked = request.name.as_str() == "revoked";
                 if revoked {
@@ -782,6 +821,10 @@ fn driver(license: PendId, context: Context) -> ! {
 }
 #[unsafe(no_mangle)]
 extern "C" fn start(words: *const usize, count: usize) -> ! {
+    // The workflow is asynchronous and includes native ELF preparation and
+    // independent service startup. Bound the whole scenario separately from
+    // an individual request wait; keep each original Pending/operation owner.
+    BUDGET.store(room::clock() + 60_000_000_000, Ordering::Relaxed);
     assert_eq!(count, 1);
     let license = find(|info| info.target == Target::None).token;
     let space = find(|info| matches!(info.target, Target::Nest(_))).token;

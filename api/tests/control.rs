@@ -119,6 +119,14 @@ fn cancellation_and_retire_require_cleanup_while_stop_does_not() {
 }
 #[test]
 fn publication_receipts_are_historical_and_nonzero_wire_ids_are_checked() {
+    // Discovery is shared by ordinary queries. One large Root list must not
+    // force every call to reserve hundreds of KiB in its native reply owner.
+    assert!(
+        <<system_api::operator::Call as weave::Contract>::Response as Codec>::SIZE
+            .maximum()
+            .unwrap()
+            <= 16 * 1024
+    );
     let mut journal = Journal::new(1).unwrap();
     let publication = Publication {
         id: id(1),

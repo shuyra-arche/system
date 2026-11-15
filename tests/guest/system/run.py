@@ -74,10 +74,13 @@ def main():
                            (user / 'Cargo.lock', 'user.lock'),
                            (guest.parent / 'runtime/platform/Cargo.lock', 'platform.lock')]:
         shutil.copyfile(source, output / target)
+    # Checkout can be owned by the runner outside its test container. Trust
+    # this exact selected checkout for these read-only provenance commands.
+    git = ['git', '-c', f'safe.directory={root}']
     identity = {'system_profile': args.profile, 'user_profile': 'release',
                 'mode': 'handoff' if args.handoff else 'application',
-                'system_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
-                'system_dirty': bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root)),
+                'system_revision': subprocess.check_output([*git, 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
+                'system_dirty': bool(subprocess.check_output([*git, 'status', '--porcelain', '--', '.', ':!.evidence'], cwd=root)),
                 'system_sha256': digest(system), 'user_sha256': digest(image),
                 'kernel': str(kernel), 'kernel_sha256': digest(kernel),
                 'firmware': firmware,
@@ -96,11 +99,13 @@ def main():
             receipt = {'command': list(map(str, command)), 'users': users, 'harts': harts,
                        'archive_sha256': digest(archive), 'passed': False}
             try:
-                result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=90)
+                # Preserve live diagnostics, including while a guest stalls.
+                with case.with_suffix('.log').open('wb') as serial_output:
+                    result = subprocess.run(command, stdout=serial_output, stderr=subprocess.STDOUT, timeout=90)
                 receipt['returncode'] = result.returncode
-                serial = result.stdout
+                serial = case.with_suffix('.log').read_bytes()
             except subprocess.TimeoutExpired as error:
-                serial = error.stdout or b''
+                serial = case.with_suffix('.log').read_bytes()
                 receipt['timeout'] = True
                 case.with_suffix('.log').write_bytes(serial)
                 case.with_suffix('.json').write_text(json.dumps(receipt, indent=2) + '\n')

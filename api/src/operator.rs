@@ -347,7 +347,7 @@ pub struct Event {
 
 #[weave::interface(tag = u8)]
 pub mod operations {
-    #[operation(code = 12, request = (), response = super::Outcome<super::Optional<super::unit::Access>, super::Fail>)]
+    #[operation(code = 12, request = super::unit::After, response = super::Outcome<super::Optional<super::unit::Access>, super::Fail>)]
     pub struct OwnRoot;
     #[operation(code = 13, request = super::Resolve, response = super::Outcome<super::unit::Association, super::Fail>)]
     pub struct ResolveRoot;
