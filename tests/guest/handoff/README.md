@@ -45,6 +45,10 @@ single-Hart run. This is a bounded concurrency probe, not deterministic proof of
 a Busy response. The separate pre-fix native stress diagnostic for
 [System #21](https://github.com/shuyra-arche/system/issues/21) captured discovery
 grant Busy followed by installation failure.
+The Driver retains the exact RPC grant request and retries a native Busy within
+its role budget before publishing that grant to Operator. A contended admission
+does not prove successful publication or revocation; all subsequent grant and
+withdrawal assertions remain mandatory.
 Production memory/retirement deadlines are unchanged. System grants each
 declared startup Unit 60 seconds, advancing the deadline only when the previous
 startup Unit reaches native readiness or retirement. A multi-Unit catalog does

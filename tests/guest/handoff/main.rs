@@ -908,18 +908,20 @@ fn driver(license: PendId, context: Context, authorization: bool) -> ! {
         },
     )
     .unwrap();
-    let remote = pend::accord(VirtAddr::new(
-        AccordRequest {
-            src: queue,
-            target: AccordTarget::Task(operator),
-            mark: Mark::of("handoff-driver"),
-            limits: clone_limits(Distributable::Yes),
+    let publication = AccordRequest {
+        src: queue,
+        target: AccordTarget::Task(operator),
+        mark: Mark::of("handoff-driver"),
+        limits: clone_limits(Distributable::Yes),
+    }
+    .to_bytes();
+    let remote = loop {
+        match pend::accord(VirtAddr::new(publication.as_ptr().addr())) {
+            Ok(remote) => break remote,
+            Err(error) if error.source.is_busy() => tick(budget()),
+            Err(error) => panic!("Driver RPC grant publication: {error:?}"),
         }
-        .to_bytes()
-        .as_ptr()
-        .addr(),
-    ))
-    .unwrap();
+    };
     success(finish(
         authority
             .begin::<operator::authority::operations::Bind>(
