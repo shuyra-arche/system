@@ -22,6 +22,8 @@ mod fixture;
 mod native_loader;
 #[path = "../client/loader.rs"]
 mod scenarios;
+#[cfg(feature = "toolchain")]
+mod std_unit;
 use core::fmt::Write;
 #[global_allocator]
 static ALLOCATOR: native_heap::Allocator = native_heap::Allocator;
@@ -35,6 +37,8 @@ core::arch::global_asm!(
 extern "C" fn start(at: usize, count: usize) -> ! {
     fixture::boot(at, count);
     scenarios::run(fixture::license());
+    #[cfg(feature = "toolchain")]
+    std_unit::run();
     fixture::exit(0)
 }
 #[panic_handler]

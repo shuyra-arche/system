@@ -9,6 +9,8 @@ name = "system-loader-guest"
 path = "main.rs"
 test = false
 bench = false
+[features]
+toolchain = []
 [dependencies]
 kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "5da3ae3e0b971f34a003a31d344ee20593725e53" }
 kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "5da3ae3e0b971f34a003a31d344ee20593725e53" }
