@@ -55,6 +55,25 @@ python3 tests/guest/system/run.py /path/to/qualified/kernel --handoff --harts 1 
 python3 tests/guest/system/run.py /path/to/qualified/kernel --handoff --profile debug --harts 1 2 4
 ```
 
+The default handoff matrix also runs `owner`, `owner-cancel` and `owner-death`
+as independent VMs. Trusted Selected policy admits CreateFor; an ordinary
+Create and absent owner are denied. Requester replay/conflict and operation
+queries remain requester-local, while only the selected owner can enumerate
+and manage the attempt. The lifecycle case starts the Driver after the
+requester actually exits, checks UnitRoot owner identity and physical
+retirement. Separate cases prove requester cancellation waits for cleanup and
+positive selected-owner exit closes its attempt. Owner death may race prepared
+completion: its historical CreateFor receipt remains Completed if already
+committed, otherwise the retired failed attempt reports Interrupted. The typed
+checker still requires every native exit/retirement and the real System exit.
+
+Use `--scenarios owner owner-cancel owner-death` with `--handoff` for focused
+checks; omitting it retains all seven scenarios. The full four profile pairs
+and three Hart counts now qualify 84 handoff executions, including the original
+48. Release Kernel runs retain 60-second role and 90-second VM bounds.
+With `--kernel-profile debug`, the recorded bounds are 120/180 seconds; see the
+[production application guide](../system/README.md) for the measured migration cost.
+
 The User image stays release with LTO and one codegen unit in both cases.
 System and Kernel retain their separately selected profiles and production
 flags. Pair each with recorded debug and release Kernel images; a host test or RV64 build is separate evidence. Each

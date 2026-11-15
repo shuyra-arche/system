@@ -41,10 +41,14 @@ def main():
     parser.add_argument('--kernel-profile', choices=('debug', 'release'), default='release',
                         help='records the selected platform profile and its handoff execution budget')
     parser.add_argument('--handoff', action='store_true', help='independent-Team Instance/UnitRoot/Supply handoff')
+    scenarios = ('handoff', 'auth', 'cancel', 'death', 'owner', 'owner-cancel', 'owner-death')
+    parser.add_argument('--scenarios', choices=scenarios, nargs='+', help='selected handoff VMs; default runs every scenario')
     args = parser.parse_args()
     slow_handoff = args.handoff and args.kernel_profile == "debug"
     timeout = 180 if slow_handoff else 90
     handoff_budget = 120 if slow_handoff else 60
+    if args.scenarios and not args.handoff:
+        parser.error('--scenarios requires --handoff')
     guest = Path(__file__).resolve().parent
     root = guest.parents[2]
     sys.dont_write_bytecode = True
@@ -96,7 +100,7 @@ def main():
                 'rustc': subprocess.check_output(['rustc', '-Vv'], text=True),
                 'qemu': subprocess.check_output([qemu, '--version'], text=True)}
     (output / 'inputs.json').write_text(json.dumps(identity, indent=2) + '\n')
-    for users in (('handoff', 'auth', 'cancel', 'death') if args.handoff else (0, 2, 1)):
+    for users in ((args.scenarios or scenarios) if args.handoff else (0, 2, 1)):
         archive = output / f'initrd-{users}.bin'
         subprocess.run([*pack, boot, system, image, archive, str(users)], check=True)
         for harts in args.harts:

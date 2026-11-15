@@ -215,6 +215,96 @@ fn accepted_ids_survive_lost_responses_conflict_and_exhaustion() {
         Some(weave::Coded(Fail::Denied))
     );
 }
+
+#[test]
+fn selected_owner_is_part_of_requester_intent_and_not_receipt_authority() {
+    let Intent::Create(request) = create() else {
+        unreachable!()
+    };
+    let request = CreateFor {
+        id: request.id,
+        input: request.input,
+        owner: TaskId::new(9),
+        subject: request.subject,
+    };
+    let action = Intent::CreateFor(alloc::boxed::Box::new(request.clone()));
+    let requester = NativeTask::new(8);
+    let owner = NativeTask::new(9);
+    let mut journal = Journal::new(1).unwrap();
+    let (at, fresh) = journal.admit(requester, id(1), action.clone()).unwrap();
+    assert!(fresh);
+    journal.attach(at, instance());
+    assert_eq!(journal.find(owner, id(1)), None);
+    assert_eq!(journal.admit(requester, id(1), action), Ok((at, false)));
+    let mut changed = request;
+    changed.owner = TaskId::new(10);
+    assert_eq!(
+        journal.admit(
+            requester,
+            id(1),
+            Intent::CreateFor(alloc::boxed::Box::new(changed))
+        ),
+        Err(Fail::Conflict)
+    );
+    assert_eq!(journal.cancel(at), Some(instance()));
+    let mut partial = evidence();
+    partial.constructed = true;
+    partial.stopped = true;
+    journal.advance(at, partial);
+    assert_eq!(journal.receipt(at).state, State::Pending);
+    let mut retired = evidence();
+    retired.retired = true;
+    journal.advance(at, retired);
+    assert_eq!(journal.receipt(at).state, State::Cancelled);
+}
+
+#[test]
+fn selected_creation_completion_is_historical_and_new_frames_are_bounded() {
+    let Intent::Create(request) = create() else {
+        unreachable!()
+    };
+    let request = CreateFor {
+        id: request.id,
+        input: request.input,
+        owner: TaskId::new(9),
+        subject: request.subject,
+    };
+    let mut bytes = vec![0; CreateFor::SIZE.maximum().unwrap()];
+    let used = request.encode(&mut bytes).unwrap();
+    assert_eq!(
+        CreateFor::decode_exact(&bytes[..used]),
+        Some(request.clone())
+    );
+    for end in 0..used {
+        assert!(CreateFor::decode_exact(&bytes[..end]).is_none());
+    }
+    let mut journal = Journal::new(1).unwrap();
+    let (at, _) = journal
+        .admit(
+            NativeTask::new(8),
+            request.id,
+            Intent::CreateFor(alloc::boxed::Box::new(request)),
+        )
+        .unwrap();
+    journal.attach(at, instance());
+    let mut ready = evidence();
+    ready.constructed = true;
+    journal.advance(at, ready);
+    let completed = journal.receipt(at);
+    let mut retired = evidence();
+    retired.retired = true;
+    journal.advance(at, retired);
+    assert_eq!(journal.receipt(at), completed);
+    assert_eq!(journal.cancel(at), None);
+    let query = Owned {
+        after: Optional(Some(instance())),
+    };
+    let mut bytes = vec![0; Owned::SIZE.maximum().unwrap()];
+    let used = query.encode(&mut bytes).unwrap();
+    assert_eq!(Owned::decode_exact(&bytes[..used]), Some(query));
+    bytes[1..9].fill(0);
+    assert!(Owned::decode_exact(&bytes[..used]).is_none());
+}
 #[test]
 fn cancellation_and_retire_require_cleanup_while_stop_does_not() {
     let caller = NativeTask::new(8);

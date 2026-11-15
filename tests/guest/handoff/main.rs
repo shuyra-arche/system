@@ -13,6 +13,7 @@ pub mod termination;
 pub mod runtime {
     pub use crate::{memory, termination};
 }
+mod owner;
 #[path = "../../../server/src/protocol/mod.rs"]
 pub mod protocol;
 #[path = "../../../server/src/system/supply/native.rs"]
@@ -1005,6 +1006,13 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
     });
     // SAFETY: Kernel supplies one copied word on this Task's live stack.
     let role = unsafe { *words };
+    if role == 9 {
+        owner::driver(license, context)
+    }
+    if matches!(role, 7 | 8 | 10 | 11 | 12 | 13) {
+        owner::run(license, context, role);
+        unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    }
     if matches!(role, 1 | 5) {
         driver(license, context, role == 1)
     }

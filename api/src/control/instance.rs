@@ -59,13 +59,31 @@ pub enum Fail {
     Interrupted = 8,
 }
 
-/// v1 retains ownership with the actual caller; selected-owner transfer is not
-/// supported by this interface. Construction still requires declaration policy.
+/// Caller-owned construction; CreateFor applies declaration-selected ownership.
+/// Neither operation transfers an existing instance to a different owner.
 #[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
 pub struct Create {
     pub id: OperationId,
     pub input: crate::loader::Input,
     pub subject: crate::identity::Subject,
+}
+
+/// Construction on behalf of a live owner selected by the caller's trusted
+/// declaration. The requester's journal and the owner's management authority
+/// remain separate; a Task coordinate alone does not authorize construction.
+#[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
+pub struct CreateFor {
+    pub id: OperationId,
+    pub input: crate::loader::Input,
+    pub owner: TaskId,
+    pub subject: crate::identity::Subject,
+}
+
+/// One page of the actual caller's instances, including retained retired
+/// attempts. A cursor belongs to this System issuer; None starts enumeration.
+#[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
+pub struct Owned {
+    pub after: Optional<InstanceId>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
@@ -147,6 +165,10 @@ pub mod operations {
     pub struct Cancel;
     #[operation(code = 8, request = super::Publication, response = super::Outcome<super::Receipt, super::Fail>)]
     pub struct Publish;
+    #[operation(code = 9, request = super::CreateFor, response = super::Outcome<super::Receipt, super::Fail>)]
+    pub struct CreateFor;
+    #[operation(code = 10, request = super::Owned, response = super::Outcome<super::Optional<super::Observation>, super::Fail>)]
+    pub struct Owned;
 }
 
 #[derive(weave::Contract)]

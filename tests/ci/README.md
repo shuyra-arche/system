@@ -71,7 +71,7 @@ feature/profile metadata, compiler identity and all artifact hashes.
 - Complete application remains Kernel debug/release × System debug/release ×
   Hart 1/2/4: 36 executions.
 - Handoff remains those four profiles × Hart 1/2/4 × recovery, authorization,
-  cancellation and owner-death scenarios: 48 executions.
+  cancellation, owner-death and three declaration-selected-owner scenarios: 84 executions (the original 48 retained).
 - Loader remains debug/release × Hart 1/2/4: 6 executions.
 - Runtime and entry retain the existing normal, fatal-retirement and stalled
   bootstrap invocations and assertions, including the Kernel-admitted root
