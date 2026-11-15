@@ -53,6 +53,11 @@ macro_rules! service {
 }
 
 service!(control, system_api::control::operations::Interface, 1);
+service!(
+    instance,
+    system_api::control::instance::operations::Interface,
+    10
+);
 service!(identity, system_api::identity::operations::Interface, 2, {
     mod query;
     pub use query::{QueryError, TaskQuery};

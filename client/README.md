@@ -3,6 +3,10 @@
 The task-local SDK uses the workspace protocol v4 API, Kernel ABI 11, Twine and
 Weave. Each service has a typed `Client` and accepts its Weave operation markers.
 Trusted Identity export has a separate client from ordinary Identity calls.
+New instance consumers use `instance::Client` and
+`api::control::instance::operations` (domain 10), with the operations, peer/ID
+scope and retained-cleanup rules in the [handoff contract](../docs/instance.md).
+The historical Loader client is not the Hub construction interface.
 
 ```rust,ignore
 use system_client::{control::Client, api::control::{Named, operations::State}, Wait};

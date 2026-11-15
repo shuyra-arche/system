@@ -541,6 +541,24 @@ impl Authority {
             .any(|r| r.identity.key == key && r.grant.state == GrantState::Granted)
             && self.ancestors_live(key)
     }
+    /// Issued keys never reuse. Compaction removes a record only after native
+    /// entrance withdrawal and descendant settlement have both completed.
+    pub(crate) fn settled(&self, key: GrantKey) -> bool {
+        key != GrantKey::Root && !self.records.iter().any(|row| row.identity.key == key)
+    }
+    pub(crate) fn root_access(
+        &self,
+        key: GrantKey,
+        caller: TaskId,
+    ) -> Option<system_protocol::operator::unit::Grant> {
+        let row = self.records.iter().find(|row| {
+            row.identity.key == key && row.grant.spec.holder == caller && self.live(key)
+        })?;
+        Some(system_protocol::operator::unit::Grant {
+            spec: row.grant.spec.clone(),
+            entrance: self.remote(key)?,
+        })
+    }
 
     pub fn attached(&mut self, key: GrantKey) -> Result<(), AuthorityError> {
         let r = self

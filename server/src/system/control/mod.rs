@@ -3,6 +3,7 @@
 mod construction;
 pub(crate) mod identity;
 pub(crate) mod instance;
+mod operations;
 use self::{
     identity::Roster,
     instance::{Instance, InstanceId, Intent},
@@ -33,6 +34,10 @@ use system_protocol::{
 use unit_contract::document as d;
 pub const E_PROGRAM: usize = 3;
 const CAPACITY: usize = 256;
+enum ImageSource<'a> {
+    Catalog(&'static [u8]),
+    Snapshot(&'a [u8]),
+}
 struct Program {
     declaration: Arc<Unit>,
     current: Option<InstanceId>,
@@ -54,6 +59,7 @@ pub(crate) struct Control {
     programs: Vec<Program>,
     instances: Vec<Instance>,
     creates: Vec<Creation>,
+    operations: operations::Journal,
     next: u64,
     pub loader: Loader,
     pub roster: Roster,
@@ -95,6 +101,7 @@ impl Control {
             programs,
             instances,
             creates,
+            operations: operations::Journal::new(CAPACITY)?,
             next: 1,
             loader,
             roster: Roster::default(),
@@ -126,7 +133,7 @@ impl Control {
         &mut self,
         owner: TaskId,
         program: Option<Arc<Unit>>,
-        bytes: &[u8],
+        image: ImageSource<'_>,
         args: &[usize],
         stack: usize,
         identity: id::Install,
@@ -151,22 +158,23 @@ impl Control {
         } else {
             ControlId::NONE
         };
-        let job = self
-            .loader
-            .prepare(
-                Image { bytes, kind },
-                Spawn {
-                    args,
-                    stack,
-                    guard,
-                    member_exit: true,
-                    creation: CreationRights::FLAT
-                        | CreationRights::SIGN
-                        | CreationRights::CLONE
-                        | CreationRights::SHARE,
-                },
-            )
-            .map_err(|_| api::Fail::BadImage)?;
+        let spawn = Spawn {
+            args,
+            stack,
+            guard,
+            member_exit: true,
+            creation: CreationRights::FLAT
+                | CreationRights::SIGN
+                | CreationRights::CLONE
+                | CreationRights::SHARE,
+        };
+        let job = match image {
+            ImageSource::Catalog(bytes) => {
+                self.loader.prepare_immutable(Image { bytes, kind }, spawn)
+            }
+            ImageSource::Snapshot(bytes) => self.loader.prepare(Image { bytes, kind }, spawn),
+        }
+        .map_err(|_| api::Fail::BadImage)?;
         self.next = next;
         self.instances
             .push(Instance::new(id, owner, program, job, identity, false));
@@ -196,7 +204,7 @@ impl Control {
         let id = self.spawn(
             services.caller,
             Some(program.clone()),
-            image,
+            ImageSource::Catalog(image),
             &program.loader().args,
             program.loader().stack,
             identity,
@@ -228,7 +236,7 @@ impl Control {
         for record in &self.creates {
             if !record.claimed
                 && (now >= record.expires
-                    || lookup(record.caller).is_none_or(|info| info.state == UnitState::Exited))
+                    || lookup(record.caller).is_some_and(|info| info.state == UnitState::Exited))
             {
                 let instance = self
                     .instances
@@ -241,8 +249,19 @@ impl Control {
             }
         }
         let mut progress = false;
-        for instance in &mut self.instances {
-            progress |= instance.progress(
+        for at in 0..self.instances.len() {
+            let owner = self.instances[at].owner;
+            if !self.instances[at].retired()
+                && self
+                    .instances
+                    .iter()
+                    .any(|instance| instance.exited_task() == Some(owner))
+            {
+                self.instances[at]
+                    .request(Intent::Stop)
+                    .map_err(|_| "owner retirement intent")?;
+            }
+            progress |= self.instances[at].progress(
                 &mut self.loader,
                 services,
                 &mut self.roster,
@@ -251,6 +270,7 @@ impl Control {
                 &anchors,
             )?;
         }
+        self.advance_operations();
         self.loader
             .advance()
             .map_err(|_| "image cache retirement")?;
@@ -306,10 +326,7 @@ impl Control {
                     && (program.declaration.control().ending == d::Ending::Transient
                         || !program.run_requested)
             })
-            && self
-                .creates
-                .iter()
-                .all(|record| self.instance(record.instance).retired())
+            && self.instances.iter().all(Instance::retired)
     }
     pub fn begin_close(&mut self) {
         self.closing = true;
@@ -608,6 +625,339 @@ impl Control {
             }
         }
     }
+    /// The native ingress supplies `caller`. Neither an InstanceId nor a
+    /// serialized Task selects a different management principal.
+    pub fn instance_command(
+        &mut self,
+        services: &Services,
+        caller: TaskId,
+        request: system_protocol::control::instance::operations::DecodedRequest,
+    ) -> system_protocol::control::instance::operations::Response {
+        use operations::Intent as Action;
+        use system_protocol::control::instance::{
+            self as wire,
+            operations::{DecodedRequest as Q, Response as R},
+        };
+        macro_rules! answer {
+            ($variant:ident, $value:expr) => {
+                R::$variant(match $value {
+                    Ok(value) => Outcome::Success(value),
+                    Err(error) => Outcome::Failure(error),
+                })
+            };
+        }
+        match request {
+            Q::Create(value) => answer!(
+                Create,
+                self.submit(
+                    services,
+                    caller,
+                    value.id,
+                    Action::Create(alloc::boxed::Box::new(value))
+                )
+            ),
+            Q::Start(value) => answer!(
+                Start,
+                self.submit(services, caller, value.id, Action::Start(value.instance))
+            ),
+            Q::Stop(value) => answer!(
+                Stop,
+                self.submit(services, caller, value.id, Action::Stop(value.instance))
+            ),
+            Q::Retire(value) => answer!(
+                Retire,
+                self.submit(services, caller, value.id, Action::Retire(value.instance))
+            ),
+            Q::Publish(value) => answer!(
+                Publish,
+                self.submit(services, caller, value.id, Action::Publish(value))
+            ),
+            Q::Inspect(value) => {
+                let result = self
+                    .owned_instance(services, caller, value)
+                    .map(|at| self.instances[at].snapshot(services.caller.into()));
+                answer!(Inspect, result)
+            }
+            Q::InspectOperation(id) => {
+                let result = self
+                    .operations
+                    .find(caller, id)
+                    .map(|at| self.operations.receipt(at))
+                    .ok_or(wire::Fail::Unknown);
+                answer!(InspectOperation, result)
+            }
+            Q::Cancel(id) => {
+                let result = (|| {
+                    let at = self
+                        .operations
+                        .find(caller, id)
+                        .ok_or(wire::Fail::Unknown)?;
+                    if let Some(target) = self.operations.cancel(at) {
+                        let instance = self.owned_instance(services, caller, target)?;
+                        if !self.instances[instance].retired() {
+                            self.instances[instance]
+                                .request(Intent::Stop)
+                                .map_err(instance_fail)?;
+                        }
+                    }
+                    self.advance_operations();
+                    Ok(self.operations.receipt(at))
+                })();
+                answer!(Cancel, result)
+            }
+        }
+    }
+    fn owned_instance(
+        &self,
+        services: &Services,
+        caller: TaskId,
+        id: system_protocol::control::instance::InstanceId,
+    ) -> Result<usize, system_protocol::control::instance::Fail> {
+        use system_protocol::control::instance::Fail;
+        if id.system != services.caller.into() {
+            return Err(Fail::Unknown);
+        }
+        let at = self
+            .instances
+            .iter()
+            .position(|instance| instance.id == id.sequence)
+            .ok_or(Fail::Unknown)?;
+        if self.instances[at].owner != caller {
+            return Err(Fail::Denied);
+        }
+        Ok(at)
+    }
+    fn submit(
+        &mut self,
+        services: &Services,
+        caller: TaskId,
+        id: system_protocol::control::instance::OperationId,
+        action: operations::Intent,
+    ) -> Result<system_protocol::control::instance::Receipt, system_protocol::control::instance::Fail>
+    {
+        use operations::Intent as Action;
+        use system_protocol::control::instance as wire;
+        let (at, fresh) = self.operations.admit(caller, id, action.clone())?;
+        if fresh {
+            if let Action::Publish(ref request) = action {
+                match self.publish_instance(services, caller, request) {
+                    Ok(()) => {
+                        if let Some(target) = request.instance.0 {
+                            self.operations.attach(at, target);
+                        }
+                        self.operations.complete(at);
+                    }
+                    Err(failure) => self.operations.reject(at, failure),
+                }
+                return Ok(self.operations.receipt(at));
+            }
+            let result = match action {
+                Action::Create(request) => self
+                    .admit(
+                        services,
+                        caller,
+                        &request.input,
+                        caller.into(),
+                        &request.subject,
+                        true,
+                    )
+                    .map(|sequence| wire::InstanceId {
+                        system: services.caller.into(),
+                        sequence,
+                    })
+                    .map_err(construction_fail),
+                Action::Start(target) | Action::Stop(target) | Action::Retire(target) => self
+                    .owned_instance(services, caller, target)
+                    .and_then(|instance| {
+                        if self.closing && matches!(action, Action::Start(_)) {
+                            return Err(wire::Fail::NotReady);
+                        }
+                        if self.instances[instance].retired() && !matches!(action, Action::Start(_))
+                        {
+                            return Ok(target);
+                        }
+                        let intent = if matches!(action, Action::Start(_)) {
+                            Intent::Run
+                        } else {
+                            Intent::Stop
+                        };
+                        self.instances[instance]
+                            .request(intent)
+                            .map_err(instance_fail)?;
+                        Ok(target)
+                    }),
+                Action::Publish(_) => unreachable!("publication committed above"),
+            };
+            match result {
+                Ok(instance) => self.operations.attach(at, instance),
+                Err(failure) => self.operations.reject(at, failure),
+            }
+        }
+        self.advance_operations();
+        Ok(self.operations.receipt(at))
+    }
+    fn advance_operations(&mut self) {
+        for at in 0..self.operations.len() {
+            if let Some(target) = self.operations.target(at) {
+                let evidence = self.instance(target.sequence).evidence();
+                self.operations.advance(at, evidence);
+            }
+        }
+    }
+    fn publish_instance(
+        &mut self,
+        services: &Services,
+        caller: TaskId,
+        request: &system_protocol::control::instance::Publication,
+    ) -> Result<(), system_protocol::control::instance::Fail> {
+        use system_protocol::{control::instance::Fail, operator as op};
+        let query = op::Resolve {
+            mark: Mark::of(request.name.as_str()).into(),
+            name: request.name.clone(),
+        };
+        match result(services.query::<op::operations::ResolveRoot>(query.clone())) {
+            Ok(old) if old.owner != caller.into() => return Err(Fail::Denied),
+            Ok(_) | Err(op::Fail::Unknown) => (),
+            Err(_) => return Err(Fail::NotReady),
+        }
+        if let Some(target) = request.instance.0 {
+            let at = self.owned_instance(services, caller, target)?;
+            if !self.instances[at].program.as_ref().is_some_and(|unit| {
+                unit.namespaces().iter().any(|ns| {
+                    ns.placement == d::Placement::Instance && ns.key == request.name.as_str()
+                })
+            }) {
+                return Err(Fail::Denied);
+            }
+        }
+        result(
+            services.mutate::<op::authority::operations::AssociateRoot>(op::unit::Associate {
+                id: op::unit::AssociationId::new(self.layout.number()).unwrap(),
+                mark: query.mark,
+                name: query.name,
+                expected: request.expected,
+                instance: request.instance.clone(),
+            }),
+        )
+        .map(|_| ())
+        .map_err(|error| match error {
+            op::Fail::Conflict => Fail::Conflict,
+            op::Fail::Full => Fail::Full,
+            op::Fail::Unknown => Fail::Unknown,
+            op::Fail::Denied => Fail::Denied,
+            _ => Fail::NotReady,
+        })
+    }
+    // One construction admission path for both interfaces. The new public
+    // contract only admits caller-owned policy; the historical construction
+    // endpoint retains its explicit owner-selection checks.
+    fn admit(
+        &mut self,
+        services: &Services,
+        caller: TaskId,
+        input: &build::Input,
+        selected_owner: system_protocol::TaskId,
+        subject: &id::Subject,
+        caller_owned: bool,
+    ) -> Result<InstanceId, build::Fail> {
+        let origin = self.caller_unit(caller).ok_or(build::Fail::Denied)?;
+        let (name, args, stack, size) = match input {
+            build::Input::Unit(input) => (
+                Some(input.name.as_str()),
+                &input.arguments.values,
+                input.stack,
+                self.catalog
+                    .find(input.name.as_str())
+                    .and_then(|unit| self.images.find(unit.loader().image))
+                    .map_or(0, |file| file.bytes.len()),
+            ),
+            build::Input::Image(input) => (
+                None,
+                &input.arguments.values,
+                input.stack,
+                input.len as usize,
+            ),
+        };
+        let policy = origin
+            .control()
+            .construction
+            .iter()
+            .find(|policy| {
+                policy.unit == name
+                    && args.len() >= usize::from(policy.arguments.min)
+                    && args.len() <= usize::from(policy.arguments.max)
+                    && stack >= policy.stack.min
+                    && stack <= policy.stack.max
+                    && (name.is_some() || size as u64 <= policy.max_image)
+            })
+            .ok_or(build::Fail::Denied)?;
+        if caller_owned && policy.owner != d::Owner::Caller {
+            return Err(build::Fail::Denied);
+        }
+        let owner = match policy.owner {
+            d::Owner::Caller => caller,
+            d::Owner::Selected => {
+                TaskId::new(usize::try_from(selected_owner.get()).map_err(|_| build::Fail::Denied)?)
+            }
+            d::Owner::Task(task) => {
+                TaskId::new(usize::try_from(task).map_err(|_| build::Fail::Denied)?)
+            }
+            d::Owner::Unit(name) => self
+                .slot(name)
+                .and_then(|at| self.programs[at].current)
+                .and_then(|id| self.instance(id).task())
+                .ok_or(build::Fail::Denied)?,
+        };
+        if selected_owner.get() != owner.get() as u64
+            || lookup(owner).is_none_or(|info| info.state == UnitState::Exited)
+        {
+            return Err(build::Fail::Denied);
+        }
+        let caller_subject = self
+            .roster
+            .subject(services, caller)
+            .map_err(|_| build::Fail::Denied)?;
+        let identity = match &policy.identity {
+            d::IdentitySelection::Caller if *subject == caller_subject => {
+                id::Install::Inherit(id::Task {
+                    task: caller.into(),
+                })
+            }
+            d::IdentitySelection::Caller => return Err(build::Fail::Denied),
+            d::IdentitySelection::Selected => id::Install::Restrict(id::Restriction {
+                parent: caller.into(),
+                subject: subject.clone(),
+            }),
+            d::IdentitySelection::Exact(declared) => {
+                let expected = crate::system::declaration::subject_value(declared)
+                    .map_err(|_| build::Fail::Denied)?;
+                if expected != *subject {
+                    return Err(build::Fail::Denied);
+                }
+                id::Install::Authorized(expected)
+            }
+        };
+        let values: Vec<_> = args
+            .iter()
+            .map(|value| usize::try_from(*value).map_err(|_| build::Fail::Bad))
+            .collect::<Result<_, _>>()?;
+        let program = name.and_then(|name| self.catalog.find(name));
+        let snapshot;
+        let bytes = match input {
+            build::Input::Unit(_) => ImageSource::Catalog(
+                self.images
+                    .find(program.as_ref().ok_or(build::Fail::Unknown)?.loader().image)
+                    .ok_or(build::Fail::BadImage)?
+                    .bytes,
+            ),
+            build::Input::Image(input) => {
+                snapshot = construction::snapshot(services, caller, input)?;
+                ImageSource::Snapshot(&snapshot)
+            }
+        };
+        self.spawn(owner, program, bytes, &values, stack as usize, identity)
+            .map_err(build_fail)
+    }
     pub fn build(
         &mut self,
         services: &Services,
@@ -639,102 +989,14 @@ impl Control {
                     if self.creates.len() == CAPACITY {
                         return Err(build::Fail::Full);
                     }
-                    let origin = self.caller_unit(caller).ok_or(build::Fail::Denied)?;
-                    let (name, args, stack, size) = match &request.input {
-                        build::Input::Unit(input) => (
-                            Some(input.name.as_str()),
-                            &input.arguments.values,
-                            input.stack,
-                            self.catalog
-                                .find(input.name.as_str())
-                                .and_then(|unit| self.images.find(unit.loader().image))
-                                .map_or(0, |file| file.bytes.len()),
-                        ),
-                        build::Input::Image(input) => (
-                            None,
-                            &input.arguments.values,
-                            input.stack,
-                            input.len as usize,
-                        ),
-                    };
-                    let policy = origin
-                        .control()
-                        .construction
-                        .iter()
-                        .find(|policy| {
-                            policy.unit == name
-                                && args.len() >= usize::from(policy.arguments.min)
-                                && args.len() <= usize::from(policy.arguments.max)
-                                && stack >= policy.stack.min
-                                && stack <= policy.stack.max
-                                && (name.is_some() || size as u64 <= policy.max_image)
-                        })
-                        .ok_or(build::Fail::Denied)?;
-                    let owner = match policy.owner {
-                        d::Owner::Caller => caller,
-                        d::Owner::Selected => TaskId::new(
-                            usize::try_from(request.owner.get())
-                                .map_err(|_| build::Fail::Denied)?,
-                        ),
-                        d::Owner::Task(task) => {
-                            TaskId::new(usize::try_from(task).map_err(|_| build::Fail::Denied)?)
-                        }
-                        d::Owner::Unit(name) => self
-                            .slot(name)
-                            .and_then(|at| self.programs[at].current)
-                            .and_then(|id| self.instance(id).task())
-                            .ok_or(build::Fail::Denied)?,
-                    };
-                    if request.owner.get() != owner.get() as u64
-                        || lookup(owner).is_none_or(|info| info.state == UnitState::Exited)
-                    {
-                        return Err(build::Fail::Denied);
-                    }
-                    let caller_subject = self
-                        .roster
-                        .subject(services, caller)
-                        .map_err(|_| build::Fail::Denied)?;
-                    let identity = match &policy.identity {
-                        d::IdentitySelection::Caller if request.subject == caller_subject => {
-                            id::Install::Inherit(id::Task {
-                                task: caller.into(),
-                            })
-                        }
-                        d::IdentitySelection::Caller => return Err(build::Fail::Denied),
-                        d::IdentitySelection::Selected => id::Install::Restrict(id::Restriction {
-                            parent: caller.into(),
-                            subject: request.subject.clone(),
-                        }),
-                        d::IdentitySelection::Exact(subject) => {
-                            let expected = crate::system::declaration::subject_value(subject)
-                                .map_err(|_| build::Fail::Denied)?;
-                            if expected != request.subject {
-                                return Err(build::Fail::Denied);
-                            }
-                            id::Install::Authorized(expected)
-                        }
-                    };
-                    let values: Vec<_> = args
-                        .iter()
-                        .map(|value| usize::try_from(*value).map_err(|_| build::Fail::Bad))
-                        .collect::<Result<_, _>>()?;
-                    let program = name.and_then(|name| self.catalog.find(name));
-                    let snapshot;
-                    let bytes = match &request.input {
-                        build::Input::Unit(_) => {
-                            self.images
-                                .find(program.as_ref().ok_or(build::Fail::Unknown)?.loader().image)
-                                .ok_or(build::Fail::BadImage)?
-                                .bytes
-                        }
-                        build::Input::Image(input) => {
-                            snapshot = construction::snapshot(services, caller, input)?;
-                            &snapshot
-                        }
-                    };
-                    let instance = self
-                        .spawn(owner, program, bytes, &values, stack as usize, identity)
-                        .map_err(build_fail)?;
+                    let instance = self.admit(
+                        services,
+                        caller,
+                        &request.input,
+                        request.owner,
+                        &request.subject,
+                        false,
+                    )?;
                     self.creates.push(Creation {
                         caller,
                         request: request.clone(),
@@ -872,6 +1134,29 @@ fn build_fail(error: api::Fail) -> build::Fail {
         api::Fail::NotReady => build::Fail::NotReady,
         api::Fail::Bad => build::Fail::Bad,
         _ => build::Fail::Denied,
+    }
+}
+fn instance_fail(error: api::Fail) -> system_protocol::control::instance::Fail {
+    use system_protocol::control::instance::Fail;
+    match error {
+        api::Fail::Unknown => Fail::Unknown,
+        api::Fail::BadImage => Fail::BadImage,
+        api::Fail::Full => Fail::Full,
+        api::Fail::NotReady => Fail::NotReady,
+        api::Fail::Bad => Fail::Bad,
+        api::Fail::Denied => Fail::Denied,
+        api::Fail::Conflict => Fail::Conflict,
+    }
+}
+fn construction_fail(error: build::Fail) -> system_protocol::control::instance::Fail {
+    use system_protocol::control::instance::Fail;
+    match error {
+        build::Fail::Unknown => Fail::Unknown,
+        build::Fail::BadImage => Fail::BadImage,
+        build::Fail::Full => Fail::Full,
+        build::Fail::NotReady => Fail::NotReady,
+        build::Fail::Bad => Fail::Bad,
+        build::Fail::Denied => Fail::Denied,
     }
 }
 fn deny_control(request: api::operations::DecodedRequest) -> api::operations::Response {

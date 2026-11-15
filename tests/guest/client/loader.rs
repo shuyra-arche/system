@@ -87,7 +87,24 @@ pub fn run(license: PendId) {
     ready(&mut first, &mut loader);
     let entries = loader.cached_entries();
     assert!(entries > 0);
-    let mut second = prepare(&mut loader, &[0xa5, 0x5a]);
+    // One immutable catalog borrow and one owned input use the same native
+    // lifecycle/cache and still get independent writable data and Task journals.
+    let mut second = loader
+        .prepare_immutable(
+            Image {
+                bytes: IMAGE,
+                kind: ProgramKind::User,
+            },
+            Spawn {
+                args: &[0xa5, 0x5a],
+                stack: 128 * 1024,
+                guard: ControlId::NONE,
+                member_exit: true,
+                creation: kernel_api::model::pend::CreationRights::FLAT
+                    | kernel_api::model::pend::CreationRights::SIGN,
+            },
+        )
+        .unwrap();
     ready(&mut second, &mut loader);
     assert_eq!(
         loader.cached_entries(),

@@ -48,9 +48,24 @@ pub(crate) enum Phase {
     Closing,
     Closed,
 }
+// A catalog image is immutable for the entire initial Task lifetime. Retaining
+// that borrow avoids allocating/retiring a second whole ELF for every attempt.
+// Caller-supplied images keep an independent owned snapshot instead.
+enum Contents {
+    Immutable(&'static [u8]),
+    Owned(Vec<u8>),
+}
+impl Contents {
+    fn bytes(&self) -> &[u8] {
+        match self {
+            Self::Immutable(bytes) => bytes,
+            Self::Owned(bytes) => bytes,
+        }
+    }
+}
 #[must_use = "retain partial construction; cancel/finish and observe Kernel reclamation"]
 pub(crate) struct Job {
-    image: Vec<u8>,
+    image: Contents,
     nest: Option<PendId>,
     child_license: Option<PendId>,
     child_space: Option<PendId>,
@@ -70,6 +85,19 @@ pub(crate) struct Job {
 }
 impl Job {
     pub(super) fn new(image: Image<'_>, spawn: Spawn<'_>) -> Result<Self, Error> {
+        let plan = Self::plan(&image, &spawn)?;
+        let mut bytes = Vec::new();
+        bytes
+            .try_reserve_exact(image.bytes.len())
+            .map_err(|_| Error::Capacity)?;
+        bytes.extend_from_slice(image.bytes);
+        Self::prepared(Contents::Owned(bytes), plan, spawn)
+    }
+    pub(super) fn immutable(image: Image<'static>, spawn: Spawn<'_>) -> Result<Self, Error> {
+        let plan = Self::plan(&image, &spawn)?;
+        Self::prepared(Contents::Immutable(image.bytes), plan, spawn)
+    }
+    fn plan(image: &Image<'_>, spawn: &Spawn<'_>) -> Result<elf::Plan, Error> {
         if image.bytes.len() > system_protocol::loader::MAX_IMAGE
             || image.kind != super::ProgramKind::User
             || spawn.args.len() > system_protocol::loader::MAX_ARGS
@@ -77,14 +105,10 @@ impl Job {
         {
             return Err(Error::Invalid);
         }
-        let plan =
-            elf::parse::<PAGE_SIZE>(image.bytes, elf::Target::native().ok_or(Error::Invalid)?)
-                .map_err(Error::Image)?;
-        let mut bytes = Vec::new();
-        bytes
-            .try_reserve_exact(image.bytes.len())
-            .map_err(|_| Error::Capacity)?;
-        bytes.extend_from_slice(image.bytes);
+        elf::parse::<PAGE_SIZE>(image.bytes, elf::Target::native().ok_or(Error::Invalid)?)
+            .map_err(Error::Image)
+    }
+    fn prepared(image: Contents, plan: elf::Plan, spawn: Spawn<'_>) -> Result<Self, Error> {
         let mut args = Vec::new();
         args.try_reserve_exact(spawn.args.len())
             .map_err(|_| Error::Capacity)?;
@@ -125,7 +149,7 @@ impl Job {
             }
         }
         Ok(Self {
-            image: bytes,
+            image,
             nest: None,
             child_license: None,
             child_space: None,
@@ -187,7 +211,7 @@ impl Job {
         }
         if self.cursor < self.segments.len() {
             let segment = &mut self.segments[self.cursor];
-            let contents = &self.image[segment.offset..segment.offset + segment.len];
+            let contents = &self.image.bytes()[segment.offset..segment.offset + segment.len];
             if segment.source.is_none() {
                 if segment.flags & 4 == 0 {
                     segment.source =
@@ -259,7 +283,7 @@ impl Job {
                 return Err(Error::Invalid);
             };
             self.task = Some(task);
-            self.image = Vec::new();
+            self.image = Contents::Immutable(&[]);
             return Ok(false);
         }
         let task = self.task.unwrap();

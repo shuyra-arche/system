@@ -9,9 +9,11 @@ use system_protocol::{
     operator::{self as api, Binding, Entry, EntryTarget, Fail, Kind, Permit},
     value::Rights,
 };
+
 pub mod gate;
 mod imports;
 pub(crate) mod journal;
+pub(crate) mod unit;
 
 struct Slot {
     name: Name,
@@ -37,6 +39,7 @@ pub struct Operator {
     slots: Vec<Option<Slot>>,
     revision: u64,
     namespaces: Vec<api::Association>,
+    units: unit::Registry,
     imports: imports::Imports,
     pub(crate) authority: Authority,
     identity: Option<TaskQuery>,
@@ -55,6 +58,7 @@ impl Operator {
             slots: Vec::new(),
             revision: 0,
             namespaces: Vec::new(),
+            units: unit::Registry::default(),
             imports: imports::Imports::new()?,
             authority: Authority::new(controller, actor),
             identity: None,
@@ -532,6 +536,15 @@ impl Operator {
         .ok_or(Fail::Full)
     }
     pub fn read(&mut self, entry: &Entry, caller: TaskId) -> Result<api::Resource, Fail> {
+        // Stable-name removal is discovery only. Closing also denies deriving
+        // a fresh consumer Pend through a remembered Entry; existing delivered
+        // Pends retain their own lifetime until explicit withdrawal.
+        if self
+            .unit_at(entry)
+            .is_some_and(|at| self.units.records()[at].root().phase != api::unit::Phase::Active)
+        {
+            return Err(Fail::Denied);
+        }
         let binding = self.binding(entry)?;
         let EntryTarget::Node(id) = entry.target else {
             return Err(Fail::NotATile);
@@ -614,7 +627,21 @@ impl Operator {
         let relative = self
             .relative(&base, &request.spec.anchor)
             .map_err(|_| AuthorityError::Denied)?;
-        self.authority.grant(request, &relative)
+        let unit = self.unit_at(&request.spec.anchor);
+        if let Some(at) = unit {
+            self.units.prepare_grant(at).map_err(|error| {
+                if error == Fail::Full {
+                    AuthorityError::Full
+                } else {
+                    AuthorityError::Denied
+                }
+            })?;
+        }
+        let result = self.authority.grant(request, &relative)?;
+        if let Some(at) = unit {
+            self.units.link_grant(at, result.1);
+        }
+        Ok(result)
     }
     pub fn authorized(
         &self,
@@ -623,6 +650,19 @@ impl Operator {
         op: api::Ops,
         name: Option<&Name>,
     ) -> Result<(), Fail> {
+        if (op.contains(api::Ops::PART)
+            || op.contains(api::Ops::BIND)
+            || op.contains(api::Ops::REPLACE)
+            || op.contains(api::Ops::GRANT))
+            && self.unit_at(entry).is_some_and(|at| {
+                !matches!(
+                    self.units.records()[at].root().phase,
+                    api::unit::Phase::Preparing | api::unit::Phase::Active
+                )
+            })
+        {
+            return Err(Fail::Denied);
+        }
         let (key, spec) = self
             .authority
             .grant_at(context.via, context.caller)
@@ -651,6 +691,153 @@ impl Operator {
         }
         Ok(())
     }
+    fn unit_at(&self, entry: &Entry) -> Option<usize> {
+        self.units.records().iter().position(|record| {
+            record.root().phase != api::unit::Phase::Retired
+                && self
+                    .relative(&record.root().registration.pane.entry, entry)
+                    .is_ok()
+        })
+    }
+    fn controller(&self, context: Context) -> Result<(), Fail> {
+        if context.authority != GrantKey::Root {
+            return Err(Fail::Denied);
+        }
+        self.permission(context, api::Ops::ALL)
+    }
+    pub(crate) fn register_root(
+        &mut self,
+        context: Context,
+        request: api::unit::Registration,
+    ) -> Result<api::unit::Root, Fail> {
+        self.controller(context)?;
+        if let Some(result) = self.units.registered(&request) {
+            return result;
+        }
+        if request.instance.system != context.caller
+            || request.owner == TaskId::NONE
+            || request.task == TaskId::NONE
+            || request.team == system_protocol::TeamId::NONE
+            || request.pane.entry.target == EntryTarget::Root
+        {
+            return Err(Fail::Bad);
+        }
+        if self.binding(&request.pane.entry)? != request.pane {
+            return Err(Fail::Conflict);
+        }
+        self.children(&self.target(&request.pane.entry)?)?;
+        if self.units.records().iter().any(|record| {
+            self.relative(&record.root().registration.pane.entry, &request.pane.entry)
+                .is_ok()
+                || self
+                    .relative(&request.pane.entry, &record.root().registration.pane.entry)
+                    .is_ok()
+        }) {
+            return Err(Fail::Conflict);
+        }
+        // This private root entrance authenticates System's execution owner.
+        // Operator has no administrative observation rights over foreign Teams;
+        // System checks the native Task/Team before this registration commit.
+        self.units.register(request)
+    }
+    pub(crate) fn advance_root(
+        &mut self,
+        context: Context,
+        request: api::unit::Advance,
+    ) -> Result<api::unit::Root, Fail> {
+        self.controller(context)?;
+        if let Some(result) = self.units.replay(&request) {
+            return result;
+        }
+        let root = self.units.get(request.instance)?;
+        if request.phase == api::unit::Phase::Retired {
+            let EntryTarget::Node(id) = root.registration.pane.entry.target else {
+                return Err(Fail::Bad);
+            };
+            if self.raw_slot(id).is_ok() {
+                return Err(Fail::NonEmpty);
+            }
+            let record = self
+                .units
+                .records()
+                .iter()
+                .find(|record| record.root().registration.instance == request.instance)
+                .ok_or(Fail::Unknown)?;
+            if record
+                .grants()
+                .iter()
+                .any(|&key| !self.authority.settled(key))
+            {
+                return Err(Fail::Denied);
+            }
+            // System sends Retired only after Job::finish proves execution,
+            // mappings and Team deletion settled. Operator separately proves
+            // its own Pane and every linked authority entrance settled above.
+        }
+        self.units.advance(request)
+    }
+    pub(crate) fn inspect_root(
+        &self,
+        context: Context,
+        id: system_protocol::control::instance::InstanceId,
+    ) -> Result<api::unit::Root, Fail> {
+        self.controller(context)?;
+        self.units.get(id).cloned()
+    }
+    pub(crate) fn associate_root(
+        &mut self,
+        context: Context,
+        request: api::unit::Associate,
+    ) -> Result<api::unit::Association, Fail> {
+        self.controller(context)?;
+        self.units.associate(request)
+    }
+    pub(crate) fn resolve_root(
+        &self,
+        request: api::Resolve,
+    ) -> Result<api::unit::Association, Fail> {
+        self.units.resolve(request.mark, &request.name)
+    }
+    pub(crate) fn own_root(
+        &self,
+        caller: TaskId,
+        after: api::unit::After,
+    ) -> Result<system_protocol::value::Optional<api::unit::Access>, Fail> {
+        let Some(record) = self.units.records().iter().find(|record| {
+            record.root().registration.task == caller
+                && matches!(
+                    record.root().phase,
+                    api::unit::Phase::Preparing | api::unit::Phase::Active
+                )
+        }) else {
+            return Ok(system_protocol::value::Optional(None));
+        };
+        // Cursor values are ordered, non-reusing Authority keys. A revoked
+        // entry cannot shift another Task's grant into the caller's result.
+        let mut cursor = after.cursor;
+        loop {
+            let candidate = record
+                .grants()
+                .iter()
+                .filter_map(|key| match key {
+                    GrantKey::Issued(number) if number.get() > cursor => Some((number.get(), *key)),
+                    _ => None,
+                })
+                .min_by_key(|(number, _)| *number);
+            let Some((number, key)) = candidate else {
+                return Ok(system_protocol::value::Optional(None));
+            };
+            cursor = number;
+            if let Some(grant) = self.authority.root_access(key, caller) {
+                return Ok(system_protocol::value::Optional(Some(api::unit::Access {
+                    root: record.root().clone(),
+                    grant,
+                    cursor,
+                })));
+            }
+        }
+    }
+
     pub(crate) fn permission(&self, context: Context, op: api::Ops) -> Result<(), Fail> {
         let (key, spec) = self
             .authority

@@ -27,6 +27,7 @@ struct ControlFace {
 pub(crate) struct Endpoints {
     control: Vec<ControlFace>,
     constructor: (PendId, protocol::Loader),
+    instances: (PendId, protocol::Instance),
     export: (PendId, protocol::Export),
     supply: (PendId, protocol::Supply),
 }
@@ -88,6 +89,16 @@ impl Endpoints {
                 .unwrap_or_else(|_| fatal("system: construction ingress binding failed")),
         );
         sources.register("system/control", "create", root, maximum());
+        let root = queue::<<api::instance::Call as Contract>::Request>(
+            services,
+            "system/control/instance",
+        );
+        let instances = (
+            root,
+            protocol::Instance::bind(root, services.license, services.context.clone())
+                .unwrap_or_else(|_| fatal("system: instance ingress binding failed")),
+        );
+        sources.register("system/control", "instance", root, maximum());
         let root = queue::<<identity::export::Call as Contract>::Request>(
             services,
             "system/identity/export",
@@ -118,6 +129,7 @@ impl Endpoints {
         Self {
             control,
             constructor,
+            instances,
             export,
             supply,
         }
@@ -143,6 +155,9 @@ impl Endpoints {
                     control.build(services, caller, request)
                 }),
         );
+        check(self.instances.1.serve_once(Wait::Poll, |caller, request| {
+            control.instance_command(services, caller, request)
+        }));
         check(
             self.export
                 .1
@@ -176,6 +191,7 @@ impl Endpoints {
             close!(face.ingress, face.root);
         }
         close!(self.constructor.1, self.constructor.0);
+        close!(self.instances.1, self.instances.0);
         close!(self.export.1, self.export.0);
         close!(self.supply.1, self.supply.0);
     }

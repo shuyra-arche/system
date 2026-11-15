@@ -405,6 +405,12 @@ impl Service {
         use api::operations::{DecodedRequest as Request, Response};
         let book = self.book.as_ref().unwrap();
         match request {
+            Request::OwnRoot(after) => {
+                Response::OwnRoot(outcome(book.own_root(caller.into(), after)))
+            }
+            Request::ResolveRoot(request) => {
+                Response::ResolveRoot(outcome(book.resolve_root(request)))
+            }
             Request::Seek(request) => {
                 Response::Seek(outcome(book.seek(&book.root(), &request.path)))
             }
@@ -506,6 +512,26 @@ impl Service {
             };
         }
         match request {
+            Request::RegisterRoot(request) => route!(RegisterRoot, |context: Context| self
+                .book
+                .as_mut()
+                .unwrap()
+                .register_root(context, request)),
+            Request::AdvanceRoot(request) => route!(AdvanceRoot, |context: Context| self
+                .book
+                .as_mut()
+                .unwrap()
+                .advance_root(context, request)),
+            Request::InspectRoot(request) => route!(InspectRoot, |context: Context| self
+                .book
+                .as_ref()
+                .unwrap()
+                .inspect_root(context, request)),
+            Request::AssociateRoot(request) => route!(AssociateRoot, |context: Context| self
+                .book
+                .as_mut()
+                .unwrap()
+                .associate_root(context, request)),
             Request::Part(request) => {
                 route!(Part, |context: Context| self
                     .mutate(context, Intent::Part(request)))

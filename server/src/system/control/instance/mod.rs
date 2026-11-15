@@ -20,16 +20,7 @@ use system_protocol::{
     identity,
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct InstanceId(core::num::NonZeroU64);
-impl InstanceId {
-    pub fn new(value: u64) -> Option<Self> {
-        core::num::NonZeroU64::new(value).map(Self)
-    }
-    pub fn get(self) -> u64 {
-        self.0.get()
-    }
-}
+pub(crate) use system_protocol::control::instance::Sequence as InstanceId;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Intent {
     Dormant,
@@ -66,6 +57,22 @@ pub(crate) struct Instance {
     supplied: bool,
 }
 impl Instance {
+    fn construct(&mut self, loader: &mut Loader) -> Result<bool, crate::system::loader::Error> {
+        // Amortize the supervisor's ingress/health round over a small native
+        // quantum. One page per full scheduler round made ordinary large ELFs
+        // compete with every poll and worker yield during startup. Each step
+        // still commits through Job; no Busy or elapsed time proves completion.
+        let until = kernel_client::call::room::clock().saturating_add(250_000_000);
+        for _ in 0..8 {
+            if self.job.advance(loader)? {
+                return Ok(true);
+            }
+            if kernel_client::call::room::clock() >= until {
+                break;
+            }
+        }
+        Ok(false)
+    }
     pub fn new(
         id: InstanceId,
         owner: TaskId,
@@ -100,6 +107,12 @@ impl Instance {
     pub fn task(&self) -> Option<TaskId> {
         self.job.task()
     }
+    /// Monotonic native exit evidence survives Job/Team deletion. An unavailable
+    /// fresh query must not be interpreted as proof that an owner has died.
+    pub(super) fn exited_task(&self) -> Option<TaskId> {
+        self.exited
+            .then(|| TaskId::new(self.last.task.get() as usize))
+    }
     pub fn anchor(&self, index: usize) -> Option<system_protocol::operator::Entry> {
         self.installation.namespaces.anchors.get(index).cloned()
     }
@@ -117,6 +130,46 @@ impl Instance {
     }
     pub fn ready(&self) -> bool {
         self.stage == Stage::Started && self.ready && self.intent == Intent::Run
+    }
+    pub fn snapshot(
+        &self,
+        system: system_protocol::TaskId,
+    ) -> system_protocol::control::instance::Observation {
+        use system_protocol::control::instance::{InstanceId, Observation, Phase};
+        Observation {
+            instance: InstanceId {
+                system,
+                sequence: self.id,
+            },
+            phase: match self.stage {
+                Stage::Building | Stage::Installing => Phase::Building,
+                Stage::Prepared => Phase::Prepared,
+                Stage::Started => Phase::Running,
+                Stage::Retiring | Stage::Uninstalling | Stage::Reclaiming => Phase::Closing,
+                Stage::Retired => Phase::Retired,
+            },
+            ready: self.ready(),
+            task: self.last.task,
+            team: self.last.team,
+            reason: self.last.reason,
+            failure: system_protocol::value::Optional(
+                self.failure
+                    .map(|value| weave::Coded(super::instance_fail(value))),
+            ),
+            root: system_protocol::value::Optional(self.installation.namespaces.root()),
+        }
+    }
+    pub(super) fn evidence(&self) -> super::operations::Evidence {
+        super::operations::Evidence {
+            constructed: self.constructed(),
+            started: self.stage == Stage::Started,
+            stopped: matches!(
+                self.stage,
+                Stage::Uninstalling | Stage::Reclaiming | Stage::Retired
+            ),
+            retired: self.retired(),
+            failure: self.failure.map(super::instance_fail),
+        }
     }
     pub fn contains_caller(&self, caller: TaskId) -> bool {
         !self.retired()
@@ -193,11 +246,13 @@ impl Instance {
             if info.state == UnitState::Exited && self.stage == Stage::Started {
                 self.intent = Intent::Stop;
             }
-            if self.owner != services.caller
-                && lookup(self.owner).is_none_or(|info| info.state == UnitState::Exited)
-            {
-                self.intent = Intent::Stop;
-            }
+        }
+        // Ownership applies before a native Task exists as well. A caller that
+        // dies during image preparation must not leave a dormant orphan.
+        if self.owner != services.caller
+            && lookup(self.owner).is_some_and(|info| info.state == UnitState::Exited)
+        {
+            self.intent = Intent::Stop;
         }
         if self.intent == Intent::Stop
             && !matches!(
@@ -205,6 +260,10 @@ impl Instance {
                 Stage::Retiring | Stage::Uninstalling | Stage::Reclaiming
             )
         {
+            self.installation
+                .namespaces
+                .phase(services, system_protocol::operator::unit::Phase::Closing)
+                .map_err(|_| "instance root closing")?;
             if let Some(task) = self.job.task() {
                 self.gate = Gate::new(
                     task,
@@ -216,7 +275,7 @@ impl Instance {
             self.stage = Stage::Retiring;
         }
         match self.stage {
-            Stage::Building => match self.job.advance(loader) {
+            Stage::Building => match self.construct(loader) {
                 Ok(true) => {
                     if self.job.phase() != crate::system::loader::Phase::Dormant {
                         return Err("invalid physical construction phase");
@@ -251,6 +310,7 @@ impl Instance {
                     crate::system::assembly::Plan {
                         instance: self.id.get(),
                         task,
+                        owner: self.owner,
                         unit: self.program.as_ref(),
                         identity: self.identity.clone(),
                     },
@@ -297,6 +357,10 @@ impl Instance {
                 match self.installation.ready() {
                     Ok(ready) => {
                         if ready && !self.ready {
+                            self.installation
+                                .namespaces
+                                .phase(services, system_protocol::operator::unit::Phase::Active)
+                                .map_err(|_| "instance root activation")?;
                             crate::system::app::events::emit(unit_contract::event::Event::Ready {
                                 task: task.get() as u64,
                             });
@@ -317,6 +381,10 @@ impl Instance {
                         .and_then(|(_, values)| values.get(index))
                         .cloned()
                 }) {
+                    self.installation
+                        .namespaces
+                        .phase(services, system_protocol::operator::unit::Phase::Retiring)
+                        .map_err(|_| "instance root retirement")?;
                     self.job.cancel().map_err(|_| "instance stop")?;
                     self.stage = Stage::Uninstalling;
                 }
@@ -333,6 +401,10 @@ impl Instance {
             }
             Stage::Reclaiming => match self.job.finish() {
                 Ok(true) => {
+                    self.installation
+                        .namespaces
+                        .phase(services, system_protocol::operator::unit::Phase::Retired)
+                        .map_err(|_| "instance root settlement")?;
                     if let Some(info) = self.job.result() {
                         if !info.reclaimed {
                             return Err("retired Task reclamation unproven");

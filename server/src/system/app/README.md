@@ -52,10 +52,12 @@ its Capsule-owned stack. The 64 KiB Kernel bootstrap stack was insufficient for
 the unoptimized application; fault addresses in transport/allocator code were
 not evidence of a transport defect. Complete SMP and debug-Kernel application
 verification is kept separately (see the [application scenario](../../../../tests/guest/system/README.md)).
-Public operation/instance identity and lifetime semantics, returned UnitRoot,
-Create cancellation/replay pressure, selected-owner death, retirement-provider
-failure, supervision recovery, and std User integration require further focused
-validation before S1/S2/S3 can be accepted. The old daemon/session/application
+The [Instance v1 handoff](../../../../docs/instance.md) adds public instance IDs,
+queryable receipts, optional Operator UnitRoots and revision-checked publication.
+It shares these native owners and has an independent-Team application fixture.
+Additional-Task grants, selected-owner transfer/death, retirement-provider
+failure, full pressure campaigns, live takeover and std User integration still
+require focused validation before S1/S2/S3 can be accepted. The old daemon/session/application
 policy hooks and test callback injections are not compatibility layers here.
 
 ## Retired path mapping
