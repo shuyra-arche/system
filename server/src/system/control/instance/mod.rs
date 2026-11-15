@@ -134,9 +134,18 @@ impl Instance {
     pub fn observation(&self) -> Observation {
         self.last.clone()
     }
-    pub fn ready(&self) -> bool {
-        self.stage == Stage::Started && self.ready && self.intent == Intent::Run
+    /// Live execution admission is separate from application readiness. Supply
+    /// may be needed to initialize the service that will later signal Ready.
+    pub fn closing(&self) -> bool {
+        self.intent == Intent::Stop
     }
+    pub fn running(&self) -> bool {
+        self.stage == Stage::Started && self.intent == Intent::Run
+    }
+    pub fn ready(&self) -> bool {
+        self.running() && self.ready
+    }
+
     pub fn snapshot(
         &self,
         system: system_protocol::TaskId,

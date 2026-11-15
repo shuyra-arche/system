@@ -381,22 +381,14 @@ impl Source {
                     }
                 }
             }
-            State::Granted => {
-                let mut bytes = [0; PendInfo::SIZE];
-                match pend::inspect(
-                    lease.root.unwrap(),
-                    VirtAddr::new(bytes.as_mut_ptr().addr()),
-                ) {
-                    Ok(())
-                        if PendInfo::from_bytes(&bytes)
-                            .is_some_and(|info| info.status == PendStatus::Active) => {}
-                    Err(error) if error.source.is_busy() => (),
-                    _ => {
-                        lease.failure = Some(Fail::SourceLost);
-                        lease.state = State::Releasing;
-                    }
+            State::Granted => match inspect(lease.root.unwrap()) {
+                Ok(info) if info.status == PendStatus::Active => (),
+                Err(Fail::Pending) => (),
+                _ => {
+                    lease.failure = Some(Fail::SourceLost);
+                    lease.state = State::Releasing;
                 }
-            }
+            },
             State::Releasing => {
                 if let Some(root) = lease.root {
                     if !retire(root)? {
@@ -469,7 +461,13 @@ fn accord(
     .to_bytes();
     pend::accord(VirtAddr::new(request.as_ptr().addr())).map_err(|error| failure(error.source))
 }
-fn retire(token: PendId) -> Result<bool, Fail> {
+pub(super) fn inspect(token: PendId) -> Result<PendInfo, Fail> {
+    let mut bytes = [0; PendInfo::SIZE];
+    pend::inspect(token, VirtAddr::new(bytes.as_mut_ptr().addr()))
+        .map_err(|error| failure(error.source))?;
+    PendInfo::from_bytes(&bytes).ok_or(Fail::Bad)
+}
+pub(super) fn retire(token: PendId) -> Result<bool, Fail> {
     match pend::return_(token) {
         Ok(()) => Ok(true),
         Err(error) if error.source.is_busy() => Ok(false),

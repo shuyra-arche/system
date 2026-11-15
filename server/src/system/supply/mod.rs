@@ -1,6 +1,7 @@
 //! Native resource sources. A provider owns its roots; System does not infer
 //! IOMMU, PCI, IRQ or retirement authority from a device description.
 pub(crate) mod native;
+mod providers;
 use alloc::{string::String, vec::Vec};
 use kernel_api::model::{
     identity::{Mark, PendId, TaskId},
@@ -18,6 +19,7 @@ struct Definition {
 #[derive(Default)]
 pub(crate) struct Registry {
     definitions: Vec<Definition>,
+    providers: providers::Providers,
 }
 impl Registry {
     pub fn register(&mut self, source: &str, resource: &str, root: PendId, maximum: Limits) {
@@ -29,6 +31,31 @@ impl Registry {
         });
     }
 
+    fn named(&self, source: &str, resource: &str) -> Option<(PendId, Limits)> {
+        self.definitions
+            .iter()
+            .find(|row| row.source == source && row.resource == resource)
+            .map(|row| (row.root, row.maximum))
+            .or_else(|| self.providers.find(source, resource))
+    }
+    pub fn advance(&mut self, mut exited: impl FnMut(TaskId) -> bool) -> Result<(), Fail> {
+        self.providers.advance(
+            |caller, root| {
+                exited(caller)
+                    || match native::inspect(root) {
+                        Ok(info) => info.status != kernel_api::model::pend::PendStatus::Active,
+                        Err(Fail::Pending) => false,
+                        Err(_) => true,
+                    }
+            },
+            native::retire,
+        )
+    }
+    pub fn finish(&mut self) -> Result<bool, Fail> {
+        self.providers.close();
+        self.advance(|_| false)?;
+        Ok(self.providers.closed())
+    }
     pub fn marked(&self, mark: Mark, requested: Limits) -> Option<PendId> {
         self.definitions
             .iter()
@@ -50,14 +77,10 @@ impl Registry {
             .try_reserve_exact(bindings.len())
             .map_err(|_| Fail::Full)?;
         for binding in bindings {
-            let row = self
-                .definitions
-                .iter()
-                .find(|row| {
-                    row.source == binding.source.name && row.resource == binding.resource.name
-                })
+            let (root, maximum) = self
+                .named(&binding.source.name, &binding.resource.name)
                 .ok_or(Fail::Unknown)?;
-            if !row.maximum.permits_narrowing(binding.rights.0) {
+            if !maximum.permits_narrowing(binding.rights.0) {
                 return Err(Fail::Denied);
             }
             let source = Source::new(&binding.source.name)?;
@@ -66,7 +89,7 @@ impl Registry {
             let source = owner.sources.last_mut().unwrap();
             source.register(Resource {
                 name: &binding.resource.name,
-                source: row.root,
+                source: root,
                 maximum: binding.rights.0,
                 caller,
                 target: Some(target),
@@ -111,6 +134,9 @@ impl Leases {
 struct ClientSource {
     caller: TaskId,
     key: String,
+    resource: String,
+    origin: PendId,
+    maximum: Limits,
     source: Source,
 }
 struct Route {
@@ -127,8 +153,9 @@ pub(crate) struct Service {
 impl Service {
     pub fn answer(
         &mut self,
-        registry: &Registry,
+        registry: &mut Registry,
         caller: TaskId,
+        provider: Option<&str>,
         policy: &[api::Binding],
         request: api::operations::DecodedRequest,
     ) -> api::operations::Response {
@@ -147,15 +174,13 @@ impl Service {
                     if self.closing || request.target.get() != caller.get() as u64 {
                         return Err(Fail::Denied);
                     }
-                    let allowed = policy.iter().any(|binding| {
+                    let allowed = policy.iter().find(|binding| {
                         binding.source == request.binding.source
                             && binding.resource == request.binding.resource
                             && binding.slot == request.binding.slot
                             && binding.rights.0.permits_narrowing(request.binding.rights.0)
                     });
-                    if !allowed {
-                        return Err(Fail::Denied);
-                    }
+                    let allowed = allowed.ok_or(Fail::Denied)?;
                     let at = if let Some(route) = self
                         .routes
                         .iter()
@@ -176,42 +201,43 @@ impl Service {
                             return Err(Fail::Full);
                         }
                         self.routes.try_reserve(1).map_err(|_| Fail::Full)?;
+                        let (root, maximum) = registry
+                            .named(&request.binding.source.name, &request.binding.resource.name)
+                            .ok_or(Fail::Unknown)?;
+                        if !maximum.permits_narrowing(allowed.rights.0) {
+                            return Err(Fail::Denied);
+                        }
+                        let maximum = allowed.rights.0;
                         let at = if let Some(at) = self.clients.iter().position(|source| {
-                            source.caller == caller && source.key == request.binding.source.name
+                            source.caller == caller
+                                && source.key == request.binding.source.name
+                                && source.resource == request.binding.resource.name
+                                && source.origin == root
+                                && source.maximum == maximum
                         }) {
                             at
                         } else {
-                            if self.clients.len() == 64 {
-                                return Err(Fail::Full);
-                            }
+                            // Each cache entry is committed with a new route;
+                            // the existing MAX_LEASES route budget bounds both.
                             self.clients.try_reserve(1).map_err(|_| Fail::Full)?;
+                            let mut source = Source::new(&request.binding.source.name)?;
+                            source.register(Resource {
+                                name: &request.binding.resource.name,
+                                source: root,
+                                maximum,
+                                caller,
+                                target: None,
+                                description: &[],
+                            })?;
                             let at = self.clients.len();
                             self.clients.push(ClientSource {
                                 caller,
                                 key: request.binding.source.name.clone(),
-                                source: Source::new(&request.binding.source.name)?,
+                                resource: request.binding.resource.name.clone(),
+                                origin: root,
+                                maximum,
+                                source,
                             });
-                            for binding in policy
-                                .iter()
-                                .filter(|binding| binding.source == request.binding.source)
-                            {
-                                if let Some(definition) = registry.definitions.iter().find(|row| {
-                                    row.source == binding.source.name
-                                        && row.resource == binding.resource.name
-                                }) {
-                                    if !definition.maximum.permits_narrowing(binding.rights.0) {
-                                        return Err(Fail::Denied);
-                                    }
-                                    self.clients[at].source.register(Resource {
-                                        name: &binding.resource.name,
-                                        source: definition.root,
-                                        maximum: binding.rights.0,
-                                        caller,
-                                        target: None,
-                                        description: &[],
-                                    })?;
-                                }
-                            }
                             at
                         };
                         self.routes.push(Route {
@@ -224,6 +250,29 @@ impl Service {
                     self.clients[at].source.acquire(caller, request)
                 })();
                 answer!(Acquire, value)
+            }
+            Q::Register(request) => {
+                let value = if self.closing {
+                    Err(Fail::Denied)
+                } else if registry
+                    .definitions
+                    .iter()
+                    .any(|row| row.source == request.source.name)
+                {
+                    Err(Fail::Conflict)
+                } else {
+                    registry
+                        .providers
+                        .register(caller, provider, request, native::inspect)
+                };
+                answer!(Register, value)
+            }
+            Q::InspectSource(request) => answer!(
+                InspectSource,
+                registry.providers.inspect(caller, request.id)
+            ),
+            Q::Withdraw(request) => {
+                answer!(Withdraw, registry.providers.withdraw(caller, request.id))
             }
             Q::Inspect(request) => answer!(
                 Inspect,

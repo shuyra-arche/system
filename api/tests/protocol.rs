@@ -388,3 +388,75 @@ fn grant_routes_keep_recovery_and_install_authorities() {
     };
     assert!(!receipt.settled());
 }
+
+#[test]
+fn supply_registration_is_bounded_and_keeps_original_operation_codes() {
+    use kernel_api::model::{
+        modifiable::Modifiable,
+        pend::{Distributable, Limits, Operations, PendScope},
+        sign::SignRights,
+    };
+    let register = supply::Register {
+        id: supply::RegistrationId::new(1).unwrap(),
+        source: supply::Key {
+            name: "provider".into(),
+        },
+        resource: supply::Key {
+            name: "signal".into(),
+        },
+        offered: PendId::new(100),
+        maximum: Rights(Limits {
+            operations: Operations::Sign(SignRights::TRIGGER),
+            modifiable: Modifiable::No,
+            distributable: Distributable::No,
+            scope: PendScope::Object,
+        }),
+    };
+    complete(&register);
+    complete(&supply::operations::Request::Register(register.clone()));
+    let encoded = bytes(&register);
+    assert_eq!(supply::Register::decode_exact(&encoded), Some(register));
+    assert!(supply::RegistrationId::decode_exact(&[0; 8]).is_none());
+    let lease = supply::Lease {
+        lease: supply::LeaseId::new(7).unwrap(),
+    };
+    for (code, request) in [
+        (2, supply::operations::Request::Inspect(lease.clone())),
+        (3, supply::operations::Request::Release(lease.clone())),
+        (4, supply::operations::Request::Cancel(lease)),
+    ] {
+        let encoded = bytes(&request);
+        assert_eq!(encoded[0], code);
+        assert_eq!(&encoded[1..], &7u64.to_le_bytes());
+    }
+    let registration = supply::Registration {
+        id: supply::RegistrationId::new(1).unwrap(),
+    };
+    for (code, request) in [
+        (6, supply::operations::Request::InspectSource(registration)),
+        (7, supply::operations::Request::Withdraw(registration)),
+    ] {
+        let encoded = bytes(&request);
+        assert_eq!(encoded[0], code);
+        complete(&request);
+    }
+}
+#[test]
+fn source_status_rejects_unknown_state_and_never_accepts_partial_frames() {
+    for state in [
+        supply::SourceState::Active,
+        supply::SourceState::Closing,
+        supply::SourceState::Closed,
+        supply::SourceState::Cancelled,
+    ] {
+        let status = supply::SourceStatus {
+            id: supply::RegistrationId::new(1).unwrap(),
+            state,
+        };
+        complete(&status);
+        let mut encoded = bytes(&status);
+        assert_eq!(supply::SourceStatus::decode_exact(&encoded), Some(status));
+        *encoded.last_mut().unwrap() = 255;
+        assert!(supply::SourceStatus::decode_exact(&encoded).is_none());
+    }
+}

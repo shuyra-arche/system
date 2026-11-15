@@ -24,6 +24,8 @@ RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**
 | `tests/` | Host contracts and explicit target component fixtures |
 
 Production packages keep `no_std`. Test code belongs under `tests/`.
+The [external Supply registration contract](docs/supply.md) adds caller-scoped
+source registration/withdrawal for declared Instance installation.
 The [Instance handoff v1](docs/instance.md) adds caller-owned instance operations,
 queryable receipts and Operator UnitRoots for the Hub integration. Its native
 [independent-Team fixture](tests/guest/handoff/README.md) is a provider increment;

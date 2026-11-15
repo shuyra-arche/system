@@ -139,7 +139,7 @@ impl Endpoints {
         services: &Services,
         control: &mut Control,
         supply: &mut Supply,
-        sources: &Registry,
+        sources: &mut Registry,
     ) {
         for face in &mut self.control {
             let role = face.role;
@@ -170,7 +170,13 @@ impl Endpoints {
                 }),
         );
         check(self.supply.1.serve_once(Wait::Poll, |caller, request| {
-            supply.answer(sources, caller, &control.supply_policy(caller), request)
+            supply.answer(
+                sources,
+                caller,
+                control.supply_provider(caller),
+                &control.supply_policy(caller),
+                request,
+            )
         }));
     }
     pub fn finish(&mut self) {

@@ -14,6 +14,10 @@ invalid identities/limits, startup selection, missing/cyclic dependencies,
 borrowed record strings and explicit VNU1 rejection. Program intent and retained
 receipts remain separate from physical Instance evidence.
 
+The `organization` target exercises the actual external registration owner
+with explicit caller/grant/completion facts, including cancellation, failed
+withdrawal and same-name replacement. Native grant proof is established separately.
+
 The `runtime` target supplies a scripted memory transport to the actual memory
 owner. It checks retained requests, version ordering and continuation rules;
 it does not execute Kernel traps. Test facades live here rather than in

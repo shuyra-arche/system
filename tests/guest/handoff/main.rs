@@ -16,6 +16,7 @@ pub mod runtime {
 mod owner;
 #[path = "../../../server/src/protocol/mod.rs"]
 pub mod protocol;
+mod provider;
 #[path = "../../../server/src/system/supply/native.rs"]
 pub mod source;
 use alloc::{string::String, vec};
@@ -818,7 +819,7 @@ fn cancellation(client: &mut system_client::instance::Client, subject: &identity
     let _ = writeln!(Console, "PASS handoff lost-reply=1 pending-cancel=1");
 }
 
-fn driver(license: PendId, context: Context, authorization: bool) -> ! {
+fn driver(license: PendId, context: Context, authorization: bool, installed: bool) -> ! {
     let info = own();
     let UnitTarget::Task(caller) = info.target else {
         panic!("Task")
@@ -829,6 +830,26 @@ fn driver(license: PendId, context: Context, authorization: bool) -> ! {
         Operations::Sign(SignRights::TRIGGER)
     );
     assert_eq!(device.limits.distributable, Distributable::No);
+    if installed {
+        assert_eq!(
+            device.lender, info.creator,
+            "System performs declared installation"
+        );
+    }
+    let mut supplied = if installed {
+        let info = find(|info| info.mark == Mark::new(9));
+        Some(
+            system_client::supply::Client::bind(info.token, info.owner, license, context.clone())
+                .unwrap(),
+        )
+    } else {
+        None
+    };
+    let mut lease = 1;
+    if let Some(client) = supplied.as_mut() {
+        provider::self_lease(client, caller, lease, false);
+        lease += 1;
+    }
     sign::trigger(device.token).unwrap();
     let mut discovery = discovery(license, context.clone());
     let access = success(finish(
@@ -955,7 +976,11 @@ fn driver(license: PendId, context: Context, authorization: bool) -> ! {
                 if name == "observer" {
                     observer = true;
                 }
-                let reason = if matches!(name, "observer" | "authorization") {
+                let reason = if name == "acquire" && installed {
+                    provider::self_lease(supplied.as_mut().unwrap(), caller, lease, true);
+                    lease += 1;
+                    2
+                } else if matches!(name, "observer" | "authorization") {
                     u64::from(observer)
                 } else {
                     u64::from(name == "revoked")
@@ -1015,8 +1040,12 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
         owner::run(license, context, role);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
     }
-    if matches!(role, 1 | 5) {
-        driver(license, context, role == 1)
+    if role == 14 {
+        provider::run(license, context);
+        unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    }
+    if matches!(role, 1 | 5 | 15) {
+        driver(license, context, role == 1, role == 15)
     }
     controller(license, context, role);
     unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)

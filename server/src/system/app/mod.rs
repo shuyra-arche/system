@@ -76,8 +76,12 @@ pub fn run(boot: Boot) -> Result<(), usize> {
     let result = loop {
         crate::runtime::heap::poll();
         services.health();
-        endpoints.advance(&services, &mut control, &mut supply, &sources);
-        if supply.advance().is_err() {
+        endpoints.advance(&services, &mut control, &mut supply, &mut sources);
+        if sources
+            .advance(|caller| control.provider_closing(caller))
+            .is_err()
+            || supply.advance().is_err()
+        {
             break Err(4);
         }
         if control.progress(&services, &sources).is_err() {
@@ -128,6 +132,13 @@ pub fn run(boot: Boot) -> Result<(), usize> {
     {
         crate::runtime::heap::poll();
         bound(deadline, "system: supply retirement timeout");
+    }
+    while !sources
+        .finish()
+        .unwrap_or_else(|_| fatal("system: provider retirement failed"))
+    {
+        crate::runtime::heap::poll();
+        bound(deadline, "system: provider retirement timeout");
     }
     crate::debug::put(&alloc::format!(
         "system: retiring {} cached images\n",

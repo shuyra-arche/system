@@ -6,7 +6,14 @@ use unit_contract::{
 pub fn scenario(value: &str) -> bool {
     matches!(
         value,
-        "handoff" | "auth" | "death" | "cancel" | "owner" | "owner-cancel" | "owner-death"
+        "handoff"
+            | "auth"
+            | "death"
+            | "cancel"
+            | "owner"
+            | "owner-cancel"
+            | "owner-death"
+            | "supply"
     )
 }
 
@@ -92,6 +99,36 @@ pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
             ..Default::default()
         },
     ];
+    if scenario == "supply" {
+        catalog[0].loader.args = vec![14];
+        catalog[0].control.ready = d::Ready::Signal(0xc0de);
+        let mut service = catalog[0].supply.bindings[0].clone();
+        service.source = "system".into();
+        service.resource = "supply".into();
+        service.slot = 8;
+        catalog[0].supply.bindings.push(service);
+        let mut state = catalog[0].supply.bindings[0].clone();
+        state.resource = "state".into();
+        state.slot = 10;
+        catalog[0].supply.bindings.push(state);
+        catalog[1].supply.bindings.push(d::v2::SupplyBinding {
+            source: "controller".into(),
+            resource: "signal".into(),
+            slot: 0xbeef,
+            rights: d::Rights {
+                operations: d::rights::Operations::Sign(vec![d::rights::Sign::Trigger]),
+                modifiable: false,
+                distributable: false,
+                window: d::rights::Window::Inherit,
+            },
+        });
+        let mut self_binding = catalog[1].supply.bindings[0].clone();
+        self_binding.slot = 0xbef0;
+        catalog[1].supply.bindings.push(self_binding);
+        let mut consumer = catalog[0].supply.bindings[1].clone();
+        consumer.slot = 9;
+        catalog[1].supply.bindings.push(consumer);
+    }
     if scenario == "auth" {
         let mut observer = catalog[0].clone();
         observer.id = "observer".into();
@@ -136,6 +173,9 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
     let serial = String::from_utf8_lossy(log);
     assert!(!serial.contains("FAIL handoff") && !serial.contains("page fault killed"));
     let marker = match scenario {
+        "supply" => {
+            "PASS handoff provider=1 register=1 installed=1 replay=1 revoke=1 ancestor=1 rebind=1"
+        }
         "death" => "PASS handoff owner-death accepted=1",
         "cancel" => "PASS handoff lost-reply=1 pending-cancel=1",
         "auth" => "PASS handoff create=1 replay=1 conflict=1 root-grants=1 stale=1",
@@ -166,7 +206,7 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
     }
     assert!(
         bound.len()
-            >= if matches!(scenario, "handoff" | "auth" | "owner") {
+            >= if matches!(scenario, "handoff" | "auth" | "owner" | "supply") {
                 3
             } else if matches!(scenario, "owner-cancel" | "owner-death") {
                 2

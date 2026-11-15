@@ -1179,8 +1179,23 @@ fn deny_control(request: api::operations::DecodedRequest) -> api::operations::Re
 }
 
 impl Control {
+    fn supply_unit(&self, caller: TaskId) -> Option<Arc<Unit>> {
+        self.instances
+            .iter()
+            .find(|instance| instance.running() && instance.contains_caller(caller))
+            .and_then(|instance| instance.program.clone())
+    }
+    pub fn supply_provider(&self, caller: TaskId) -> Option<&'static str> {
+        self.supply_unit(caller).map(|unit| unit.name())
+    }
+    pub fn provider_closing(&self, caller: TaskId) -> bool {
+        self.instances.iter().any(|instance| {
+            instance.exited_task() == Some(caller)
+                || (instance.closing() && instance.contains_caller(caller))
+        })
+    }
     pub fn supply_policy(&self, caller: TaskId) -> Vec<system_protocol::supply::Binding> {
-        self.caller_unit(caller)
+        self.supply_unit(caller)
             .map_or_else(Vec::new, |unit| unit.supply().to_vec())
     }
     pub fn export(
