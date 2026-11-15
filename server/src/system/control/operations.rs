@@ -11,6 +11,7 @@ use system_protocol::{
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) enum Intent {
     Create(Box<system_protocol::control::instance::Create>),
+    CreateFor(Box<system_protocol::control::instance::CreateFor>),
     Start(InstanceId),
     Stop(InstanceId),
     Retire(InstanceId),
@@ -139,7 +140,7 @@ impl Journal {
             Completion::Pending => (),
         }
         let complete = match record.intent {
-            Intent::Create(_) => evidence.constructed,
+            Intent::Create(_) | Intent::CreateFor(_) => evidence.constructed,
             Intent::Start(_) => evidence.started,
             Intent::Stop(_) => evidence.stopped,
             Intent::Retire(_) => evidence.retired,
