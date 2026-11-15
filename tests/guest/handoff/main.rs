@@ -2,6 +2,8 @@
 #![no_std]
 #![no_main]
 extern crate alloc;
+// This fixture uses the production allocator, but creates no same-Team workers.
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/heap/mod.rs"]
 pub mod heap;
 #[path = "../../../server/src/runtime/memory.rs"]
@@ -9,7 +11,6 @@ pub mod memory;
 #[path = "../../../server/src/runtime/termination.rs"]
 pub mod termination;
 pub mod runtime {
-    pub(crate) use crate::heap;
     pub use crate::{memory, termination};
 }
 #[path = "../../../server/src/protocol/mod.rs"]
