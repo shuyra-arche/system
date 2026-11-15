@@ -1,4 +1,7 @@
-//! Bounded image import and declared construction admission; never wire authority.
+//! Native construction support: bounded receipt ownership and private image import.
+mod receipts;
+pub(super) use receipts::{Creation, Ledger};
+
 use crate::runtime::view::Mapping;
 use crate::system::app::services::{LIMIT_NS, Services, bound, fatal, probe, release};
 use alloc::vec::Vec;

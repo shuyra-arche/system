@@ -19,7 +19,7 @@ RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**
 | `client/` | Task-local clients and retained reply cleanup |
 | `server/src/protocol/` | Authenticated ingress before service effects |
 | `server/src/runtime/` | Initial-Task heap and native memory result ownership |
-| `server/src/system/` | Services, declarations and supervisor migration |
+| `server/src/system/` | Services, declarations and supervisor migration; [`control/`](server/src/system/control/README.md) documents Control and construction receipt ownership |
 | `support/` | Borrowed boot archive, typed ledger and bounded platform facts |
 | `tests/` | Host contracts and explicit target component fixtures |
 
