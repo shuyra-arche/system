@@ -35,14 +35,14 @@ Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
 
 | Provider | Exact revision |
 | --- | --- |
-| Kernel API/Client | `9c0fc4da1ca4e41bd6ddea3cba2b5964c07323d2` (ABI/Ledger 13/13, Capsule 2) |
-| Twine | `e547f60b2ed4c3c09c49de3a360210d90d4ad972` |
+| Kernel API/Client | `789ffd19b5359f3de172fb9aad8a61f6a7113a64` (ABI/Ledger 13/13, Capsule 2) |
+| Twine | `932454c07bd2673ac7d6d9612d36182aae71e8b2` |
 | Weave | `7a7d67fb3f190aeb43049d051b0972bcd53213bc` |
 | Unit declarations | `aaa2b58c1ef0b40428dcc71d1321736156551109` (schema 2, runtime disabled) |
 
 This candidate coordinates Kernel #160/#206/#188 and the API macro relocation.
 API/Client/Server and Twine share the published full Kernel SHA above; the test
-platform selects Vanllia `5ec59a466ed5f05acb9c5559aa1cc5e91fa5dfa4`.
+platform selects Vanllia `0eb086a2416eee8921416b12bf94819b30b6bb1f`.
 Land Kernel, then Twine/System, then Vanllia composition. No release is implied.
 ABI 11/12 images and old Task descriptors require a coordinated rebuild.
 Every external Capsule and ordinary Task executes in User mode through ECALL;
