@@ -1,7 +1,11 @@
 extern crate alloc;
 extern crate system_api as system_protocol;
+#[path = "../../server/src/system/control/construction/receipts.rs"]
+#[allow(dead_code)]
+mod construction_receipts;
 #[path = "../../server/src/system/control/operations.rs"]
 mod journal;
+use construction_receipts::{Creation, Ledger};
 use journal::{Evidence, Intent, Journal};
 use kernel_api::model::identity::TaskId as NativeTask;
 use system_api::{
@@ -49,6 +53,130 @@ fn create() -> Intent {
         )
         .unwrap(),
     }))
+}
+
+fn construction_request(id: u64, stack: u64) -> loader::Build {
+    loader::Build {
+        id: loader::CreateId::new(id).unwrap(),
+        input: loader::Input::Unit(loader::UnitInput {
+            name: Name::new("worker").unwrap(),
+            stack,
+            arguments: loader::Arguments {
+                values: alloc::vec![1],
+            },
+        }),
+        owner: TaskId::new(4),
+        subject: Subject::new(
+            PrincipalId {
+                authority: TaskId::new(2),
+                slot: 0,
+            },
+            &[],
+        )
+        .unwrap(),
+    }
+}
+
+fn sequence(value: u64) -> Sequence {
+    Sequence::new(value).unwrap()
+}
+
+#[test]
+fn construction_ids_replay_exactly_and_are_scoped_to_the_caller() {
+    let caller = NativeTask::new(8);
+    let other = NativeTask::new(9);
+    let request = construction_request(1, 4096);
+    let mut ledger = Ledger::new(2).unwrap();
+
+    assert_eq!(ledger.replay(caller, &request), Ok(None));
+    ledger.insert(Creation::new(caller, request.clone(), sequence(1), 100));
+    assert_eq!(ledger.replay(caller, &request), Ok(Some(0)));
+    assert_eq!(
+        ledger.replay(caller, &construction_request(1, 8192)),
+        Err(loader::Fail::Denied)
+    );
+
+    // The same ID belongs to a different caller's independent namespace.
+    assert_eq!(ledger.replay(other, &request), Ok(None));
+    ledger.insert(Creation::new(other, request.clone(), sequence(2), 100));
+    assert_eq!(ledger.replay(other, &request), Ok(Some(1)));
+}
+
+#[test]
+fn full_construction_ledger_keeps_existing_replay_and_conflict_decisions() {
+    let caller = NativeTask::new(8);
+    let request = construction_request(1, 4096);
+    let mut ledger = Ledger::new(1).unwrap();
+    ledger.insert(Creation::new(caller, request.clone(), sequence(1), 100));
+
+    assert_eq!(ledger.replay(caller, &request), Ok(Some(0)));
+    assert_eq!(
+        ledger.replay(caller, &construction_request(1, 8192)),
+        Err(loader::Fail::Denied)
+    );
+    assert_eq!(
+        ledger.replay(caller, &construction_request(2, 4096)),
+        Err(loader::Fail::Full)
+    );
+}
+
+#[test]
+fn claimed_construction_keeps_grants_and_ignores_deadline_or_owner_exit() {
+    let caller = NativeTask::new(8);
+    let mut ledger = Ledger::new(1).unwrap();
+    ledger.insert(Creation::new(
+        caller,
+        construction_request(1, 4096),
+        sequence(3),
+        10,
+    ));
+
+    assert_eq!(ledger.expired_instances(9, |_| false).next(), None);
+    assert_eq!(
+        ledger.expired_instances(10, |_| false).next(),
+        Some(sequence(3))
+    );
+    assert_eq!(
+        ledger.expired_instances(9, |_| true).next(),
+        Some(sequence(3))
+    );
+
+    let at = ledger
+        .find(caller, loader::CreateId::new(1).unwrap())
+        .unwrap();
+    let resolve_calls = std::cell::Cell::new(0);
+    let resolve = ledger
+        .resolve_with(at, || {
+            resolve_calls.set(resolve_calls.get() + 1);
+            Ok::<_, ()>(system_api::PendId::new(40))
+        })
+        .unwrap();
+    let replayed_resolve = ledger
+        .resolve_with(at, || {
+            resolve_calls.set(resolve_calls.get() + 1);
+            Ok::<_, ()>(system_api::PendId::new(42))
+        })
+        .unwrap();
+
+    let owner_calls = std::cell::Cell::new(0);
+    let owner_resolve = ledger
+        .claim_with(at, || {
+            owner_calls.set(owner_calls.get() + 1);
+            Ok::<_, ()>(system_api::PendId::new(41))
+        })
+        .unwrap();
+    let replayed_owner_resolve = ledger
+        .claim_with(at, || {
+            owner_calls.set(owner_calls.get() + 1);
+            Ok::<_, ()>(system_api::PendId::new(43))
+        })
+        .unwrap();
+
+    assert_eq!(resolve, replayed_resolve);
+    assert_eq!(owner_resolve, replayed_owner_resolve);
+    assert_eq!(resolve_calls.get(), 1);
+    assert_eq!(owner_calls.get(), 1);
+    assert_eq!(ledger.expired_instances(100, |_| true).next(), None);
 }
 #[test]
 fn accepted_ids_survive_lost_responses_conflict_and_exhaustion() {

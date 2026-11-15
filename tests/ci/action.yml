@@ -1,0 +1,40 @@
+name: Native Rust and platform setup
+description: Restore the locked toolchain and, when requested, the qualified platform artifact
+inputs:
+  artifact-id:
+    description: Artifact ID emitted by the shared platform producer
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Hash tracked toolchain and lock inputs
+      id: cache-inputs
+      shell: bash
+      run: bash tests/ci/cache-input-hash.sh
+    - name: Restore Rust dependencies and toolchain
+      uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          ~/.rustup
+        key: native-rust-${{ runner.os }}-${{ steps.cache-inputs.outputs.hash }}-rv64-default-instructions-debug-release-static-frame-medium-warnings
+    - name: Install declared Rust toolchain
+      shell: bash
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup-init.sh
+        sh /tmp/rustup-init.sh -y --profile minimal --default-toolchain none
+        echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+        "$HOME/.cargo/bin/rustup" show
+    - name: Download the shared platform artifact
+      if: inputs.artifact-id != ''
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        artifact-ids: ${{ inputs.artifact-id }}
+        path: tests/ci/target/platforms
+        merge-multiple: true
+    - name: Verify shared platform identity and contents
+      if: inputs.artifact-id != ''
+      shell: bash
+      run: tests/ci/verify-platforms.sh tests/ci/target/platforms

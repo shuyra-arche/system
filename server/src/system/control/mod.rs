@@ -43,22 +43,12 @@ struct Program {
     current: Option<InstanceId>,
     run_requested: bool,
 }
-struct Creation {
-    caller: TaskId,
-    request: build::Build,
-    instance: InstanceId,
-    resolve: Option<system_protocol::PendId>,
-    owner_resolve: Option<system_protocol::PendId>,
-    claimed: bool,
-    expires: u64,
-}
-
 pub(crate) struct Control {
     catalog: Catalog,
     images: Images<'static>,
     programs: Vec<Program>,
     instances: Vec<Instance>,
-    creates: Vec<Creation>,
+    creates: construction::Ledger,
     operations: operations::Journal,
     next: u64,
     pub loader: Loader,
@@ -91,16 +81,12 @@ impl Control {
         instances
             .try_reserve_exact(CAPACITY)
             .map_err(|_| "instance capacity")?;
-        let mut creates = Vec::new();
-        creates
-            .try_reserve_exact(CAPACITY)
-            .map_err(|_| "construction capacity")?;
         Ok(Self {
             catalog,
             images,
             programs,
             instances,
-            creates,
+            creates: construction::Ledger::new(CAPACITY)?,
             operations: operations::Journal::new(CAPACITY)?,
             next: 1,
             loader,
@@ -233,19 +219,16 @@ impl Control {
             })
             .collect();
         let now = kernel_client::call::room::clock();
-        for record in &self.creates {
-            if !record.claimed
-                && (now >= record.expires
-                    || lookup(record.caller).is_some_and(|info| info.state == UnitState::Exited))
-            {
-                let instance = self
-                    .instances
-                    .iter_mut()
-                    .find(|instance| instance.id == record.instance)
-                    .unwrap();
-                if !instance.retired() {
-                    let _ = instance.request(Intent::Stop);
-                }
+        for id in self.creates.expired_instances(now, |caller| {
+            lookup(caller).is_some_and(|info| info.state == UnitState::Exited)
+        }) {
+            let instance = self
+                .instances
+                .iter_mut()
+                .find(|instance| instance.id == id)
+                .unwrap();
+            if !instance.retired() {
+                let _ = instance.request(Intent::Stop);
             }
         }
         let mut progress = false;
@@ -976,18 +959,8 @@ impl Control {
         match request {
             Q::Build(request) => {
                 let result = (|| {
-                    if let Some(record) = self
-                        .creates
-                        .iter()
-                        .find(|row| row.caller == caller && row.request.id == request.id)
-                    {
-                        if record.request != request {
-                            return Err(build::Fail::Denied);
-                        }
+                    if self.creates.replay(caller, &request)?.is_some() {
                         return self.construction(services, caller, request.id);
-                    }
-                    if self.creates.len() == CAPACITY {
-                        return Err(build::Fail::Full);
                     }
                     let instance = self.admit(
                         services,
@@ -997,15 +970,12 @@ impl Control {
                         &request.subject,
                         false,
                     )?;
-                    self.creates.push(Creation {
+                    self.creates.insert(construction::Creation::new(
                         caller,
-                        request: request.clone(),
+                        request.clone(),
                         instance,
-                        resolve: None,
-                        owner_resolve: None,
-                        claimed: false,
-                        expires: kernel_client::call::room::clock().saturating_add(5_000_000_000),
-                    });
+                        kernel_client::call::room::clock().saturating_add(5_000_000_000),
+                    ));
                     self.construction(services, caller, request.id)
                 })();
                 answer!(Build, result)
@@ -1013,14 +983,10 @@ impl Control {
             Q::Inspect(id) => answer!(Inspect, self.construction(services, caller, id)),
             Q::Cancel(id) => {
                 let result = (|| {
-                    let record = self
-                        .creates
-                        .iter()
-                        .find(|row| row.caller == caller && row.request.id == id)
-                        .ok_or(build::Fail::Unknown)?;
+                    let at = self.creates.find(caller, id).ok_or(build::Fail::Unknown)?;
                     self.instances
                         .iter_mut()
-                        .find(|instance| instance.id == record.instance)
+                        .find(|instance| instance.id == self.creates.instance(at))
                         .unwrap()
                         .request(Intent::Stop)
                         .map_err(build_fail)?;
@@ -1032,41 +998,37 @@ impl Control {
                 let value = (|| {
                     let at = self
                         .creates
-                        .iter()
-                        .position(|record| {
-                            self.instance(record.instance).observation().task == request.task
-                                && self.instance(record.instance).owner == caller
+                        .find_claim(caller, request.task, |id| {
+                            let instance = self.instance(id);
+                            Some((instance.owner, instance.observation().task))
                         })
                         .ok_or(build::Fail::Denied)?;
-                    let instance = self.instance(self.creates[at].instance);
+                    let instance = self.instance(self.creates.instance(at));
                     if !instance.constructed() {
                         return Err(build::Fail::NotReady);
                     }
                     let observed = instance.observation();
-                    if self.creates[at].owner_resolve.is_none() {
-                        self.creates[at].owner_resolve = Some(
-                            give(
-                                services.identity_entry(id::Grant::Resolve),
-                                caller,
-                                Mark::of("system/identity/resolve"),
-                                Limits {
-                                    operations: Operations::Clone(
-                                        CloneRights::PUSH | CloneRights::PEEK,
-                                    ),
-                                    modifiable: Modifiable::Yes,
-                                    distributable: Distributable::No,
-                                    scope: PendScope::Object,
-                                },
-                            )
-                            .map_err(|_| build::Fail::Full)?
-                            .into(),
-                        );
-                    }
-                    self.creates[at].claimed = true;
+                    let resolve = self.creates.claim_with(at, || {
+                        give(
+                            services.identity_entry(id::Grant::Resolve),
+                            caller,
+                            Mark::of("system/identity/resolve"),
+                            Limits {
+                                operations: Operations::Clone(
+                                    CloneRights::PUSH | CloneRights::PEEK,
+                                ),
+                                modifiable: Modifiable::Yes,
+                                distributable: Distributable::No,
+                                scope: PendScope::Object,
+                            },
+                        )
+                        .map(Into::into)
+                        .map_err(|_| build::Fail::Full)
+                    })?;
                     Ok(build::Built {
                         task: observed.task,
                         team: observed.team,
-                        resolve: self.creates[at].owner_resolve.unwrap(),
+                        resolve,
                     })
                 })();
                 answer!(Claim, value)
@@ -1079,12 +1041,8 @@ impl Control {
         caller: TaskId,
         id: build::CreateId,
     ) -> Result<build::Construction, build::Fail> {
-        let at = self
-            .creates
-            .iter()
-            .position(|row| row.caller == caller && row.request.id == id)
-            .ok_or(build::Fail::Unknown)?;
-        let instance = self.instance(self.creates[at].instance);
+        let at = self.creates.find(caller, id).ok_or(build::Fail::Unknown)?;
+        let instance = self.instance(self.creates.instance(at));
         let state = if instance.retired() {
             if instance.failure().is_some() {
                 build::State::Failed
@@ -1098,8 +1056,8 @@ impl Control {
         };
         let observed = instance.observation();
         let failure = instance.failure().map(build_fail);
-        if state == build::State::Completed && self.creates[at].resolve.is_none() {
-            self.creates[at].resolve = Some(
+        let resolve = if state == build::State::Completed {
+            Some(self.creates.resolve_with(at, || {
                 give(
                     services.identity_entry(id::Grant::Resolve),
                     caller,
@@ -1111,16 +1069,18 @@ impl Control {
                         scope: PendScope::Object,
                     },
                 )
-                .map_err(|_| build::Fail::Full)?
-                .into(),
-            );
-        }
+                .map(Into::into)
+                .map_err(|_| build::Fail::Full)
+            })?)
+        } else {
+            None
+        };
         Ok(build::Construction {
             state,
             built: Optional((state == build::State::Completed).then(|| build::Built {
                 team: observed.team,
                 task: observed.task,
-                resolve: self.creates[at].resolve.unwrap(),
+                resolve: resolve.expect("completed construction has resolve grant"),
             })),
             failure: Optional(failure.map(weave::Coded)),
         })
