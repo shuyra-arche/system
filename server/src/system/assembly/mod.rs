@@ -74,7 +74,18 @@ impl Installation {
                 scope: PendScope::Object,
             },
         )
-        .map_err(|_| "discovery grant delivery")?;
+        .map_err(|error| {
+            use kernel_api::abi::call::pend::PendFail;
+            match error {
+                PendFail::Denied => "discovery grant delivery: Denied",
+                PendFail::Dead => "discovery grant delivery: Dead",
+                PendFail::OutOfMemory => "discovery grant delivery: OutOfMemory",
+                PendFail::NotAligned => "discovery grant delivery: NotAligned",
+                PendFail::HandedOver => "discovery grant delivery: HandedOver",
+                PendFail::Busy => "discovery grant delivery: Busy",
+                PendFail::Invalid => "discovery grant delivery: Invalid",
+            }
+        })?;
         if let Some(unit) = unit {
             if let unit_contract::document::Ready::Signal(mark) = unit.control().ready {
                 self.ready =

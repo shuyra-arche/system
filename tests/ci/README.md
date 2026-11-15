@@ -16,10 +16,25 @@ producer; runtime, entry and fatal/stall; Loader for both Kernel profiles;
 complete application for all four Kernel/System profile pairs; and eight
 handoff jobs. The six debug Kernel handoff jobs each run one Hart count under a
 `max-parallel` limit of six. The two release Kernel jobs each retain the full
-1/2/4-Hart invocation. This changes scheduling, not test selection. Expected
-critical path is about 5–7 minutes from the recorded timings; the added job
-setup can raise total runner-minutes. Confirm these estimates against a new CI
-run.
+1/2/4-Hart invocation. This changes scheduling, not test selection.
+
+## Measured runs
+
+Wall time is workflow start to completion; summed job time is the sum of each
+job's started-to-completed duration. The 17-job runs reduced wall time, while
+adding runner time. Neither new run is a qualified CI pass:
+
+| Run | Wall time | Summed job time | Native evidence |
+| --- | ---: | ---: | --- |
+| [Baseline 43662800577](https://github.com/shuyra-arche/system/actions/runs/43662800577) | 12:09 | 41.08 runner-min | Successful: application 36/36, handoff 48/48, Loader 6/6, runtime/entry 6/6 guest invocations |
+| [First split 43669366890](https://github.com/shuyra-arche/system/actions/runs/43669366890) | 7:21 | 45.25 runner-min | Native workload passed: application 36/36, handoff 48/48, Loader 6/6, runtime/entry 6/6; run failed in cache post-processing |
+| [Cache fix 43670213070](https://github.com/shuyra-arche/system/actions/runs/43670213070) | 7:34 | 43.25 runner-min | Application 36/36, Loader 6/6 and runtime/entry 6/6 passed; handoff 45 passed, 1 authorization failure, 2 scenarios not run |
+
+The last run is 37.7% faster by wall time and uses 5.3% more summed job time
+than baseline. The handoff authorization failure and its runtime investigation
+are tracked separately in [System #21](https://github.com/shuyra-arche/system/issues/21).
+The logs for these runs contain no console-loss retry or inconclusive retry.
+Do not treat either new run as completing full CI acceptance.
 
 ## Shared platforms
 
