@@ -5,6 +5,7 @@ extern crate alloc;
 
 mod bootstrap;
 mod loader;
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/view.rs"]
 pub(crate) mod loader_memory;
 #[path = "../../../server/src/runtime/memory.rs"]

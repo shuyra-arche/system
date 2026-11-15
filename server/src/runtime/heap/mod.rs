@@ -30,8 +30,14 @@ static LICENSE: AtomicUsize = AtomicUsize::new(0);
 static MAPPINGS: AtomicUsize = AtomicUsize::new(0);
 #[derive(Clone, Copy)]
 enum Request {
-    Allocate { size: usize, align: usize },
-    Free { address: usize },
+    Allocate {
+        size: usize,
+        align: usize,
+        guard: usize,
+    },
+    Free {
+        address: usize,
+    },
 }
 struct Mailbox {
     state: AtomicU32,
@@ -112,7 +118,7 @@ fn perform(value: Request) -> usize {
     }
     let license = PendId::from_bytes(&(raw as u64).to_le_bytes()).unwrap_or_else(|| fatal());
     match value {
-        Request::Allocate { size, align } => pages::allocate(license, size, align),
+        Request::Allocate { size, align, guard } => pages::allocate(license, size, align, guard),
         Request::Free { address } => {
             pages::free(address);
             0
@@ -179,6 +185,7 @@ unsafe impl GlobalAlloc for Pages {
         request(Request::Allocate {
             size: layout.size(),
             align: layout.align(),
+            guard: 0,
         }) as *mut u8
     }
     unsafe fn dealloc(&self, ptr: *mut u8, _: Layout) {
@@ -225,4 +232,21 @@ fn supported(layout: Layout) -> bool {
         .and_then(|n| n.checked_add(talc::min_first_heap_layout::<talc::DefaultBinning>().size()))
         .and_then(|n| n.checked_add(2 * BLOCK))
         .is_some_and(|n| n <= isize::MAX as usize)
+}
+
+/// Runtime-owned backing, including an unmapped lower reservation position.
+/// Only the heap's actual initial-Task owner publishes or retires its memory.
+pub(crate) fn stack(size: usize) -> usize {
+    request(Request::Allocate {
+        size,
+        align: kernel_api::address::PAGE_SIZE,
+        guard: 1,
+    })
+}
+pub(crate) fn release_stack(address: usize) {
+    // The unmapped guard separates the usable stack from the retained header.
+    // Free consumes the owner coordinate immediately above that header.
+    request(Request::Free {
+        address: address - kernel_api::address::PAGE_SIZE,
+    });
 }

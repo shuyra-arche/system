@@ -1,4 +1,4 @@
-"""Verify the production System heap against real Kernel ABI 11 on one/four Harts."""
+"""Verify the production System heap against real Kernel ABI 13 on one/four Harts."""
 import argparse
 import importlib.util
 import os
@@ -10,7 +10,7 @@ import tempfile
 MARKER = b"PASS system-runtime heap=1 growing=1 shared=1 owner=1 worker-exit=1 reclaim=1 contention=1"
 SUPPLY = b"PASS supply-native rights=1 scope=1 replay=1 cancel=1 reorder=1 withdrawal=1 cleanup=1"
 WINDOW = b"PASS supply-window relative=1 narrowed=1 once=1 cleanup=1"
-RPC = b"PASS system-rpc abi=11 protocol=4 context=1 sender=1 reply=1 cleanup=1 worker-reclaimed=1"
+RPC = b"PASS system-rpc abi=13 protocol=4 context=1 sender=1 reply=1 cleanup=1 worker-reclaimed=1"
 
 
 def main():

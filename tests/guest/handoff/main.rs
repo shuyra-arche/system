@@ -9,6 +9,7 @@ pub mod memory;
 #[path = "../../../server/src/runtime/termination.rs"]
 pub mod termination;
 pub mod runtime {
+    pub(crate) use crate::heap;
     pub use crate::{memory, termination};
 }
 #[path = "../../../server/src/protocol/mod.rs"]

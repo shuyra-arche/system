@@ -16,8 +16,8 @@ bench = false
 instructions = []
 
 [dependencies]
-kernel = { git = "https://github.com/shuyra-arche/kernel.git", rev = "684f479c45dc2d94d405b32b4ffc6334a4233fc9" }
-platform-riscv = { git = "https://github.com/shuyra-arche/vanllia.git", rev = "58498c13f41ad64a1fc09af338802b279347c9c8" }
+kernel = { git = "https://github.com/shuyra-arche/kernel.git", rev = "12cb1b5ae7fcd57b46cc0103a0f30ea29631724e" }
+platform-riscv = { git = "https://github.com/shuyra-arche/vanllia.git", rev = "c2d56c14efac3373f54b4a8b0ba97a4a337724d6" }
 fdt = { version = "0.1.5", default-features = false }
 
 [profile.dev]

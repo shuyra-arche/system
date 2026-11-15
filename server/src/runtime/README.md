@@ -1,6 +1,6 @@
 # Native initial Task and heap
 
-The System binary uses Kernel ABI 11's word arguments directly. `main.rs` validates the
+The System binary uses Kernel ABI 13's word arguments directly. `main.rs` validates the
 four-word shape, borrows the current boot ledger, initializes the heap from its
 explicit Create Pend and trusted Space grant, opens the DTB, and invokes System on the initial guarded
 stack. Panic formatting uses stack storage and the native debug call. `link.ld`
@@ -13,7 +13,7 @@ without receiving its creation license; exiting a worker cannot withdraw live
 heap pages. Completely free backing heaps are retracted, disassociated, released and deleted; Talc may retain
 its first heap for metadata. This is not the fixed bump heap in older fixtures.
 
-The initial supervisor must call `heap::poll` between finite rounds, including
+The initial User Task must call `heap::poll` between finite rounds, including
 startup and shutdown, and must not wait indefinitely while workers can allocate.
 A worker holds the Talc lock while publishing a backing request. ROOT services
 that mailbox without allocation, both at polls and while contending for the
@@ -29,7 +29,7 @@ may obtain a fresh request after refreshing the expected version. Accepted
 failure or an unresolved deadline terminates the enclosing Team, leaving the
 Kernel responsible for retained physical obligations.
 
-Current ABI 11 runtime evidence lives in `tests/guest/runtime`: native heap,
+Current ABI 13 runtime evidence lives in `tests/guest/runtime`: native heap,
 Supply and same-Team Client/Ingress calls on the single-Hart qualified platform.
 The old entry fixture and complete application still require migration. The
 selected Kernel rejects native memory qualification with multiple Harts; no

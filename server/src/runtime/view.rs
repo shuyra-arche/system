@@ -272,3 +272,65 @@ fn inspect(token: PendId) -> Result<PendInfo, Error> {
     pend::inspect(token, VirtAddr::new(bytes.as_mut_ptr().addr())).map_err(Error::Pend)?;
     PendInfo::from_bytes(&bytes).ok_or(Error::Invalid)
 }
+
+/// An unmapped guard position with its own retained retirement continuation.
+/// It owns no backing and grants no special stack access rights.
+pub(crate) struct Guard {
+    memory: Memory,
+    phase: GuardPhase,
+}
+enum GuardPhase {
+    Live(MemoPosition),
+    Returning(PendId),
+    Closed,
+}
+impl Guard {
+    pub(crate) fn new(
+        space: PendId,
+        at: VirtAddr,
+        abort: fn(&'static str) -> !,
+    ) -> Result<Self, Error> {
+        let Target::Nest(nest) = inspect(space)?.target else {
+            return Err(Error::Invalid);
+        };
+        let mut memory = Memory::new(abort);
+        let Snapshot::Nest(status) = memory.inspect(Query::Nest { token: space, nest }) else {
+            return Err(Error::Invalid);
+        };
+        let Value::Reservation {
+            token, reservation, ..
+        } = memory
+            .mutate(Action::Reserve {
+                token: space,
+                nest,
+                expected: status.version,
+                reservation: ReserveRequest {
+                    placement: Placement::exact(at, PAGE_SIZE).ok_or(Error::Invalid)?,
+                    count: PageCount::new(1).unwrap(),
+                    level: CellLevel::new(0).unwrap(),
+                    access: 6,
+                },
+            })
+            .map_err(Error::Native)?
+        else {
+            return Err(Error::Invalid);
+        };
+        Ok(Self {
+            memory,
+            phase: GuardPhase::Live(
+                MemoPosition::new(token, nest, reservation, 0).ok_or(Error::Invalid)?,
+            ),
+        })
+    }
+    pub(crate) fn finish(&mut self) -> Result<(), Error> {
+        if let GuardPhase::Live(memo) = self.phase {
+            self.memory.release(memo).map_err(Error::Native)?;
+            self.phase = GuardPhase::Returning(memo.token());
+        }
+        if let GuardPhase::Returning(token) = self.phase {
+            pend::return_(token).map_err(Error::Pend)?;
+            self.phase = GuardPhase::Closed;
+        }
+        Ok(())
+    }
+}

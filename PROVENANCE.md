@@ -28,7 +28,7 @@ consumer checks without changing the upstream attribution or license status.
 
 The native System heap's Kernel page backing in `server/src/runtime/heap/pages.rs`
 adapts `rust/library/std/src/sys/pal/vanllia/broker/pages.rs` from Shuyra Toolchain
-at `cd6a6f0d3bcd180cbf835deda08aa07e9b9d4e97`. System owns its initial-supervisor
+at `cd6a6f0d3bcd180cbf835deda08aa07e9b9d4e97`. System owns its initial-Task
 servicing protocol; Toolchain remains the language runtime for ordinary std
 Units. This attribution adds no license grant.
 

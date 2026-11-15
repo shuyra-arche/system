@@ -35,18 +35,26 @@ Read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) and
 
 | Provider | Exact revision |
 | --- | --- |
-| Kernel API/Client | `684f479c45dc2d94d405b32b4ffc6334a4233fc9` (ABI/Ledger 11/11, Capsule 2) |
-| Twine | `8c68cbeffd024b4105a6a7c2f4baaab330994ca1` |
+| Kernel API/Client | `12cb1b5ae7fcd57b46cc0103a0f30ea29631724e` (ABI/Ledger 13/13, Capsule 2) |
+| Twine | `f835021f6afa80e68186846feb95260717487104` |
 | Weave | `7a7d67fb3f190aeb43049d051b0972bcd53213bc` |
 | Unit declarations | `aaa2b58c1ef0b40428dcc71d1321736156551109` (schema 2, runtime disabled) |
 
-Kernel [#183](https://github.com/shuyra-arche/kernel/pull/183), Twine
-[#11](https://github.com/shuyra-arche/twine/pull/11) and Vanllia
-[#42](https://github.com/shuyra-arche/vanllia/pull/42) have merged. This increment
-selects their validated SMP data/instruction pins. Twine continues retained
-Release(Busy) explicitly, preserving its failed receipt and owner until a new
-Release completes. API/Client/Server share one Kernel source. No new release
-is implied.
+This candidate coordinates Kernel #160/#206/#188 and the API macro relocation.
+API/Client/Server and Twine share the published full Kernel SHA above; the test
+platform selects Vanllia `c2d56c14efac3373f54b4a8b0ba97a4a337724d6`.
+Land Kernel, then Twine/System, then Vanllia composition. No release is implied.
+ABI 11/12 images and old Task descriptors require a coordinated rebuild.
+Every external Capsule and ordinary Task executes in User mode through ECALL;
+Supervisor execution is restricted to Kernel internal work.
+
+System Loader now prepares target-Nest stack backing, argument words and an
+unmapped lower guard before submitting TaskStart. Runtime workers likewise use
+initial-Task-owned guarded heap backing. Worker/Loader records retain their real
+memory owners through creation failure, cancellation, Task reclamation and
+separate mapping retirement; Task exit alone never releases stack storage.
+The stack guard separates usable stack storage from its allocator metadata.
+System #18 continues to own future PIE/ASLR policy.
 
 API/Client 0.4 and protocol v4 reject v2/v3 envelopes and retired Share Open/Shut
 rights. A client or ingress receives an explicit shared memory context backed by

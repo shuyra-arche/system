@@ -2,10 +2,12 @@
 #![no_std]
 #![no_main]
 extern crate alloc;
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/heap/mod.rs"]
 pub mod native_heap;
 #[path = "../../../server/src/runtime/memory.rs"]
 pub mod native_memory;
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/view.rs"]
 pub(crate) mod native_view;
 #[path = "../../../server/src/runtime/termination.rs"]

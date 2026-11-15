@@ -150,7 +150,7 @@ pub fn run(license: PendId, space: PendId) {
     assert_eq!(result.result, Some(31));
     writeln!(
         crate::Console,
-        "PASS system-rpc abi=11 protocol=4 context=1 sender=1 reply=1 cleanup=1 worker-reclaimed=1"
+        "PASS system-rpc abi=13 protocol=4 context=1 sender=1 reply=1 cleanup=1 worker-reclaimed=1"
     )
     .unwrap();
 }

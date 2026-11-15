@@ -9,7 +9,7 @@ import subprocess
 import shutil
 import sys
 import tempfile
-MARKER = b"PASS system-entry words=4 ledger=11 catalog=2 dtb=1 heap=1"
+MARKER = b"PASS system-entry words=4 ledger=13 catalog=2 dtb=1 heap=1"
 SERVICES = b"PASS entry-services heap=production roles=2 root=1 wired=1 retire=1"
 DATA = b"PASS boot-data native=1 readonly=1 content=1 padding=1 retire=1"
 

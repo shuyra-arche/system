@@ -88,7 +88,7 @@ dependencies = [
 [[package]]
 name = "kernel"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=684f479c45dc2d94d405b32b4ffc6334a4233fc9#684f479c45dc2d94d405b32b4ffc6334a4233fc9"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=12cb1b5ae7fcd57b46cc0103a0f30ea29631724e#12cb1b5ae7fcd57b46cc0103a0f30ea29631724e"
 dependencies = [
  "bitflags",
  "erra",
@@ -103,7 +103,7 @@ dependencies = [
 [[package]]
 name = "kernel-api"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=684f479c45dc2d94d405b32b4ffc6334a4233fc9#684f479c45dc2d94d405b32b4ffc6334a4233fc9"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=12cb1b5ae7fcd57b46cc0103a0f30ea29631724e#12cb1b5ae7fcd57b46cc0103a0f30ea29631724e"
 dependencies = [
  "bitflags",
  "erra",
@@ -113,7 +113,7 @@ dependencies = [
 [[package]]
 name = "kernel-api-macros"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/kernel.git?rev=684f479c45dc2d94d405b32b4ffc6334a4233fc9#684f479c45dc2d94d405b32b4ffc6334a4233fc9"
+source = "git+https://github.com/shuyra-arche/kernel.git?rev=12cb1b5ae7fcd57b46cc0103a0f30ea29631724e#12cb1b5ae7fcd57b46cc0103a0f30ea29631724e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -135,7 +135,7 @@ checksum = "2ee67f1008b1ba2321834326597b8e186293b049a023cdef258527550b9935b4"
 [[package]]
 name = "platform-riscv"
 version = "0.0.1"
-source = "git+https://github.com/shuyra-arche/vanllia.git?rev=58498c13f41ad64a1fc09af338802b279347c9c8#58498c13f41ad64a1fc09af338802b279347c9c8"
+source = "git+https://github.com/shuyra-arche/vanllia.git?rev=c2d56c14efac3373f54b4a8b0ba97a4a337724d6#c2d56c14efac3373f54b4a8b0ba97a4a337724d6"
 dependencies = [
  "fack",
  "fdt",

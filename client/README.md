@@ -1,6 +1,6 @@
 # System Client v4
 
-The task-local SDK uses the workspace protocol v4 API, Kernel ABI 11, Twine and
+The task-local SDK uses the workspace protocol v4 API, Kernel ABI 13, Twine and
 Weave. Each service has a typed `Client` and accepts its Weave operation markers.
 Trusted Identity export has a separate client from ordinary Identity calls.
 New instance consumers use `instance::Client` and

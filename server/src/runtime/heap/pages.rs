@@ -67,7 +67,7 @@ impl Pages {
         }
     }
 
-    fn allocate(&mut self, size: usize, align: usize) -> usize {
+    fn allocate(&mut self, size: usize, align: usize, guard: usize) -> usize {
         let align = align.max(align_of::<Header>());
         let Some(prefix) = size_of::<Header>().checked_next_multiple_of(align) else {
             return 0;
@@ -104,7 +104,7 @@ impl Pages {
                 expected: status.version,
                 reservation: kernel_api::model::nest::ReserveRequest {
                     placement,
-                    count: PageCount::new(count).unwrap(),
+                    count: PageCount::new(count + guard).unwrap(),
                     level: CellLevel::new(0).unwrap(),
                     access: 6,
                 },
@@ -121,9 +121,17 @@ impl Pages {
             return 0;
         };
         let memo = MemoPosition::new(token, nest, reservation, 0).unwrap();
+        // Keep the header at position 0; guarded stacks leave position 1
+        // absent so overflow faults before it can overwrite the owner.
         for page in 0..count {
             let slot = SlotPosition::new(flat.token(), flat.flat(), page).unwrap();
-            let target = MemoPosition::new(token, nest, reservation, page).unwrap();
+            let target = MemoPosition::new(
+                token,
+                nest,
+                reservation,
+                page + if page == 0 { 0 } else { guard },
+            )
+            .unwrap();
             let occupied = self.change(|memory| {
                 let Snapshot::Slot(status) = memory.inspect(Query::Slot(slot)) else {
                     super::fatal()
@@ -169,9 +177,10 @@ impl Pages {
                 return 0;
             }
         }
-        let data = base.get() + prefix;
+        let data = base.get() + guard * PAGE_SIZE + prefix;
         unsafe {
-            ((data - size_of::<Header>()) as *mut Header).write(Header { flat, memo });
+            ((data - guard * PAGE_SIZE - size_of::<Header>()) as *mut Header)
+                .write(Header { flat, memo });
         }
         data
     }
@@ -222,8 +231,8 @@ impl Pages {
     }
 }
 
-pub(super) fn allocate(license: PendId, size: usize, align: usize) -> usize {
-    let data = Pages::new(license, super::space()).allocate(size, align);
+pub(super) fn allocate(license: PendId, size: usize, align: usize, guard: usize) -> usize {
+    let data = Pages::new(license, super::space()).allocate(size, align, guard);
     if data != 0 {
         super::MAPPINGS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
     }
