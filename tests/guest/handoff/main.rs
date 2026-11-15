@@ -49,7 +49,12 @@ use system_protocol::{
 use weave::{Codec, Contract, Operation};
 const DEVICE: u64 = 0xbeef;
 const READY: u64 = 0xabcd;
+const CONTENTION_GRANTS: usize = 32;
 static BUDGET: AtomicU64 = AtomicU64::new(0);
+static CONTEND_SOURCE: AtomicU64 = AtomicU64::new(0);
+static CONTEND_TARGET: AtomicU64 = AtomicU64::new(0);
+static CONTEND_BATCHES: AtomicU64 = AtomicU64::new(0);
+static CONTEND_BUSY: AtomicU64 = AtomicU64::new(0);
 fn budget() -> u64 {
     BUDGET.load(Ordering::Relaxed)
 }
@@ -114,6 +119,48 @@ fn query_tick(deadline: u64) {
     // Query an asynchronous operation at a bounded cadence. Holding a reply
     // owner is useful; creating a new RPC on every yield only consumes the
     // same CPU and native memory budget needed by construction.
+    let source = CONTEND_SOURCE.load(Ordering::Relaxed);
+    if source == 0 || CONTEND_BATCHES.load(Ordering::Relaxed) != 0 {
+        room::sleep_until(room::clock().saturating_add(500_000_000).min(deadline)).unwrap();
+        return;
+    }
+
+    let target = TaskId::new(CONTEND_TARGET.load(Ordering::Relaxed) as usize);
+    let source = PendId::from_bytes(&source.to_le_bytes()).unwrap();
+    let bytes = AccordRequest {
+        src: source,
+        target: AccordTarget::Task(target),
+        mark: Mark::of("handoff/auth-contention"),
+        limits: Limits {
+            operations: Operations::Clone(CloneRights::PEEK),
+            modifiable: Modifiable::No,
+            distributable: Distributable::No,
+            scope: PendScope::Object,
+        },
+    }
+    .to_bytes();
+
+    for _ in 0..CONTENTION_GRANTS {
+        let delivered = loop {
+            match pend::accord(VirtAddr::new(bytes.as_ptr().addr())) {
+                Ok(delivered) => break delivered,
+                Err(error) if error.source.is_busy() => {
+                    CONTEND_BUSY.fetch_add(1, Ordering::Relaxed);
+                    tick(deadline);
+                }
+                Err(error) => panic!("authorization contention accord: {error:?}"),
+            }
+        };
+        while let Err(error) = pend::revoke(target, delivered) {
+            assert!(
+                error.source.is_busy(),
+                "authorization contention revoke: {error:?}"
+            );
+            CONTEND_BUSY.fetch_add(1, Ordering::Relaxed);
+            tick(deadline);
+        }
+    }
+    CONTEND_BATCHES.fetch_add(1, Ordering::Relaxed);
     room::sleep_until(room::clock().saturating_add(500_000_000).min(deadline)).unwrap();
 }
 fn retire(token: PendId) {
@@ -317,6 +364,25 @@ fn controller(license: PendId, context: Context, role: usize) {
     let info = own();
     let UnitTarget::Task(caller) = info.target else {
         panic!("Task")
+    };
+    let contention_root = if role == 6 {
+        // This role's Instance endpoint is owned by the actual System Task.
+        assert_ne!(endpoint.owner, caller, "System recipient identity");
+        let root = clone_view::create(
+            license,
+            Mark::NONE,
+            CloneLimits {
+                max_len: 8,
+                max_messages: 1,
+                max_bytes: 8,
+            },
+        )
+        .unwrap();
+        CONTEND_SOURCE.store(root.get() as u64, Ordering::Relaxed);
+        CONTEND_TARGET.store(endpoint.owner.get() as u64, Ordering::Relaxed);
+        Some(root)
+    } else {
+        None
     };
     let resolver = find(|info| info.mark == Mark::of("system/identity/resolve"));
     let mut identity = system_client::identity::Client::bind(
@@ -670,6 +736,22 @@ fn controller(license: PendId, context: Context, role: usize) {
     let cleanup_limit = room::clock() + 5_000_000_000;
     while !source.finish().unwrap() {
         tick(cleanup_limit);
+    }
+    if role == 6 {
+        assert_eq!(
+            CONTEND_BATCHES.load(Ordering::Relaxed),
+            1,
+            "authorization Pending path must execute exactly one contention batch"
+        );
+        let _ = writeln!(
+            Console,
+            "handoff: contention pairs={} busy={}",
+            CONTENTION_GRANTS,
+            CONTEND_BUSY.load(Ordering::Relaxed)
+        );
+        CONTEND_SOURCE.store(0, Ordering::Relaxed);
+        CONTEND_TARGET.store(0, Ordering::Relaxed);
+        retire(contention_root.expect("authorization contention source"));
     }
     retire(signal);
     let _ = writeln!(

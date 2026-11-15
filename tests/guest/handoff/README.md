@@ -34,6 +34,16 @@ observer discovers at a two-second cadence; repeated test obligations are
 exercised once rather than issuing redundant RPCs for both Drivers.
 The authorization observer acknowledges through the real Driver RPC; its
 controller waits for that acknowledgment before closing discovery.
+During one Pending-operation wait, only the authorization Controller also derives
+32 Object-scoped Clone PEEK grants from its real local source to the System Task
+that owns its Instance endpoint, then revokes every returned grant. Every revoke
+must complete; exactly one full batch must run and the local source is returned
+before passing. All waits retain the 500 ms cadence. The serial records observed
+Busy responses, which depend on scheduling and are not required for a passing
+single-Hart run. This is a bounded concurrency probe, not deterministic proof of
+a Busy response. The separate pre-fix native stress diagnostic for
+[System #21](https://github.com/shuyra-arche/system/issues/21) captured discovery
+grant Busy followed by installation failure.
 Production memory/retirement deadlines are unchanged. Native cleanup steps
 still have their own bounded retries.
 
