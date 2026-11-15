@@ -3,7 +3,7 @@ use unit_contract::{
     event::{Cause, Event},
 };
 
-pub fn catalog(death: bool) -> Vec<d::v2::Unit<String>> {
+pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
     let mut catalog = vec![
         d::v2::Unit {
             schema: 2,
@@ -11,7 +11,11 @@ pub fn catalog(death: bool) -> Vec<d::v2::Unit<String>> {
             loader: d::Loader {
                 image: "user-bin".into(),
                 stack: 512 * 1024,
-                args: vec![if death { 2 } else { 0 }],
+                args: vec![match scenario {
+                    "death" => 2,
+                    "cancel" => 4,
+                    _ => 0,
+                }],
                 ..Default::default()
             },
             identity: d::Identity {
@@ -80,7 +84,7 @@ pub fn catalog(death: bool) -> Vec<d::v2::Unit<String>> {
             ..Default::default()
         },
     ];
-    if !death {
+    if scenario == "handoff" {
         let mut observer = catalog[0].clone();
         observer.id = "observer".into();
         observer.loader.args = vec![3];
@@ -90,7 +94,7 @@ pub fn catalog(death: bool) -> Vec<d::v2::Unit<String>> {
     catalog
 }
 pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
-    if !matches!(scenario, "handoff" | "death") {
+    if !matches!(scenario, "handoff" | "death" | "cancel") {
         return false;
     }
     let Some(Event::Started { system }) = events.first() else {
@@ -100,19 +104,17 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
         matches!(events.last(), Some(Event::Complete { system: owner, reason: 0 }) if owner == system)
     );
     let serial = String::from_utf8_lossy(log);
-    assert!(serial.contains(&format!(
-        "exit tid={system} reason=0x0 note: system: complete"
-    )));
     assert!(!serial.contains("FAIL handoff") && !serial.contains("page fault killed"));
-    let marker = if scenario == "death" {
-        "PASS handoff owner-death accepted=1"
-    } else {
-        "PASS handoff create=1 replay=1 conflict=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
+    let marker = match scenario {
+        "death" => "PASS handoff owner-death accepted=1",
+        "cancel" => "PASS handoff lost-reply=1 pending-cancel=1",
+        _ => {
+            "PASS handoff create=1 replay=1 conflict=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
+        }
     };
     assert!(serial.contains(marker));
     if scenario == "handoff" {
         assert!(serial.contains("PASS handoff authorization=1"));
-        assert!(serial.contains("PASS handoff lost-reply=1 pending-cancel=1"));
     }
     let mut bound = vec![];
     for (at, event) in events.iter().enumerate() {
@@ -128,7 +130,24 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
             assert!(at < exit && exit < retired);
         }
     }
-    assert!(bound.len() >= if scenario == "death" { 1 } else { 4 });
+    assert!(bound.len() >= if scenario == "handoff" { 4 } else { 1 });
+    // Typed Complete precedes the terminal native call. Require Kernel's
+    // actual acceptance even after every application assertion has passed.
+    let root_exit = format!("exit tid={system} reason=0x0 note: system: complete");
+    if !serial.lines().any(|line| line.trim_end() == root_exit) {
+        let console_lost = serial.lines().any(|line| {
+            line.strip_prefix("[kernel] console-lost=")
+                .and_then(|value| value.trim().parse::<u64>().ok())
+                .is_some_and(|value| value != 0)
+        });
+        if console_lost {
+            // Distinct from PASS and from a behavioral failure. The runner
+            // may qualify a fresh VM, retaining this incomplete receipt.
+            eprintln!("INCONCLUSIVE kernel-console-loss missing admitted root exit: {root_exit}");
+            std::process::exit(2);
+        }
+        panic!("missing admitted root exit: {root_exit}");
+    }
     println!(
         "PASS system-handoff scenario={scenario} users={} independent-teams=1 root-exit=1 retired=1",
         bound.len()

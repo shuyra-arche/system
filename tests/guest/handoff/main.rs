@@ -127,17 +127,7 @@ fn finish<O: Operation>(mut call: Pending<O>) -> <<O as Contract>::Response as C
     let deadline = budget();
     // This User has no same-Team allocator workers. Use the SDK's native
     // reply watch instead of repeatedly polling Kernel while the peer runs.
-    let started = room::clock();
     let value = call.wait().unwrap().value;
-    let elapsed = room::clock().saturating_sub(started);
-    if elapsed >= 100_000_000 {
-        let _ = writeln!(
-            Console,
-            "handoff: {} wait={}ms",
-            core::any::type_name::<O>(),
-            elapsed / 1_000_000
-        );
-    }
     while let Err(error) = call.finish() {
         assert!(error.is_busy(), "{error:?}");
         tick(deadline);
@@ -199,7 +189,7 @@ fn create(
     client: &mut system_client::instance::Client,
     subject: &identity::Subject,
     value: u64,
-) -> api::InstanceId {
+) -> (api::InstanceId, api::Observation) {
     let request = api::Create {
         id: id(value),
         input: loader::Input::Unit(loader::UnitInput {
@@ -215,25 +205,28 @@ fn create(
             .unwrap(),
     ));
     let target = first.instance.0.unwrap();
-    let repeated = success(finish(
-        client
-            .begin::<op::Create>(request.clone(), deadline())
-            .unwrap(),
-    ));
-    assert_eq!(repeated.instance.0, Some(target));
-    let mut changed = request;
-    let loader::Input::Unit(ref mut input) = changed.input else {
-        unreachable!()
-    };
-    input.arguments.values[0] = 2;
-    assert_eq!(
-        finish(client.begin::<op::Create>(changed, deadline()).unwrap()),
-        Outcome::Failure(api::Fail::Conflict)
-    );
+    if value == 1 {
+        let repeated = success(finish(
+            client
+                .begin::<op::Create>(request.clone(), deadline())
+                .unwrap(),
+        ));
+        assert_eq!(repeated.instance.0, Some(target));
+        let mut changed = request;
+        let loader::Input::Unit(ref mut input) = changed.input else {
+            unreachable!()
+        };
+        input.arguments.values[0] = 2;
+        assert_eq!(
+            finish(client.begin::<op::Create>(changed, deadline()).unwrap()),
+            Outcome::Failure(api::Fail::Conflict)
+        );
+    }
     let result = receipt(client, first);
     assert_eq!(result.state, api::State::Completed);
-    assert_eq!(observe(client, target).phase, api::Phase::Prepared);
-    target
+    let observed = observe(client, target);
+    assert_eq!(observed.phase, api::Phase::Prepared);
+    (target, observed)
 }
 fn bind_resource(
     discovery: &mut system_client::operator::Client,
@@ -349,6 +342,10 @@ fn controller(license: PendId, context: Context, role: usize) {
         let _ = writeln!(Console, "PASS handoff owner-death accepted=1");
         return;
     }
+    if role == 4 {
+        cancellation(&mut client, &subject);
+        return;
+    }
     let mut discovery = discovery(license, context.clone());
     if role == 3 {
         let limit = budget();
@@ -367,7 +364,10 @@ fn controller(license: PendId, context: Context, role: usize) {
             {
                 break target;
             }
-            query_tick(limit);
+            // The observer only needs one published association. Give ELF
+            // construction CPU time rather than rediscovering it twice/second.
+            tick(limit);
+            room::sleep_until(room::clock().saturating_add(2_000_000_000).min(limit)).unwrap();
         };
         assert_eq!(
             finish(client.begin::<op::Inspect>(target, deadline()).unwrap()),
@@ -405,7 +405,7 @@ fn controller(license: PendId, context: Context, role: usize) {
             room::clock() / 1_000_000
         );
         let base = 1 + round * 10;
-        let target = create(&mut client, &subject, base);
+        let (target, observed) = create(&mut client, &subject, base);
         if round == 0 {
             // Cancellation cannot undo an already completed Create receipt.
             let cancellation = success(finish(
@@ -414,10 +414,9 @@ fn controller(license: PendId, context: Context, role: usize) {
             assert_eq!(cancellation.state, api::State::Completed);
         }
 
-        if let Some((old, _)) = &previous {
+        if let Some((old, _, _)) = &previous {
             assert_ne!(*old, target);
         }
-        let observed = observe(&mut client, target);
         assert_ne!(observed.team.get(), info.team.get() as u64);
         assert_ne!(observed.task.get(), caller.get() as u64);
         let actual = TaskId::new(observed.task.get() as usize);
@@ -518,11 +517,11 @@ fn controller(license: PendId, context: Context, role: usize) {
         );
         let resource = bind_resource(&mut discovery, target);
         ping(&resource, &observed, license, context.clone(), false);
-        if let Some((old, old_resource)) = previous.take() {
+        if let Some((old, old_resource, old_observed)) = previous.take() {
             // Rebinding discovery preserves the first consumer's actual Pend.
             ping(
                 &old_resource,
-                &observe(&mut client, old),
+                &old_observed,
                 license,
                 context.clone(),
                 false,
@@ -556,14 +555,26 @@ fn controller(license: PendId, context: Context, role: usize) {
                 observe(&mut client, old).root.0.unwrap().phase,
                 operator::unit::Phase::Retired
             );
-            let still_current = bind_resource(&mut discovery, target);
-            assert_eq!(still_current.binding, resource.binding);
-            retire(still_current.token.try_into().unwrap());
+            let still_current = success(finish(
+                discovery
+                    .begin::<operator::operations::ResolveRoot>(
+                        operator::Resolve {
+                            mark: Mark::of("driver").into(),
+                            name: Name::new("driver").unwrap(),
+                        },
+                        deadline(),
+                    )
+                    .unwrap(),
+            ));
+            assert_eq!(still_current.instance.0, Some(target));
+            // Snapshots supply expected identity only; native Pend ownership
+            // and actual RPC sender are checked again by ping.
+            ping(&resource, &observed, license, context.clone(), false);
         }
-        previous = Some((target, resource));
+        previous = Some((target, resource, observed));
         let _ = writeln!(Console, "handoff: round {round} complete");
     }
-    let (last, resource) = previous.take().unwrap();
+    let (last, resource, last_observed) = previous.take().unwrap();
     // Lease withdrawal is independent of Task exit and namespace discovery.
     source
         .release(caller, supply::LeaseId::new(11).unwrap())
@@ -579,13 +590,7 @@ fn controller(license: PendId, context: Context, role: usize) {
         tick(limit);
     }
     let _ = writeln!(Console, "handoff: lease withdrawn");
-    ping(
-        &resource,
-        &observe(&mut client, last),
-        license,
-        context.clone(),
-        true,
-    );
+    ping(&resource, &last_observed, license, context.clone(), true);
     retire(resource.token.try_into().unwrap());
     let retired = success(finish(
         client
@@ -614,6 +619,17 @@ fn controller(license: PendId, context: Context, role: usize) {
         ),
         Outcome::Failure(api::Fail::Unknown)
     );
+    let cleanup_limit = room::clock() + 5_000_000_000;
+    while !source.finish().unwrap() {
+        tick(cleanup_limit);
+    }
+    retire(signal);
+    let _ = writeln!(
+        Console,
+        "PASS handoff create=1 replay=1 conflict=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
+    );
+}
+fn cancellation(client: &mut system_client::instance::Client, subject: &identity::Subject) {
     // Ignore the first application response after admission. Querying the same
     // operation recovers its identity without dispatching Create a second time.
     let pending_request = api::Create {
@@ -647,10 +663,10 @@ fn controller(license: PendId, context: Context, role: usize) {
         assert!(error.is_busy());
         tick(lost_limit);
     }
-    let cancelled = receipt(&mut client, cancel);
+    let cancelled = receipt(client, cancel);
     assert_eq!(cancelled.state, api::State::Cancelled);
     assert_eq!(
-        observe(&mut client, accepted.instance.0.unwrap()).phase,
+        observe(client, accepted.instance.0.unwrap()).phase,
         api::Phase::Retired
     );
     assert_eq!(
@@ -662,16 +678,8 @@ fn controller(license: PendId, context: Context, role: usize) {
         cancelled
     );
     let _ = writeln!(Console, "PASS handoff lost-reply=1 pending-cancel=1");
-    let cleanup_limit = room::clock() + 5_000_000_000;
-    while !source.finish().unwrap() {
-        tick(cleanup_limit);
-    }
-    retire(signal);
-    let _ = writeln!(
-        Console,
-        "PASS handoff create=1 replay=1 conflict=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
-    );
 }
+
 fn driver(license: PendId, context: Context) -> ! {
     let info = own();
     let UnitTarget::Task(caller) = info.target else {

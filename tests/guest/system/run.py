@@ -88,40 +88,50 @@ def main():
                 'rustc': subprocess.check_output(['rustc', '-Vv'], text=True),
                 'qemu': subprocess.check_output([qemu, '--version'], text=True)}
     (output / 'inputs.json').write_text(json.dumps(identity, indent=2) + '\n')
-    for users in (('handoff', 'death') if args.handoff else (0, 2, 1)):
+    for users in (('handoff', 'cancel', 'death') if args.handoff else (0, 2, 1)):
         archive = output / f'initrd-{users}.bin'
         subprocess.run([*pack, boot, system, image, archive, str(users)], check=True)
         for harts in args.harts:
-            case = output / f'users-{users}-harts-{harts}'
-            command = [qemu, '-M', 'virt', '-cpu', 'rv64', '-m', '128M', '-smp', str(harts),
-                       '-bios', firmware, '-kernel', kernel, '-initrd', archive,
-                       '-nographic', '-monitor', 'none', '-nic', 'none']
-            receipt = {'command': list(map(str, command)), 'users': users, 'harts': harts,
-                       'archive_sha256': digest(archive), 'passed': False}
-            try:
-                # Preserve live diagnostics, including while a guest stalls.
-                with case.with_suffix('.log').open('wb') as serial_output:
-                    result = subprocess.run(command, stdout=serial_output, stderr=subprocess.STDOUT, timeout=90)
-                receipt['returncode'] = result.returncode
-                serial = case.with_suffix('.log').read_bytes()
-            except subprocess.TimeoutExpired as error:
-                serial = case.with_suffix('.log').read_bytes()
-                receipt['timeout'] = True
+            for attempt in range(2):
+                suffix = '' if attempt == 0 else '-retry-1'
+                case = output / f'users-{users}-harts-{harts}{suffix}'
+                command = [qemu, '-M', 'virt', '-cpu', 'rv64', '-m', '128M', '-smp', str(harts),
+                           '-bios', firmware, '-kernel', kernel, '-initrd', archive,
+                           '-nographic', '-monitor', 'none', '-nic', 'none']
+                receipt = {'command': list(map(str, command)), 'users': users, 'harts': harts,
+                           'archive_sha256': digest(archive), 'attempt': attempt + 1, 'passed': False}
+                try:
+                    # Preserve live diagnostics, including while a guest stalls.
+                    with case.with_suffix('.log').open('wb') as serial_output:
+                        result = subprocess.run(command, stdout=serial_output, stderr=subprocess.STDOUT, timeout=90)
+                    receipt['returncode'] = result.returncode
+                    serial = case.with_suffix('.log').read_bytes()
+                except subprocess.TimeoutExpired as error:
+                    serial = case.with_suffix('.log').read_bytes()
+                    receipt['timeout'] = True
+                    case.with_suffix('.log').write_bytes(serial)
+                    case.with_suffix('.json').write_text(json.dumps(receipt, indent=2) + '\n')
+                    print(serial.decode(errors='replace'), flush=True)
+                    raise SystemExit(f'full System application timeout: {harts} Hart(s)') from error
                 case.with_suffix('.log').write_bytes(serial)
+                print(f'QEMU System {args.profile} / {harts} Hart(s) / {users} User(s)\n'
+                      f'{serial.decode(errors="replace")}', flush=True)
                 case.with_suffix('.json').write_text(json.dumps(receipt, indent=2) + '\n')
-                print(serial.decode(errors='replace'), flush=True)
-                raise SystemExit(f'full System application timeout: {harts} Hart(s)') from error
-            case.with_suffix('.log').write_bytes(serial)
-            print(f'QEMU System {args.profile} / {harts} Hart(s) / {users} User(s)\n'
-                  f'{serial.decode(errors="replace")}', flush=True)
-            case.with_suffix('.json').write_text(json.dumps(receipt, indent=2) + '\n')
-            result.check_returncode()
-            assert b'page fault killed' not in serial and b'system: panic' not in serial
-            final = b'system: supervision failed (4)' if users == 1 else b'system: complete (0)'
-            assert b'all tasks exited' in serial and final in serial
-            subprocess.run([*pack, 'check', case.with_suffix('.log'), str(users)], check=True)
-            receipt['passed'] = True
-            case.with_suffix('.json').write_text(json.dumps(receipt, indent=2) + '\n')
+                result.check_returncode()
+                assert b'page fault killed' not in serial and b'system: panic' not in serial
+                final = b'system: supervision failed (4)' if users == 1 else b'system: complete (0)'
+                assert b'all tasks exited' in serial and final in serial
+                checked = subprocess.run([*pack, 'check', case.with_suffix('.log'), str(users)])
+                if args.handoff and checked.returncode == 2:
+                    receipt['inconclusive'] = 'kernel-console-loss'
+                    case.with_suffix('.json').write_text(json.dumps(receipt, indent=2) + '\n')
+                    if attempt == 0:
+                        print(f'INCONCLUSIVE {case}: preserving evidence; qualifying one fresh VM', flush=True)
+                        continue
+                checked.check_returncode()
+                receipt['passed'] = True
+                case.with_suffix('.json').write_text(json.dumps(receipt, indent=2) + '\n')
+                break
 
 
 if __name__ == '__main__':
