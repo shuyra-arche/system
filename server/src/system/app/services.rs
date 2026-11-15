@@ -5,7 +5,7 @@ use kernel_api::{
     address::VirtAddr,
     model::{
         identity::{PendId, TaskId},
-        pend::{AccordRequest, AccordTarget, Limits, PendInfo, Target},
+        pend::{AccordRequest, AccordTarget, Limits, Operations, PendInfo, PendScope, Target},
         wait::Wait,
     },
 };
@@ -232,7 +232,28 @@ pub(crate) fn give(
         limits,
     }
     .to_bytes();
-    pend::accord(VirtAddr::new(bytes.as_ptr().addr())).map_err(|error| error.source)
+    // Object Clone Busy precedes creation and recipient publication in the
+    // selected Kernel. Reuse this exact descriptor after yielding; other
+    // target kinds can have different withdrawal effects and retain their
+    // original failure handling.
+    let retry = matches!(limits.operations, Operations::Clone(_))
+        && matches!(limits.scope, PendScope::Object);
+    let deadline = if retry {
+        room::clock().saturating_add(LIMIT_NS)
+    } else {
+        0
+    };
+    loop {
+        match pend::accord(VirtAddr::new(bytes.as_ptr().addr())) {
+            Ok(token) => return Ok(token),
+            Err(error) => {
+                if !retry || !error.source.is_busy() || room::clock() >= deadline {
+                    return Err(error.source);
+                }
+                room::yield_();
+            }
+        }
+    }
 }
 pub(crate) fn release(token: PendId) -> bool {
     match pend::return_(token) {
