@@ -14,6 +14,7 @@ pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
                 args: vec![match scenario {
                     "death" => 2,
                     "cancel" => 4,
+                    "auth" => 6,
                     _ => 0,
                 }],
                 ..Default::default()
@@ -84,7 +85,7 @@ pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
             ..Default::default()
         },
     ];
-    if scenario == "handoff" {
+    if scenario == "auth" {
         let mut observer = catalog[0].clone();
         observer.id = "observer".into();
         observer.loader.args = vec![3];
@@ -94,7 +95,7 @@ pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
     catalog
 }
 pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
-    if !matches!(scenario, "handoff" | "death" | "cancel") {
+    if !matches!(scenario, "handoff" | "auth" | "death" | "cancel") {
         return false;
     }
     let Some(Event::Started { system }) = events.first() else {
@@ -108,12 +109,13 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
     let marker = match scenario {
         "death" => "PASS handoff owner-death accepted=1",
         "cancel" => "PASS handoff lost-reply=1 pending-cancel=1",
+        "auth" => "PASS handoff create=1 replay=1 conflict=1 root-grants=1 stale=1",
         _ => {
-            "PASS handoff create=1 replay=1 conflict=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
+            "PASS handoff recovery=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
         }
     };
     assert!(serial.contains(marker));
-    if scenario == "handoff" {
+    if scenario == "auth" {
         assert!(serial.contains("PASS handoff authorization=1"));
     }
     let mut bound = vec![];
@@ -130,7 +132,14 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
             assert!(at < exit && exit < retired);
         }
     }
-    assert!(bound.len() >= if scenario == "handoff" { 4 } else { 1 });
+    assert!(
+        bound.len()
+            >= if matches!(scenario, "handoff" | "auth") {
+                3
+            } else {
+                1
+            }
+    );
     // Typed Complete precedes the terminal native call. Require Kernel's
     // actual acceptance even after every application assertion has passed.
     let root_exit = format!("exit tid={system} reason=0x0 note: system: complete");

@@ -22,8 +22,9 @@ native Task construction. The checker requires typed Task exit/retired order,
 independent Team identities and Kernel's admitted initial-System exit.
 
 Each User role has one 60-second scenario budget; the outer runner still has
-its original 90-second limit per VM. Main handoff, lost-reply/pending-cancel
-and early owner death run as separate archives/VMs, so fault checks do not
+its original 90-second limit per VM. Main recovery, authorization/replay,
+lost-reply/pending-cancel and early owner death run as separate archives/VMs,
+so contract and fault checks do not
 consume the main recovery scenario's budget. The initial fixture incorrectly
 killed a caller after five seconds of an asynchronous request/operation, while debug Kernel
 was still preparing another ordinary ELF. Waiting now uses the SDK's native
@@ -31,6 +32,8 @@ reply watch and queries the original operation at a 500 ms cadence under the
 scenario budget. The idle Driver waits on native ingress readiness. The
 observer discovers at a two-second cadence; repeated test obligations are
 exercised once rather than issuing redundant RPCs for both Drivers.
+The authorization observer acknowledges through the real Driver RPC; its
+controller waits for that acknowledgment before closing discovery.
 Production memory/retirement deadlines are unchanged. Native cleanup steps
 still have their own bounded retries.
 

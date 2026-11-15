@@ -88,7 +88,7 @@ def main():
                 'rustc': subprocess.check_output(['rustc', '-Vv'], text=True),
                 'qemu': subprocess.check_output([qemu, '--version'], text=True)}
     (output / 'inputs.json').write_text(json.dumps(identity, indent=2) + '\n')
-    for users in (('handoff', 'cancel', 'death') if args.handoff else (0, 2, 1)):
+    for users in (('handoff', 'auth', 'cancel', 'death') if args.handoff else (0, 2, 1)):
         archive = output / f'initrd-{users}.bin'
         subprocess.run([*pack, boot, system, image, archive, str(users)], check=True)
         for harts in args.harts:

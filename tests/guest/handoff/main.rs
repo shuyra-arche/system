@@ -189,13 +189,16 @@ fn create(
     client: &mut system_client::instance::Client,
     subject: &identity::Subject,
     value: u64,
+    authorization: bool,
 ) -> (api::InstanceId, api::Observation) {
     let request = api::Create {
         id: id(value),
         input: loader::Input::Unit(loader::UnitInput {
             name: Name::new("driver").unwrap(),
             stack: 512 * 1024,
-            arguments: loader::Arguments { values: vec![1] },
+            arguments: loader::Arguments {
+                values: vec![if authorization { 1 } else { 5 }],
+            },
         }),
         subject: subject.clone(),
     };
@@ -205,7 +208,7 @@ fn create(
             .unwrap(),
     ));
     let target = first.instance.0.unwrap();
-    if value == 1 {
+    if authorization {
         let repeated = success(finish(
             client
                 .begin::<op::Create>(request.clone(), deadline())
@@ -270,23 +273,38 @@ fn ping(
 ) {
     let token = resource.token.try_into().unwrap();
     assert_eq!(inspect(token).owner.get() as u64, target.task.get());
-    let mut client =
-        system_client::control::Client::bind(token, inspect(token).owner, license, context)
-            .unwrap();
-    let response = success(finish(
-        client
-            .begin::<control::operations::State>(
-                control::Named {
-                    name: Name::new(if revoked { "revoked" } else { "ping" }).unwrap(),
-                },
-                deadline(),
-            )
-            .unwrap(),
-    ));
+    let response = query(
+        resource,
+        license,
+        context,
+        if revoked { "revoked" } else { "ping" },
+    );
     assert_eq!(response.task, target.task);
     assert_eq!(response.team, target.team);
     assert_eq!(response.reason, u64::from(revoked));
 }
+fn query(
+    resource: &operator::Resource,
+    license: PendId,
+    context: Context,
+    name: &str,
+) -> control::Observation {
+    let token = resource.token.try_into().unwrap();
+    let mut client =
+        system_client::control::Client::bind(token, inspect(token).owner, license, context)
+            .unwrap();
+    success(finish(
+        client
+            .begin::<control::operations::State>(
+                control::Named {
+                    name: Name::new(name).unwrap(),
+                },
+                deadline(),
+            )
+            .unwrap(),
+    ))
+}
+
 fn controller(license: PendId, context: Context, role: usize) {
     let endpoint = find(|info| info.mark == Mark::new(7));
     let mut client = system_client::instance::Client::bind(
@@ -386,27 +404,40 @@ fn controller(license: PendId, context: Context, role: usize) {
         ));
         assert_eq!(denied.state, api::State::Failed);
         assert_eq!(denied.failure.0.unwrap().0, api::Fail::Denied);
+        let resource = bind_resource(&mut discovery, target);
+        assert_eq!(
+            query(&resource, license, context.clone(), "observer").reason,
+            1
+        );
+        retire(resource.token.try_into().unwrap());
         let _ = writeln!(Console, "PASS handoff authorization=1");
         return;
     }
-    let absent = success(finish(
-        discovery
-            .begin::<operator::operations::OwnRoot>(operator::unit::After { cursor: 0 }, deadline())
-            .unwrap(),
-    ));
-    assert!(absent.0.is_none());
+    let authorization = role == 6;
+    if authorization {
+        let absent = success(finish(
+            discovery
+                .begin::<operator::operations::OwnRoot>(
+                    operator::unit::After { cursor: 0 },
+                    deadline(),
+                )
+                .unwrap(),
+        ));
+        assert!(absent.0.is_none());
+    }
+    let rounds = if authorization { 1 } else { 2 };
     let signal = sign::create(license).unwrap();
     let mut source = source::Source::new("handoff").unwrap();
     let mut previous = None;
-    for round in 0..2 {
+    for round in 0..rounds {
         let _ = writeln!(
             Console,
             "handoff: round {round} start t={}ms",
             room::clock() / 1_000_000
         );
         let base = 1 + round * 10;
-        let (target, observed) = create(&mut client, &subject, base);
-        if round == 0 {
+        let (target, observed) = create(&mut client, &subject, base, authorization);
+        if authorization {
             // Cancellation cannot undo an already completed Create receipt.
             let cancellation = success(finish(
                 client.begin::<op::Cancel>(id(base), deadline()).unwrap(),
@@ -507,16 +538,37 @@ fn controller(license: PendId, context: Context, role: usize) {
                 .unwrap(),
         ));
         assert_eq!(published.state, api::State::Completed);
-        assert_eq!(
-            success(finish(
+        if authorization {
+            assert_eq!(
+                success(finish(
+                    client
+                        .begin::<op::Publish>(publication.clone(), deadline())
+                        .unwrap()
+                )),
+                published
+            );
+            let stale = success(finish(
                 client
-                    .begin::<op::Publish>(publication, deadline())
-                    .unwrap()
-            )),
-            published
-        );
+                    .begin::<op::Publish>(
+                        api::Publication {
+                            id: id(40),
+                            ..publication
+                        },
+                        deadline(),
+                    )
+                    .unwrap(),
+            ));
+            assert_eq!(stale.state, api::State::Failed);
+            assert_eq!(stale.failure.0.unwrap().0, api::Fail::Conflict);
+        }
         let resource = bind_resource(&mut discovery, target);
         ping(&resource, &observed, license, context.clone(), false);
+        if authorization {
+            let limit = budget();
+            while query(&resource, license, context.clone(), "authorization").reason != 1 {
+                query_tick(limit);
+            }
+        }
         if let Some((old, old_resource, old_observed)) = previous.take() {
             // Rebinding discovery preserves the first consumer's actual Pend.
             ping(
@@ -576,16 +628,10 @@ fn controller(license: PendId, context: Context, role: usize) {
     }
     let (last, resource, last_observed) = previous.take().unwrap();
     // Lease withdrawal is independent of Task exit and namespace discovery.
-    source
-        .release(caller, supply::LeaseId::new(11).unwrap())
-        .unwrap();
+    let last_lease = supply::LeaseId::new(1 + (rounds - 1) * 10).unwrap();
+    source.release(caller, last_lease).unwrap();
     let limit = room::clock() + 5_000_000_000;
-    while source
-        .inspect(caller, supply::LeaseId::new(11).unwrap())
-        .unwrap()
-        .state
-        != supply::State::Released
-    {
+    while source.inspect(caller, last_lease).unwrap().state != supply::State::Released {
         source.advance().unwrap();
         tick(limit);
     }
@@ -605,20 +651,22 @@ fn controller(license: PendId, context: Context, role: usize) {
     ));
     assert_eq!(receipt(&mut client, retired).state, api::State::Completed);
     assert_eq!(observe(&mut client, last).phase, api::Phase::Retired);
-    assert_eq!(
-        finish(
-            client
-                .begin::<op::Inspect>(
-                    api::InstanceId {
-                        system: system_protocol::TaskId::new(999),
-                        ..last
-                    },
-                    deadline()
-                )
-                .unwrap()
-        ),
-        Outcome::Failure(api::Fail::Unknown)
-    );
+    if authorization {
+        assert_eq!(
+            finish(
+                client
+                    .begin::<op::Inspect>(
+                        api::InstanceId {
+                            system: system_protocol::TaskId::new(999),
+                            ..last
+                        },
+                        deadline()
+                    )
+                    .unwrap()
+            ),
+            Outcome::Failure(api::Fail::Unknown)
+        );
+    }
     let cleanup_limit = room::clock() + 5_000_000_000;
     while !source.finish().unwrap() {
         tick(cleanup_limit);
@@ -626,7 +674,12 @@ fn controller(license: PendId, context: Context, role: usize) {
     retire(signal);
     let _ = writeln!(
         Console,
-        "PASS handoff create=1 replay=1 conflict=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
+        "{}",
+        if authorization {
+            "PASS handoff create=1 replay=1 conflict=1 root-grants=1 stale=1"
+        } else {
+            "PASS handoff recovery=1 instance=1 roots=1 cas=1 rpc=1 supply=1 revoke=1 stop=1 retire=1"
+        }
     );
 }
 fn cancellation(client: &mut system_client::instance::Client, subject: &identity::Subject) {
@@ -680,7 +733,7 @@ fn cancellation(client: &mut system_client::instance::Client, subject: &identity
     let _ = writeln!(Console, "PASS handoff lost-reply=1 pending-cancel=1");
 }
 
-fn driver(license: PendId, context: Context) -> ! {
+fn driver(license: PendId, context: Context, authorization: bool) -> ! {
     let info = own();
     let UnitTarget::Task(caller) = info.target else {
         panic!("Task")
@@ -705,20 +758,22 @@ fn driver(license: PendId, context: Context) -> ! {
     let grant = &access.grant;
     assert_eq!(grant.spec.holder.get(), caller.get() as u64);
     assert_eq!(grant.spec.source.0, Some(caller.into()));
-    assert!(
-        success(finish(
-            discovery
-                .begin::<operator::operations::OwnRoot>(
-                    operator::unit::After {
-                        cursor: access.cursor
-                    },
-                    deadline()
-                )
-                .unwrap()
-        ))
-        .0
-        .is_none()
-    );
+    if authorization {
+        assert!(
+            success(finish(
+                discovery
+                    .begin::<operator::operations::OwnRoot>(
+                        operator::unit::After {
+                            cursor: access.cursor
+                        },
+                        deadline()
+                    )
+                    .unwrap()
+            ))
+            .0
+            .is_none()
+        );
+    }
     let entry: PendId = grant.entrance.try_into().unwrap();
     assert_eq!(
         inspect(entry).owner.get() as u64,
@@ -727,32 +782,34 @@ fn driver(license: PendId, context: Context) -> ! {
     let operator = inspect(entry).owner;
     let mut authority =
         system_client::authority::Client::bind(entry, operator, license, context.clone()).unwrap();
-    assert_eq!(
-        finish(
-            authority
-                .begin::<operator::authority::operations::RegisterRoot>(
-                    access.root.registration.clone(),
-                    deadline()
-                )
-                .unwrap()
-        ),
-        Outcome::Failure(operator::Fail::Denied)
-    );
-    assert_eq!(
-        finish(
-            authority
-                .begin::<operator::authority::operations::AdvanceRoot>(
-                    operator::unit::Advance {
-                        instance: access.root.registration.instance,
-                        expected: access.root.revision,
-                        phase: operator::unit::Phase::Active,
-                    },
-                    deadline()
-                )
-                .unwrap()
-        ),
-        Outcome::Failure(operator::Fail::Denied)
-    );
+    if authorization {
+        assert_eq!(
+            finish(
+                authority
+                    .begin::<operator::authority::operations::RegisterRoot>(
+                        access.root.registration.clone(),
+                        deadline()
+                    )
+                    .unwrap()
+            ),
+            Outcome::Failure(operator::Fail::Denied)
+        );
+        assert_eq!(
+            finish(
+                authority
+                    .begin::<operator::authority::operations::AdvanceRoot>(
+                        operator::unit::Advance {
+                            instance: access.root.registration.instance,
+                            expected: access.root.revision,
+                            phase: operator::unit::Phase::Active,
+                        },
+                        deadline()
+                    )
+                    .unwrap()
+            ),
+            Outcome::Failure(operator::Fail::Denied)
+        );
+    }
     let bytes = <control::Call as Contract>::Request::SIZE
         .maximum()
         .unwrap();
@@ -803,10 +860,20 @@ fn driver(license: PendId, context: Context) -> ! {
     ));
     let mut ingress = protocol::Control::bind(queue, license, context).unwrap();
     sign::trigger(find(|info| info.mark == Mark::new(READY)).token).unwrap();
+    let mut observer = false;
     loop {
         let result = ingress.serve_once(Wait::At(budget()), |_, request| match request {
             control::operations::DecodedRequest::State(request) => {
-                let revoked = request.name.as_str() == "revoked";
+                let name = request.name.as_str();
+                if name == "observer" {
+                    observer = true;
+                }
+                let reason = if matches!(name, "observer" | "authorization") {
+                    u64::from(observer)
+                } else {
+                    u64::from(name == "revoked")
+                };
+                let revoked = name == "revoked";
                 if revoked {
                     let error =
                         sign::trigger(device.token).expect_err("withdrawn lease remained usable");
@@ -814,7 +881,7 @@ fn driver(license: PendId, context: Context) -> ! {
                 }
                 control::operations::Response::State(Outcome::Success(control::Observation {
                     state: control::State::Ready,
-                    reason: u64::from(revoked),
+                    reason,
                     completed: false,
                     task: caller.into(),
                     team: info.team.into(),
@@ -846,8 +913,8 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
     });
     // SAFETY: Kernel supplies one copied word on this Task's live stack.
     let role = unsafe { *words };
-    if role == 1 {
-        driver(license, context)
+    if matches!(role, 1 | 5) {
+        driver(license, context, role == 1)
     }
     controller(license, context, role);
     unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
