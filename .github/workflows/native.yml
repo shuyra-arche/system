@@ -102,10 +102,6 @@ jobs:
         run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --harts 1 2 4
       - name: Complete debug System application and ordinary User Teams
         run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --profile debug --harts 1 2 4
-      - name: Instance and UnitRoot handoff with release Kernel on 1/2/4 Harts
-        run: |
-          python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --handoff --harts 1 2 4
-          python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform --handoff --profile debug --harts 1 2 4
       - name: Debug Loader and instruction platform on 1/2/4 Harts
         run: |
           cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --target riscv64gc-unknown-none-elf
@@ -114,18 +110,12 @@ jobs:
         run: |
           python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform --profile debug --harts 1 2 4
           python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform --profile release --harts 1 2 4
-      - name: Instance and UnitRoot handoff with debug Kernel on 1/2/4 Harts
-        run: |
-          python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform --handoff --harts 1 2 4
-          python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform --handoff --profile debug --harts 1 2 4
       - name: Preserve complete application execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: system-application
-          path: |
-            tests/guest/system/target/evidence/
-            tests/guest/system/target/handoff/
+          path: tests/guest/system/target/evidence/
           if-no-files-found: error
       - name: Preserve Loader execution evidence
         if: always()
@@ -153,4 +143,53 @@ jobs:
             tests/guest/runtime/platform/Cargo.lock
             tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform
           include-hidden-files: true
+          if-no-files-found: error
+
+  handoff:
+    name: Handoff / Kernel ${{ matrix.kernel }} / System ${{ matrix.system }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        kernel: [debug, release]
+        system: [debug, release]
+    container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
+    env:
+      QEMU_RISCV64: qemu-system-riscv64
+      QEMU_OPENSBI: /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.bin
+      RUSTFLAGS: -Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium -Dwarnings
+    steps:
+      - name: Install QEMU and build tools
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-misc
+          qemu-system-riscv64 --version
+          sha256sum "$QEMU_OPENSBI"
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install declared toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup-init.sh
+          sh /tmp/rustup-init.sh -y --profile minimal --default-toolchain none
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          "$HOME/.cargo/bin/rustup" show
+      - name: Build instruction-qualified Kernel
+        run: |
+          if [ "${{ matrix.kernel }}" = release ]; then
+            cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --release --target riscv64gc-unknown-none-elf
+          else
+            cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target riscv64gc-unknown-none-elf
+          fi
+      - name: Independent-Team handoff and owner exit on 1/2/4 Harts
+        run: python3 tests/guest/system/run.py tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/${{ matrix.kernel }}/system-runtime-platform --handoff --profile ${{ matrix.system }} --harts 1 2 4
+      - name: Preserve handoff execution evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: handoff-kernel-${{ matrix.kernel }}-system-${{ matrix.system }}
+          path: |
+            tests/guest/system/target/handoff/
+            tests/guest/runtime/platform/target/riscv64gc-unknown-none-elf/${{ matrix.kernel }}/system-runtime-platform
           if-no-files-found: error
