@@ -1,20 +1,23 @@
 //! One instance owns its execution attempt and all installation/reclamation work.
+mod installation;
+mod retirement;
 use crate::system::{
     app::{
         namespace::Layout,
         services::{Services, lookup, observe},
     },
-    assembly::{Gate, Installation},
     control::identity::Roster,
     declaration::Unit,
     loader::{Job, Loader},
     supply::Registry,
 };
 use alloc::sync::Arc;
+use installation::Installation;
 use kernel_api::model::{
     identity::TaskId,
     unit::{UnitQuery, UnitState},
 };
+use retirement::Gate;
 use system_protocol::{
     control::{Fail, Observation, State},
     identity,
@@ -42,7 +45,7 @@ enum Stage {
 
 pub(crate) struct Instance {
     pub id: InstanceId,
-    pub owner: TaskId,
+    owner: TaskId,
     pub program: Option<Arc<Unit>>,
     job: Job,
     installation: Installation,
@@ -103,6 +106,9 @@ impl Instance {
             exited: false,
             supplied: false,
         }
+    }
+    pub fn owner(&self) -> TaskId {
+        self.owner
     }
     pub fn task(&self) -> Option<TaskId> {
         self.job.task()
@@ -307,7 +313,7 @@ impl Instance {
                     roster,
                     layout,
                     sources,
-                    crate::system::assembly::Plan {
+                    installation::Plan {
                         instance: self.id.get(),
                         task,
                         owner: self.owner,

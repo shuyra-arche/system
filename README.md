@@ -66,7 +66,9 @@ schema 2. Old Env/Wire/Mold/IPC/Resource/Execution dependencies, Cargo
 replacements and the System API self Git pin have been removed. The original
 Identity/Operator/Loader/Supply mechanisms are retained and composed by the
 [native application](server/src/system/app/README.md). Inactive SDK harnesses
-remain explicitly [historical](tests/historical/README.md).
+remain explicitly [historical](tests/historical/README.md). The finite
+[test and support inventory](docs/test-inventory.md) records owner migrations
+and remaining assertion/consumer work.
 
 ## Verification
 
@@ -75,11 +77,9 @@ Rustfmt and Clippy). From this repository root:
 
 ```sh
 cargo test --locked -p system-api -p system-client -p system-support --tests --target x86_64-unknown-linux-gnu
+cargo test --locked --manifest-path server/tests/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo test --locked --manifest-path tests/identity-state/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo test --locked --manifest-path tests/operator-policy/Cargo.toml --target x86_64-unknown-linux-gnu
-cargo test --locked --manifest-path tests/declarations/Cargo.toml --target x86_64-unknown-linux-gnu
-cargo test --locked --manifest-path tests/loader-image/Cargo.toml --target x86_64-unknown-linux-gnu
-cargo test --locked --manifest-path tests/native-memory/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo clippy --locked -p system-client -p system-support --lib --target riscv64gc-unknown-none-elf -- -D warnings
 ```
 

@@ -1,9 +1,9 @@
 //! Instance installation owns identity, publication, leases and readiness roots.
 //! Control owns execution; Operator and Identity remain the live authorities.
-mod retirement;
+mod namespace;
 use crate::system::{
     app::{
-        namespace::{Installation as Namespaces, Layout},
+        namespace::Layout,
         services::{Services, give, release},
     },
     control::identity::{Installed, Roster},
@@ -19,7 +19,7 @@ use kernel_api::model::{
     wait::Wait,
 };
 use kernel_client::call::sign;
-pub(crate) use retirement::Gate;
+use namespace::Installation as Namespaces;
 use system_protocol::identity as id;
 
 pub(crate) struct Plan<'a> {
@@ -110,7 +110,7 @@ impl Installation {
                 .install(
                     layout,
                     services,
-                    crate::system::app::namespace::Plan {
+                    namespace::Plan {
                         instance,
                         task,
                         owner,

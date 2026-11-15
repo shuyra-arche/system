@@ -1,4 +1,4 @@
-#[path = "../../../server/src/system/loader/image/elf.rs"]
+#[path = "../../src/system/loader/image/elf.rs"]
 mod elf;
 
 use elf::{Error, Plan, Target};

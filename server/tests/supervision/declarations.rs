@@ -1,3 +1,4 @@
+use super::declaration::{Catalog, Error, Unit};
 use kernel_api::{
     boot::capsule,
     model::{
@@ -7,7 +8,6 @@ use kernel_api::{
         },
     },
 };
-use system_declaration_tests::declaration::{Catalog, Error, Unit};
 use unit_contract::{bundle, document as d};
 
 fn document(id: &'static str) -> d::v2::Unit<&'static str> {

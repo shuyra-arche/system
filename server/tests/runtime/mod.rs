@@ -4,7 +4,7 @@ use kernel_api::abi::memory::{Call, Request};
 use std::cell::{Cell, RefCell};
 
 #[allow(dead_code)]
-#[path = "../../server/src/runtime/memory.rs"]
+#[path = "../../src/runtime/memory.rs"]
 mod owner;
 
 type Delivery = Result<memory::Response, memory::Error>;

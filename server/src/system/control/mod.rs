@@ -4,6 +4,7 @@ mod construction;
 pub(crate) mod identity;
 pub(crate) mod instance;
 mod operations;
+mod program;
 use self::{
     identity::Roster,
     instance::{Instance, InstanceId, Intent},
@@ -27,6 +28,7 @@ use kernel_api::model::{
     pend::{CloneRights, CreationRights, Distributable, Limits, Operations, PendScope},
     unit::{ControlId, UnitState},
 };
+use program::Program;
 use system_protocol::{
     control as api, identity as id, loader as build,
     value::{Optional, Outcome},
@@ -37,11 +39,6 @@ const CAPACITY: usize = 256;
 enum ImageSource<'a> {
     Catalog(&'static [u8]),
     Snapshot(&'a [u8]),
-}
-struct Program {
-    declaration: Arc<Unit>,
-    current: Option<InstanceId>,
-    run_requested: bool,
 }
 pub(crate) struct Control {
     catalog: Catalog,
@@ -71,11 +68,7 @@ impl Control {
             .units()
             .iter()
             .filter(|unit| unit.name() != catalog.system())
-            .map(|declaration| Program {
-                declaration: declaration.clone(),
-                current: None,
-                run_requested: false,
-            })
+            .map(|declaration| Program::new(declaration.clone()))
             .collect();
         let mut instances = Vec::new();
         instances
@@ -172,7 +165,7 @@ impl Control {
         services: &Services,
         start: bool,
     ) -> Result<InstanceId, api::Fail> {
-        if let Some(id) = self.programs[index].current
+        if let Some(id) = self.programs[index].current()
             && !self.instance(id).retired()
         {
             return Ok(id);
@@ -198,8 +191,7 @@ impl Control {
         if start {
             self.instances.last_mut().unwrap().request(Intent::Run)?;
         }
-        self.programs[index].current = Some(id);
-        self.programs[index].run_requested = true;
+        self.programs[index].select(id);
         Ok(id)
     }
     pub fn progress(
@@ -211,7 +203,7 @@ impl Control {
             .programs
             .iter()
             .filter_map(|program| {
-                let instance = self.instance(program.current?);
+                let instance = self.instance(program.current()?);
                 let values: Vec<_> = (0..program.declaration.namespaces().len())
                     .filter_map(|index| instance.anchor(index))
                     .collect();
@@ -233,7 +225,7 @@ impl Control {
         }
         let mut progress = false;
         for at in 0..self.instances.len() {
-            let owner = self.instances[at].owner;
+            let owner = self.instances[at].owner();
             if !self.instances[at].retired()
                 && self
                     .instances
@@ -261,7 +253,7 @@ impl Control {
         if !self.closing && self.cursor < self.startup.len() {
             let unit = self.startup[self.cursor].clone();
             let index = self.slot(unit.name()).ok_or("startup program missing")?;
-            if self.programs[index].current.is_none() {
+            if self.programs[index].current().is_none() {
                 let ready = unit
                     .control()
                     .requires
@@ -271,7 +263,7 @@ impl Control {
                         *name == self.catalog.system()
                             || self.slot(name).is_none_or(|at| {
                                 self.programs[at]
-                                    .current
+                                    .current()
                                     .is_some_and(|id| self.instance(id).ready())
                             })
                     });
@@ -281,11 +273,11 @@ impl Control {
                     progress = true;
                 }
             } else if self.programs[index]
-                .current
+                .current()
                 .is_some_and(|id| self.instance(id).ready() || self.instance(id).retired())
             {
                 if self.programs[index]
-                    .current
+                    .current()
                     .is_some_and(|id| self.instance(id).failure().is_some())
                 {
                     return Err("startup instance failed");
@@ -306,20 +298,16 @@ impl Control {
     }
     pub fn eligible(&self) -> bool {
         self.startup_complete()
-            && self.programs.iter().all(|program| {
-                let Some(id) = program.current else {
-                    return true;
-                };
-                self.instance(id).retired()
-                    && (program.declaration.control().ending == d::Ending::Transient
-                        || !program.run_requested)
-            })
+            && self
+                .programs
+                .iter()
+                .all(|program| program.eligible(|id| self.instance(id).retired()))
             && self.instances.iter().all(Instance::retired)
     }
     pub fn begin_close(&mut self) {
         self.closing = true;
         for program in &mut self.programs {
-            program.run_requested = false;
+            program.stop();
         }
         self.close_round();
     }
@@ -330,7 +318,7 @@ impl Control {
         let canonical: Vec<_> = self
             .programs
             .iter()
-            .filter_map(|program| program.current)
+            .filter_map(|program| program.current())
             .collect();
         for instance in &mut self.instances {
             if !canonical.contains(&instance.id) && !instance.retired() {
@@ -348,11 +336,11 @@ impl Control {
             .programs
             .iter()
             .filter_map(|provider| {
-                let id = provider.current?;
+                let id = provider.current()?;
                 let name = provider.declaration.name();
                 let depended_on = self.programs.iter().any(|consumer| {
                     consumer
-                        .current
+                        .current()
                         .is_some_and(|other| other != id && !self.instance(other).retired())
                         && (consumer.declaration.control().requires.contains(&name)
                             || consumer
@@ -384,7 +372,7 @@ impl Control {
     }
     fn observed(&self, index: usize) -> api::Observation {
         self.programs[index]
-            .current
+            .current()
             .map(|id| self.instance(id).observation())
             .unwrap_or(api::Observation {
                 state: api::State::NeverStarted,
@@ -410,10 +398,7 @@ impl Control {
             return Ok(());
         }
         let group = source.control().supervision.ok_or(api::Fail::Denied)?;
-        if !target.declaration.control().groups.contains(&group)
-            || !target.run_requested
-            || target.declaration.control().guarded
-        {
+        if !target.supervised_by(group) {
             return Err(api::Fail::Denied);
         }
         Ok(())
@@ -443,14 +428,14 @@ impl Control {
                 let result = (|| {
                     let at = named(self, &value)?;
                     self.authorize_named(services, caller, at, false)?;
-                    let id = self.programs[at].current.ok_or(api::Fail::NotReady)?;
+                    let id = self.programs[at].current().ok_or(api::Fail::NotReady)?;
                     self.instances
                         .iter_mut()
                         .find(|item| item.id == id)
                         .unwrap()
                         .request($intent)?;
                     if $intent == Intent::Stop {
-                        self.programs[at].run_requested = false;
+                        self.programs[at].stop();
                     }
                     Ok(self.observed(at))
                 })();
@@ -497,7 +482,7 @@ impl Control {
                 let result = (|| {
                     let at = named(self, &value)?;
                     self.authorize_named(services, caller, at, false)?;
-                    if !self.programs[at].run_requested {
+                    if !self.programs[at].requested() {
                         self.mint(at, services, false)?;
                     }
                     Ok(self.observed(at))
@@ -508,10 +493,10 @@ impl Control {
                 let result = (|| {
                     let at = named(self, &value)?;
                     self.authorize_named(services, caller, at, false)?;
-                    let id = if !self.programs[at].run_requested {
+                    let id = if !self.programs[at].requested() {
                         self.mint(at, services, true)?
                     } else {
-                        self.programs[at].current.ok_or(api::Fail::NotReady)?
+                        self.programs[at].current().ok_or(api::Fail::NotReady)?
                     };
                     self.instances
                         .iter_mut()
@@ -534,7 +519,7 @@ impl Control {
                     let at = named(self, &value)?;
                     self.authorize_named(services, caller, at, true)?;
                     if self.programs[at]
-                        .current
+                        .current()
                         .is_none_or(|id| !self.instance(id).retired())
                     {
                         return Err(api::Fail::NotReady);
@@ -552,7 +537,7 @@ impl Control {
                         index: value.index,
                         present: row.is_some(),
                         end: value.index as usize + 1 >= self.programs.len(),
-                        run_requested: row.is_some_and(|row| row.run_requested),
+                        run_requested: row.is_some_and(|row| row.requested()),
                         name: Optional(
                             row.and_then(|row| system_protocol::Name::new(row.declaration.name()))
                         ),
@@ -665,7 +650,9 @@ impl Control {
                     Ok(Optional(
                         self.instances
                             .iter()
-                            .find(|instance| instance.owner == caller && instance.id.get() > after)
+                            .find(|instance| {
+                                instance.owner() == caller && instance.id.get() > after
+                            })
                             .map(|instance| instance.snapshot(services.caller.into())),
                     ))
                 };
@@ -742,7 +729,7 @@ impl Control {
             .iter()
             .position(|instance| instance.id == id.sequence)
             .ok_or(Fail::Unknown)?;
-        if self.instances[at].owner != caller {
+        if self.instances[at].owner() != caller {
             return Err(Fail::Denied);
         }
         Ok(at)
@@ -938,7 +925,7 @@ impl Control {
             }
             d::Owner::Unit(name) => self
                 .slot(name)
-                .and_then(|at| self.programs[at].current)
+                .and_then(|at| self.programs[at].current())
                 .and_then(|id| self.instance(id).task())
                 .ok_or(build::Fail::Denied)?,
         };
@@ -1051,7 +1038,7 @@ impl Control {
                         .creates
                         .find_claim(caller, request.task, |id| {
                             let instance = self.instance(id);
-                            Some((instance.owner, instance.observation().task))
+                            Some((instance.owner(), instance.observation().task))
                         })
                         .ok_or(build::Fail::Denied)?;
                     let instance = self.instance(self.creates.instance(at));
