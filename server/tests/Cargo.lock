@@ -177,7 +177,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "system-declaration-tests"
+name = "system-server-contracts"
 version = "0.0.0"
 dependencies = [
  "kernel-api",
