@@ -6,10 +6,12 @@ pub use system_support::support;
 mod bootstrap;
 #[path = "../../../server/src/system/declaration/mod.rs"]
 pub mod declaration;
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/heap/mod.rs"]
 pub mod native_heap;
 #[path = "../../../server/src/runtime/memory.rs"]
 pub mod native_memory;
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/view.rs"]
 pub(crate) mod native_view;
 #[path = "../../../server/src/runtime/termination.rs"]
@@ -105,6 +107,6 @@ pub fn run(boot: boot::Boot) -> Result<(), usize> {
             _ => panic!("boot Space"),
         },
     );
-    system_support::debug::put("PASS system-entry words=4 ledger=11 catalog=2 dtb=1 heap=1\n");
+    system_support::debug::put("PASS system-entry words=4 ledger=13 catalog=2 dtb=1 heap=1\n");
     Ok(())
 }

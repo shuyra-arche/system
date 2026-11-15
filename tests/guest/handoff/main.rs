@@ -2,6 +2,8 @@
 #![no_std]
 #![no_main]
 extern crate alloc;
+// This fixture uses the production allocator, but creates no same-Team workers.
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/heap/mod.rs"]
 pub mod heap;
 #[path = "../../../server/src/runtime/memory.rs"]
@@ -906,18 +908,20 @@ fn driver(license: PendId, context: Context, authorization: bool) -> ! {
         },
     )
     .unwrap();
-    let remote = pend::accord(VirtAddr::new(
-        AccordRequest {
-            src: queue,
-            target: AccordTarget::Task(operator),
-            mark: Mark::of("handoff-driver"),
-            limits: clone_limits(Distributable::Yes),
+    let publication = AccordRequest {
+        src: queue,
+        target: AccordTarget::Task(operator),
+        mark: Mark::of("handoff-driver"),
+        limits: clone_limits(Distributable::Yes),
+    }
+    .to_bytes();
+    let remote = loop {
+        match pend::accord(VirtAddr::new(publication.as_ptr().addr())) {
+            Ok(remote) => break remote,
+            Err(error) if error.source.is_busy() => tick(budget()),
+            Err(error) => panic!("Driver RPC grant publication: {error:?}"),
         }
-        .to_bytes()
-        .as_ptr()
-        .addr(),
-    ))
-    .unwrap();
+    };
     success(finish(
         authority
             .begin::<operator::authority::operations::Bind>(
@@ -982,7 +986,15 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
     // The workflow is asynchronous and includes native ELF preparation and
     // independent service startup. Bound the whole scenario separately from
     // an individual request wait; keep each original Pending/operation owner.
-    BUDGET.store(room::clock() + 60_000_000_000, Ordering::Relaxed);
+    let seconds = option_env!("SHUYRA_HANDOFF_BUDGET_SECONDS")
+        .unwrap_or("60")
+        .parse::<u64>()
+        .expect("handoff budget");
+    assert!(matches!(seconds, 60 | 120));
+    BUDGET.store(
+        room::clock().saturating_add(seconds * 1_000_000_000),
+        Ordering::Relaxed,
+    );
     assert_eq!(count, 1);
     let license = find(|info| info.target == Target::None).token;
     let space = find(|info| matches!(info.target, Target::Nest(_))).token;

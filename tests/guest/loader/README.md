@@ -52,3 +52,12 @@ The cache/independent-data pair also compares an owned image snapshot with a
 borrow of an immutable static image. Catalog borrowing avoids copying and
 retiring a complete ELF for every attempt; anonymous inputs still require an
 owned snapshot. Both use the same parser, native construction and retirement.
+
+The opt-in `--toolchain-receipt /path/to/toolchain/build/std.json` also starts
+Toolchain's real `std-waits` ELF through this production Loader. The runner
+validates its ELF hash against the build receipt and records compiler/source
+inputs with the normal Kernel/firmware/Loader evidence. It requires normal std
+completion, Task reclaim, target mapping/guard retirement and restored parent
+Pend inventory. Run this on one qualified Hart; the fixture adds no System
+initializer or alternate std runtime. This is the Loader/Toolchain component
+boundary, not the full product artifact distribution/lifecycle acceptance.

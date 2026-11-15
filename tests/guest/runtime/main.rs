@@ -5,11 +5,13 @@ extern crate alloc;
 mod heap;
 #[path = "../../../server/src/runtime/memory.rs"]
 pub mod memory;
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/view.rs"]
 pub(crate) mod native_view;
 #[path = "../../../server/src/runtime/termination.rs"]
 pub mod termination;
 pub mod runtime {
+    pub(crate) use crate::heap;
     pub use crate::memory;
     pub(crate) use crate::native_view as view;
     pub use crate::termination;
@@ -33,7 +35,7 @@ use kernel_api::{
     model::{
         identity::{PendId, TaskId},
         pend::{PendInfo, Target},
-        unit::{CreatedUnit, ExitScope, UnitCreate, UnitInfo, UnitQuery, UnitState},
+        unit::{CreatedUnit, ExitScope, TaskStart, UnitCreate, UnitInfo, UnitQuery, UnitState},
     },
 };
 use kernel_client::call::{debug, pend, room, unit};
@@ -133,14 +135,23 @@ extern "C" fn start() -> ! {
     let baseline_pends = pends();
     assert!(baseline > 0);
     let mut tasks = [TaskId::new(0); WORKERS];
+    let mut stacks = [0; WORKERS];
     for (i, task) in tasks.iter_mut().enumerate() {
-        let args = [i];
+        let stack = heap::stack(128 * 1024);
+        assert_ne!(stack, 0);
+        stacks[i] = stack;
+        let at = stack + 128 * 1024 - 8;
+        unsafe {
+            (at as *mut usize).write(i);
+        }
         let descriptor = UnitCreate::Task {
             team: None,
-            entry: VirtAddr::new(worker as *const () as usize),
-            args: addr(&args),
-            count: 1,
-            stack: VirtAddr::new(128 * 1024),
+            start: TaskStart {
+                entry: VirtAddr::new(worker as *const () as usize),
+                stack_pointer: VirtAddr::new(at & !15),
+                arguments: VirtAddr::new(at),
+                argument_count: 1,
+            },
         }
         .to_bytes();
         let CreatedUnit::Task(id) = unit::create(addr(&descriptor)).unwrap() else {
@@ -162,6 +173,7 @@ extern "C" fn start() -> ! {
             if result.state == UnitState::Exited && result.reclaimed {
                 assert_eq!(result.result, Some(i as u64 + 17));
                 unit::delete((*task).into()).unwrap();
+                heap::release_stack(stacks[i]);
                 reclaimed[i] = true;
             }
         }

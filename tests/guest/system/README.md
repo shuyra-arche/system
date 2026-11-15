@@ -89,3 +89,13 @@ Operator UnitRoots, revision CAS, direct Driver RPC, native restricted lease
 withdrawal, replay/lost reply/cancellation and early owner exit. Its evidence
 lives under `target/handoff/`; it does not mark the complete S1/S2 or Toolchain
 acceptance checklist passed.
+
+For handoff against a Debug Kernel, pass `--kernel-profile debug` (CI supplies
+its actual matrix selection). This records a 120-second guest scenario budget
+and a 180-second host bound; Release retains 60/90 seconds. The migrated Runtime
+performs real stack/guard publication and retirement. A measured one-Hart Debug
+replay completed round 0 after 69 seconds of boot/scenario work and exceeded the
+old 60-second guest workflow deadline in round 1. Per-request identity,
+progress-only bootstrap bounds, complete event/retirement assertions and normal
+exit requirements remain enforced. This is a bounded fixture budget, not a
+real-time or hardware latency guarantee.

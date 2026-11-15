@@ -299,6 +299,11 @@ impl Control {
     pub fn startup_complete(&self) -> bool {
         self.cursor == self.startup.len()
     }
+    /// Settled startup Units, monotonically advanced only by native readiness
+    /// or retirement evidence. Polling and partial construction do not count.
+    pub fn startup_completed(&self) -> usize {
+        self.cursor
+    }
     pub fn eligible(&self) -> bool {
         self.startup_complete()
             && self.programs.iter().all(|program| {

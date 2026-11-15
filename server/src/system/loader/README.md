@@ -21,9 +21,9 @@ native request allocator and query accepted operations by their original ID.
 An address in a foreign Nest is descriptive; only the trusted local staging
 owner may dereference its own mapping.
 
-ABI 11 permits the creator's genuine Nest authority to prepare the complete
+ABI 13 requires the creator's genuine Nest authority to prepare the complete
 image before Task creation. The child starts at the ELF entry with its original
-arguments and Kernel stack, with no injected System initializer or consumed
+arguments and System-owned guarded stack, with no injected System initializer or consumed
 native RequestIds. Application readiness remains a separate supervisor/service
 fact. Trusted construction policy explicitly selects the creation rights handed
 to the child; the child also receives only Whole-Nest INSPECT/RESERVE. The ordinary
@@ -43,3 +43,8 @@ live eviction, first native RequestId, result 17, Task/Team retirement and Pend
 baseline recovery on the production heap. It is not assembled System or Toolchain
 std acceptance. Loader RPC/image admission and Control/Assembly integration
 remain to be migrated.
+
+The Loader places argument words in its writable stack Source and publishes that
+Source into the target Nest before Unit.Create. It submits explicit target PC,
+SP and a0/a1 coordinates. A separate unmapped Reservation owns the guard;
+cleanup retains it and every Mapping/Source until real retirement completes.

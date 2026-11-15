@@ -5,7 +5,7 @@ use kernel_api::{
     address::VirtAddr,
     model::{
         identity::TaskId,
-        unit::{CreatedUnit, UnitCreate, UnitInfo, UnitQuery, UnitState, UnitTarget},
+        unit::{CreatedUnit, TaskStart, UnitCreate, UnitInfo, UnitQuery, UnitState, UnitTarget},
     },
 };
 use kernel_client::call::unit;
@@ -33,12 +33,13 @@ pub enum Error {
 #[must_use = "stop, observe reclamation, and finish the worker record explicitly"]
 pub struct Worker {
     task: TaskId,
+    stack: usize,
     phase: Phase,
     observed: Option<UnitInfo>,
 }
 impl Worker {
-    /// Prepare a dormant member of the caller's Team. Kernel copies the words
-    /// before returning; it supplies a guarded stack and the RV64 a0/a1 entry.
+    /// Prepare Runtime-owned stack/arguments, then submit a dormant execution
+    /// context. Backing remains held until separate Task and memory retirement.
     ///
     /// # Safety
     /// Any pointers embedded in `arguments` must obey `entry`'s lifetime and
@@ -50,24 +51,47 @@ impl Worker {
         arguments: &[usize],
         stack_bytes: usize,
     ) -> Result<Self, Error> {
-        if arguments.len() > 256 || stack_bytes > 16 * 1024 * 1024 {
+        if arguments.len() > TaskStart::MAX_ARGUMENTS || stack_bytes > 16 * 1024 * 1024 {
             return Err(Error::Arguments);
+        }
+        let size = stack_bytes
+            .max(65536)
+            .checked_next_multiple_of(kernel_api::address::PAGE_SIZE)
+            .ok_or(Error::Arguments)?;
+        let stack = crate::runtime::heap::stack(size);
+        if stack == 0 {
+            return Err(Error::Arguments);
+        }
+        let at = stack + size - arguments.len() * 8;
+        for (index, word) in arguments.iter().enumerate() {
+            unsafe {
+                ((at + index * 8) as *mut usize).write(*word);
+            }
         }
         let request = UnitCreate::Task {
             team: None,
-            entry: VirtAddr::new(entry as *const () as usize),
-            args: VirtAddr::new(arguments.as_ptr().addr()),
-            count: arguments.len() as u64,
-            stack: VirtAddr::new(stack_bytes),
+            start: TaskStart {
+                entry: VirtAddr::new(entry as *const () as usize),
+                stack_pointer: VirtAddr::new(at & !15),
+                arguments: VirtAddr::new(at),
+                argument_count: arguments.len(),
+            },
         }
         .to_bytes();
-        let target = unit::create(VirtAddr::new(request.as_ptr().addr())).map_err(Error::Kernel)?;
+        let target = match unit::create(VirtAddr::new(request.as_ptr().addr())) {
+            Ok(value) => value,
+            Err(error) => {
+                crate::runtime::heap::release_stack(stack);
+                return Err(Error::Kernel(error));
+            }
+        };
         let CreatedUnit::Task(task) = target else {
             // A Task request returning a Team contradicts the trusted ABI.
             unreachable!("Kernel returned a non-Task for Task creation")
         };
         Ok(Self {
             task,
+            stack,
             phase: Phase::Prepared,
             observed: None,
         })
@@ -141,6 +165,7 @@ impl Worker {
             return Ok(false);
         }
         unit::delete(self.task.into()).map_err(Error::Kernel)?;
+        crate::runtime::heap::release_stack(self.stack);
         self.phase = Phase::Closed;
         Ok(true)
     }

@@ -2,10 +2,12 @@
 #![no_std]
 #![no_main]
 extern crate alloc;
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/heap/mod.rs"]
 pub mod native_heap;
 #[path = "../../../server/src/runtime/memory.rs"]
 pub mod native_memory;
+#[allow(dead_code)]
 #[path = "../../../server/src/runtime/view.rs"]
 pub(crate) mod native_view;
 #[path = "../../../server/src/runtime/termination.rs"]
@@ -20,6 +22,8 @@ mod fixture;
 mod native_loader;
 #[path = "../client/loader.rs"]
 mod scenarios;
+#[cfg(feature = "toolchain")]
+mod std_unit;
 use core::fmt::Write;
 #[global_allocator]
 static ALLOCATOR: native_heap::Allocator = native_heap::Allocator;
@@ -33,6 +37,8 @@ core::arch::global_asm!(
 extern "C" fn start(at: usize, count: usize) -> ! {
     fixture::boot(at, count);
     scenarios::run(fixture::license());
+    #[cfg(feature = "toolchain")]
+    std_unit::run();
     fixture::exit(0)
 }
 #[panic_handler]

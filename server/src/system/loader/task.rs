@@ -4,7 +4,7 @@ use super::{
     image::elf,
     source::{Shared, Source},
 };
-use crate::runtime::view::Mapping;
+use crate::runtime::view::{Guard, Mapping};
 use alloc::{rc::Rc, vec::Vec};
 use kernel_api::{
     address::{PAGE_SIZE, VirtAddr},
@@ -16,7 +16,10 @@ use kernel_api::{
             AccordRequest, AccordTarget, CreationRights, Distributable, Limits, NestRights,
             NestScope, Operations, PendScope,
         },
-        unit::{ControlId, CreatedUnit, UnitCreate, UnitInfo, UnitQuery, UnitState, UnitTarget},
+        unit::{
+            ControlId, CreatedUnit, TaskStart, UnitCreate, UnitInfo, UnitQuery, UnitState,
+            UnitTarget,
+        },
     },
 };
 use kernel_client::call::{pend, unit};
@@ -69,9 +72,8 @@ pub(crate) struct Job {
     nest: Option<PendId>,
     child_license: Option<PendId>,
     child_space: Option<PendId>,
-    entry: usize,
-    args: Vec<usize>,
-    stack: usize,
+    start: TaskStart,
+    stack_guard: Option<Guard>,
     guard: ControlId,
     member_exit: bool,
     creation: CreationRights,
@@ -115,8 +117,32 @@ impl Job {
         args.extend_from_slice(spawn.args);
         let mut segments = Vec::new();
         segments
-            .try_reserve_exact(plan.regions.len().checked_mul(2).ok_or(Error::Invalid)?)
+            .try_reserve_exact(
+                plan.regions
+                    .len()
+                    .checked_mul(2)
+                    .and_then(|n| n.checked_add(1))
+                    .ok_or(Error::Invalid)?,
+            )
             .map_err(|_| Error::Capacity)?;
+        let stack_size = if spawn.stack == 0 {
+            65536
+        } else {
+            spawn.stack.max(16384)
+        }
+        .checked_next_multiple_of(PAGE_SIZE)
+        .ok_or(Error::Invalid)?;
+        // System owns initial-program placement. Keep this portable Sv39 address
+        // explicit until System #18 supplies its independently reviewed policy.
+        let top = 0x3f_ffff_f000usize;
+        let bottom = top.checked_sub(stack_size).ok_or(Error::Invalid)?;
+        if plan
+            .regions
+            .iter()
+            .any(|region| region.va < top && bottom - PAGE_SIZE < region.va + region.size)
+        {
+            return Err(Error::Invalid);
+        }
         for region in plan.regions {
             if region.data_size != 0 {
                 segments.push(Segment {
@@ -148,14 +174,38 @@ impl Job {
                 });
             }
         }
+        let mut words = Vec::new();
+        words
+            .try_reserve_exact(args.len() * 8)
+            .map_err(|_| Error::Capacity)?;
+        for word in &args {
+            words.extend_from_slice(&word.to_le_bytes());
+        }
+        segments.push(Segment {
+            va: bottom,
+            size: stack_size,
+            flags: 6,
+            prefix: stack_size - words.len(),
+            offset: 0,
+            len: 0,
+            source: Some(Source::new(&words, stack_size - words.len(), stack_size, 6)?.shared()),
+            mapping: None,
+            cache_decided: true,
+        });
+        let at = top - words.len();
+        let start = TaskStart {
+            entry: VirtAddr::new(plan.entry),
+            stack_pointer: VirtAddr::new(at & !15),
+            arguments: VirtAddr::new(at),
+            argument_count: args.len(),
+        };
         Ok(Self {
             image,
             nest: None,
             child_license: None,
             child_space: None,
-            entry: plan.entry,
-            args,
-            stack: spawn.stack,
+            start,
+            stack_guard: None,
             guard: spawn.guard,
             member_exit: spawn.member_exit,
             creation: spawn.creation,
@@ -207,6 +257,18 @@ impl Job {
             };
             self.team = Some(team);
             self.nest = Some(nest);
+            return Ok(false);
+        }
+        if self.stack_guard.is_none() {
+            let at = self.segments.last().ok_or(Error::Invalid)?.va - PAGE_SIZE;
+            self.stack_guard = Some(
+                Guard::new(
+                    self.nest.ok_or(Error::Invalid)?,
+                    VirtAddr::new(at),
+                    super::abort,
+                )
+                .map_err(Error::Mapping)?,
+            );
             return Ok(false);
         }
         if self.cursor < self.segments.len() {
@@ -264,19 +326,9 @@ impl Job {
             return Ok(false);
         }
         if self.task.is_none() {
-            // ABI 11 prepares every segment through the creator's real Nest
-            // authority. The new Task starts at the ELF entry with a fresh
-            // native request journal; no injected initializer resets its IDs.
             let request = UnitCreate::Task {
                 team: self.team,
-                entry: VirtAddr::new(self.entry),
-                args: VirtAddr::new(if self.args.is_empty() {
-                    0
-                } else {
-                    self.args.as_ptr().addr()
-                }),
-                count: self.args.len() as u64,
-                stack: VirtAddr::new(self.stack),
+                start: self.start,
             }
             .to_bytes();
             let CreatedUnit::Task(task) = unit::create(addr(&request)).map_err(Error::Unit)? else {
@@ -375,6 +427,11 @@ impl Job {
                 }
                 return Ok(false);
             }
+        }
+        if let Some(guard) = &mut self.stack_guard {
+            guard.finish().map_err(Error::Mapping)?;
+            self.stack_guard = None;
+            return Ok(false);
         }
         if let Some(team) = self.team {
             match unit::delete(team.into()) {

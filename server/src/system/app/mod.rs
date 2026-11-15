@@ -72,7 +72,7 @@ pub fn run(boot: Boot) -> Result<(), usize> {
     let mut endpoints = endpoints::Endpoints::new(&services, &mut sources);
     let mut supply = Supply::default();
     let mut closing = None;
-    let started = room::clock();
+    let mut startup = (control.startup_completed(), room::clock());
     let result = loop {
         crate::runtime::heap::poll();
         services.health();
@@ -83,6 +83,15 @@ pub fn run(boot: Boot) -> Result<(), usize> {
         if control.progress(&services, &sources).is_err() {
             break Err(4);
         }
+        // Each declared startup Unit receives the same bounded interval.
+        // A large catalog must not consume later Units' budget while earlier
+        // Units are still constructing. Only settled startup evidence resets
+        // the deadline; polling, Busy and partial construction never renew it.
+        let now = room::clock();
+        let completed = control.startup_completed();
+        if completed != startup.0 {
+            startup = (completed, now);
+        }
         if closing.is_none() && control.eligible() {
             control.begin_close();
             closing = Some(room::clock());
@@ -90,7 +99,11 @@ pub fn run(boot: Boot) -> Result<(), usize> {
         if closing.is_some() && control.closed() {
             break Ok(());
         }
-        if !control.startup_complete() && room::clock().saturating_sub(started) >= 60_000_000_000 {
+        if !control.startup_complete() && now.saturating_sub(startup.1) >= 60_000_000_000 {
+            crate::debug::put(&alloc::format!(
+                "system: startup Unit {} timed out\n",
+                completed + 1
+            ));
             break Err(3);
         }
         if closing.is_some_and(|since| room::clock().saturating_sub(since) >= 10_000_000_000) {

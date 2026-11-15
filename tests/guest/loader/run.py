@@ -19,6 +19,8 @@ def main():
     parser.add_argument("--harts", type=int, choices=(1, 2, 4), nargs="+", default=[1, 2, 4])
     parser.add_argument("--profile", choices=("debug", "release"), default="release")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--toolchain-receipt", type=Path)
+    parser.add_argument("--toolchain-fixture", choices=("std-waits", "toolchain-std"), default="std-waits")
     args = parser.parse_args()
     guest = Path(__file__).resolve().parent
     sys.dont_write_bytecode = True
@@ -37,10 +39,29 @@ def main():
     # image; debug here exercises the production Loader and Kernel themselves.
     image_elf = target / triple / "release" / "system-loader-image"
     environment = {**os.environ, "SYSTEM_LOADER_IMAGE": str(image_elf)}
+    marker = MARKER
+    if args.toolchain_receipt:
+        receipt_path = args.toolchain_receipt.resolve(strict=True)
+        receipt = json.loads(receipt_path.read_text())
+        assert receipt["target_build"] == "passed"
+        artifact = receipt["artifacts"][args.toolchain_fixture]
+        program = Path(artifact["path"]).resolve(strict=True)
+        assert hashlib.sha256(program.read_bytes()).hexdigest() == artifact["elf"]["sha256"]
+        environment["SYSTEM_TOOLCHAIN_IMAGE"] = str(program)
+        toolchain_root = receipt_path.parent.parent
+        revision = subprocess.check_output(["git", "-C", str(toolchain_root), "rev-parse", "HEAD"], text=True).strip()
+        dirty = bool(subprocess.check_output(["git", "-C", str(toolchain_root), "status", "--porcelain"]))
+        assert not dirty, "commit Toolchain source inputs before composition verification"
+        inputs["toolchain"] = {"source_revision": revision, "fixture": args.toolchain_fixture, "receipt": receipt,
+                               "receipt_sha256": hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
+                               "elf_sha256": artifact["elf"]["sha256"]}
+        marker = b"PASS loader-toolchain user=1 std=1 threads=1 reclaim=1 retirement=1"
     for root in [guest.parent / "client/image", guest]:
         selected = profile if root == guest else ["--release"]
         command = ["cargo", "build", "--locked", *selected, "--target", triple,
                    "--manifest-path", str(root / "Cargo.toml"), "--target-dir", str(target)]
+        if root == guest and args.toolchain_receipt:
+            command.extend(["--features", "toolchain"])
         inputs["build"].append(command)
         subprocess.run(command, check=True, env=environment)
     image = target / "initrd.bin"
@@ -70,7 +91,7 @@ def main():
             except subprocess.TimeoutExpired:
                 status = "timeout"
         output = serial.read_bytes()
-        passed = status == 0 and MARKER in output and b"FAIL" not in output and b"task: all tasks exited" in output
+        passed = status == 0 and MARKER in output and marker in output and b"FAIL" not in output and b"task: all tasks exited" in output
         (target / f"harts-{count}.json").write_text(json.dumps({"command": command,
             "status": status, "seconds": time.monotonic() - started, "passed": passed}, indent=2))
         print(f"QEMU {count} Hart(s)\n{output.decode(errors='replace')}", flush=True)
