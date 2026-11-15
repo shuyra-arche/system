@@ -38,8 +38,13 @@ def main():
     parser.add_argument('kernel', type=Path)
     parser.add_argument('--profile', choices=('debug', 'release'), default='release')
     parser.add_argument('--harts', type=int, choices=(1, 2, 4), nargs='+', default=[1])
+    parser.add_argument('--kernel-profile', choices=('debug', 'release'), default='release',
+                        help='records the selected platform profile and its handoff execution budget')
     parser.add_argument('--handoff', action='store_true', help='independent-Team Instance/UnitRoot/Supply handoff')
     args = parser.parse_args()
+    slow_handoff = args.handoff and args.kernel_profile == "debug"
+    timeout = 180 if slow_handoff else 90
+    handoff_budget = 120 if slow_handoff else 60
     guest = Path(__file__).resolve().parent
     root = guest.parents[2]
     sys.dont_write_bytecode = True
@@ -53,7 +58,8 @@ def main():
     system = root / 'target' / triple / args.profile / 'system'
     user = guest.parent / ('handoff' if args.handoff else 'client/image')
     subprocess.run(['cargo', 'build', '--locked', '--manifest-path', user / 'Cargo.toml',
-                    '--release', '--target', triple], check=True)
+                    '--release', '--target', triple], check=True,
+                   env={**os.environ, 'SHUYRA_HANDOFF_BUDGET_SECONDS': str(handoff_budget)})
     image = user / 'target' / triple / 'release' / ('system-handoff-guest' if args.handoff else 'system-loader-image')
     pack = ['cargo', 'run', '--locked', '--release', '--target', 'x86_64-unknown-linux-gnu',
             '--manifest-path', guest / 'pack/Cargo.toml', '--']
@@ -78,6 +84,8 @@ def main():
     # this exact selected checkout for these read-only provenance commands.
     git = ['git', '-c', f'safe.directory={root}']
     identity = {'system_profile': args.profile, 'user_profile': 'release',
+                'kernel_profile': args.kernel_profile, 'timeout_seconds': timeout,
+                'handoff_budget_seconds': handoff_budget,
                 'mode': 'handoff' if args.handoff else 'application',
                 'system_revision': subprocess.check_output([*git, 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
                 'system_dirty': bool(subprocess.check_output([*git, 'status', '--porcelain', '--', '.', ':!.evidence'], cwd=root)),
@@ -103,7 +111,7 @@ def main():
                 try:
                     # Preserve live diagnostics, including while a guest stalls.
                     with case.with_suffix('.log').open('wb') as serial_output:
-                        result = subprocess.run(command, stdout=serial_output, stderr=subprocess.STDOUT, timeout=90)
+                        result = subprocess.run(command, stdout=serial_output, stderr=subprocess.STDOUT, timeout=timeout)
                     receipt['returncode'] = result.returncode
                     serial = case.with_suffix('.log').read_bytes()
                 except subprocess.TimeoutExpired as error:

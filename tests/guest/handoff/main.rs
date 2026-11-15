@@ -983,7 +983,15 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
     // The workflow is asynchronous and includes native ELF preparation and
     // independent service startup. Bound the whole scenario separately from
     // an individual request wait; keep each original Pending/operation owner.
-    BUDGET.store(room::clock() + 60_000_000_000, Ordering::Relaxed);
+    let seconds = option_env!("SHUYRA_HANDOFF_BUDGET_SECONDS")
+        .unwrap_or("60")
+        .parse::<u64>()
+        .expect("handoff budget");
+    assert!(matches!(seconds, 60 | 120));
+    BUDGET.store(
+        room::clock().saturating_add(seconds * 1_000_000_000),
+        Ordering::Relaxed,
+    );
     assert_eq!(count, 1);
     let license = find(|info| info.target == Target::None).token;
     let space = find(|info| matches!(info.target, Target::Nest(_))).token;
