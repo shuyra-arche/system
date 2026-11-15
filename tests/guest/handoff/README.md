@@ -21,8 +21,9 @@ completed-receipt cancellation, provider cleanup and an early owner exit before
 native Task construction. The checker requires typed Task exit/retired order,
 independent Team identities and Kernel's admitted initial-System exit.
 
-Each User role has one 60-second scenario budget; the outer runner still has
-its original 90-second limit per VM. Main recovery, authorization/replay,
+Release Kernel runs give each User role a 60-second scenario budget and each
+VM a 90-second limit. Debug Kernel runs use the recorded 120/180-second bounds
+described below. Main recovery, authorization/replay,
 lost-reply/pending-cancel and early owner death run as separate archives/VMs,
 so contract and fault checks do not
 consume the main recovery scenario's budget. The initial fixture incorrectly
@@ -44,8 +45,12 @@ single-Hart run. This is a bounded concurrency probe, not deterministic proof of
 a Busy response. The separate pre-fix native stress diagnostic for
 [System #21](https://github.com/shuyra-arche/system/issues/21) captured discovery
 grant Busy followed by installation failure.
-Production memory/retirement deadlines are unchanged. Native cleanup steps
-still have their own bounded retries.
+Production memory/retirement deadlines are unchanged. System grants each
+declared startup Unit 60 seconds, advancing the deadline only when the previous
+startup Unit reaches native readiness or retirement. A multi-Unit catalog does
+not share one global 60-second interval. Busy, polling and partial construction
+do not renew a stalled Unit's deadline. Native cleanup steps still have their
+own bounded retries.
 
 Use the instruction-qualified platform and runner documented in
 `../system/README.md`:
