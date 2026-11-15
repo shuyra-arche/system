@@ -95,3 +95,11 @@ inconclusive (checker status 2). The runner preserves that log/JSON with
 including the actual root-exit line. No timeout, fault or other assertion is
 retried or accepted; a second inconclusive result fails. The
 [contract matrix](../../../docs/instance.md) records supported operations and the remaining S1/S2 acceptance scope.
+
+The `supply` scenario uses the public System Supply registration operations,
+with no private native Source in that path. Its provider registers before Ready;
+System installs the declared Sign into independent Drivers. It checks explicit
+and ancestor withdrawal, cancellation-before-register, original provider rights,
+ordinary self Acquire and fresh registration selection from the same live Driver.
+The default campaign now has eight scenarios (96 profile/Hart cases). See
+[the contract](../../../docs/supply.md) for ownership and proof limits.

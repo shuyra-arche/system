@@ -7,6 +7,8 @@ New instance consumers use `instance::Client` and
 `api::control::instance::operations` (domain 10), with the operations, peer/ID
 scope and retained-cleanup rules in the [handoff contract](../docs/instance.md).
 The historical Loader client is not the Hub construction interface.
+`supply::Client` also serves the new typed Register/InspectSource/Withdraw markers;
+retain offering-grant ownership as specified in the [external Supply contract](../docs/supply.md).
 
 ```rust,ignore
 use system_client::{control::Client, api::control::{Named, operations::State}, Wait};

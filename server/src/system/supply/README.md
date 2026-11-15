@@ -24,3 +24,11 @@ The [application scenarios](../../../../tests/guest/system/README.md) also use
 actual declared service leases before User activation and reject missing
 sources. RPC pressure, provider failure and full public handoff remain distinct
 gates; the old hardware hooks are retained only as historical test sources.
+
+External registration now has a bounded [public contract](../../../../../docs/supply.md).
+The provider retains its original resource; `providers::Providers` owns only the
+received Object Sign/Clone branch, immutable caller-scoped intent, cancellation
+and physical Return completion. Native lease and Instance owners are unchanged.
+Source admission uses running native membership before application readiness;
+new sources remain constrained to the caller's trusted Unit name and actual
+Kernel lender. The `supply` handoff scenario exercises this public path.

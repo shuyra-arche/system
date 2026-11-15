@@ -1,4 +1,4 @@
-//! Resource leases carry explicit Kernel v9 rights and recipient-local Pends.
+//! Resource leases carry explicit native Kernel rights and recipient-local Pends.
 use crate::{
     Mark, PendId, TaskId,
     value::{Optional, Outcome, Rights},
@@ -201,6 +201,39 @@ pub struct Reply {
     pub state: State,
     pub delivery: Optional<Delivery>,
 }
+// Caller-scoped registration identity. Retained after withdrawal; never reused.
+request_id!(RegistrationId);
+#[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
+pub struct Register {
+    pub id: RegistrationId,
+    /// Must equal the actual caller's trusted Unit name.
+    pub source: Key,
+    pub resource: Key,
+    /// Already granted to System; the Kernel lender must be the actual caller.
+    pub offered: PendId,
+    /// Maximum recipient rights. The offered branch must permit delegation.
+    pub maximum: Rights,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, weave::Code)]
+#[repr(u8)]
+pub enum SourceState {
+    Active = 1,
+    Closing = 2,
+    Closed = 3,
+    /// Withdraw won admission; no offered grant was accepted.
+    Cancelled = 4,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, weave::Frame)]
+pub struct Registration {
+    pub id: RegistrationId,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, weave::Frame)]
+pub struct SourceStatus {
+    pub id: RegistrationId,
+    #[frame(code)]
+    pub state: SourceState,
+}
+
 #[weave::interface(tag = u8)]
 pub mod operations {
     #[operation(code = 1, request = super::Acquire, response = super::Outcome<super::Reply, super::Fail>)]
@@ -211,6 +244,12 @@ pub mod operations {
     pub struct Release;
     #[operation(code = 4, request = super::Lease, response = super::Outcome<super::Reply, super::Fail>)]
     pub struct Cancel;
+    #[operation(code = 5, request = super::Register, response = super::Outcome<super::SourceStatus, super::Fail>)]
+    pub struct Register;
+    #[operation(code = 6, request = super::Registration, response = super::Outcome<super::SourceStatus, super::Fail>)]
+    pub struct InspectSource;
+    #[operation(code = 7, request = super::Registration, response = super::Outcome<super::SourceStatus, super::Fail>)]
+    pub struct Withdraw;
 }
 
 #[derive(weave::Contract)]
