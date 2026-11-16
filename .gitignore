@@ -1,2 +1,4 @@
 **/target/
 !/server/tests/target/
+**/__pycache__/
+*.pyc
