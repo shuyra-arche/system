@@ -17,6 +17,5 @@ path = "tests/mod.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-libc = "0.2"
-kernel-verification = { git = "https://github.com/shuyra-arche/kernel.git", rev = "789ffd19b5359f3de172fb9aad8a61f6a7113a64" }
+kernel-verification = { git = "https://github.com/shuyra-arche/kernel.git", rev = "ad360f86c9472d79d6c087edb8d03aa1f0906161" }
 serde_json = "1"

@@ -75,10 +75,8 @@ fn loss_of_either_qemu_stream_is_an_error() {
 
 #[test]
 fn receipt_and_kernel_runner_pins_are_exact() {
-    assert_eq!(
-        runner::KERNEL_RUNNER_REV,
-        "789ffd19b5359f3de172fb9aad8a61f6a7113a64"
-    );
+    let revision = runner::KERNEL_RUNNER_REV;
+    assert!(include_str!("../Cargo.toml").contains(&format!("rev = \"{revision}\"")));
     assert!(runner::pin_matches(
         "789ffd19b5359f3de172fb9aad8a61f6a7113a64",
         "789ffd19b5359f3de172fb9aad8a61f6a7113a64"
@@ -87,9 +85,9 @@ fn receipt_and_kernel_runner_pins_are_exact() {
         "789ffd19b5359f3de172fb9aad8a61f6a7113a64",
         "0123456789abcdef0123456789abcdef01234567"
     ));
-    assert!(include_str!("../Cargo.lock").contains(
-        "git+https://github.com/shuyra-arche/kernel.git?rev=789ffd19b5359f3de172fb9aad8a61f6a7113a64#789ffd19b5359f3de172fb9aad8a61f6a7113a64"
-    ));
+    assert!(include_str!("../Cargo.lock").contains(&format!(
+        "git+https://github.com/shuyra-arche/kernel.git?rev={revision}#{revision}"
+    )));
 }
 
 #[test]

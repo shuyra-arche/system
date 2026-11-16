@@ -90,7 +90,8 @@ fn a_spawn_error_leaves_an_explicit_failed_receipt() {
     assert_eq!(receipt["passed"], false);
     let cleanup: serde_json::Value =
         serde_json::from_slice(&std::fs::read(dir.join("cleanup.json")).unwrap()).unwrap();
-    assert!(cleanup["process_group"].as_i64().is_some());
+    assert_eq!(cleanup["spawned"], false);
+    assert!(cleanup["process_group"].is_null());
     assert_eq!(cleanup["settled"], true);
     let _ = std::fs::remove_dir_all(dir);
 }

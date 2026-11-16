@@ -3,7 +3,8 @@
 This standalone Cargo package drives the native System guest scenarios with
 bounded Cargo and QEMU processes. Kernel process and Capsule helpers are pinned
 to kernel-verification revision
-789ffd19b5359f3de172fb9aad8a61f6a7113a64. Application and handoff verdicts
+`ad360f86c9472d79d6c087edb8d03aa1f0906161` ([Kernel #219](https://github.com/shuyra-arche/kernel/pull/219)).
+The tested native Kernel remains pinned to `789ffd19b5359f3de172fb9aad8a61f6a7113a64`. Application and handoff verdicts
 remain owned by server/tests/target/app/pack; this runner invokes its existing
 archive builder and typed event checker.
 
