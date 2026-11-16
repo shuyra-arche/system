@@ -132,8 +132,8 @@ deleted to make an inventory look complete.
 
 | Historical function | Mapping or reason |
 | --- | --- |
-| `repeated_native_peeks_emit_one_exit_and_keep_the_native_cause` | Partial current mapping: app-pack Host observation tests reject duplicate Exited and preserve the typed frame; current app/handoff native logs exercise exactly-once event emission. Proving repeated native peeks and exit cause is a target assertion, not parser-only coverage. |
-| `retirement_and_readiness_cannot_be_invented_from_control_state` | Partial: `control-retirement` requires provider receipt, cleanup and root release before gate completion; pack Host tests require Ready to follow Bound and precede Exited when present. Actual event emission still needs native evidence. |
+| `repeated_native_peeks_emit_one_exit_and_keep_the_native_cause` | Partial current mapping: `server/tests/target/app/pack/tests/mod.rs::rejects_duplicate_start_complete_and_task_events` rejects duplicate Exited in the consumed stream; app/handoff native logs exercise exactly-once event emission. Proving repeated native peeks and exit cause is a target assertion, not parser-only coverage. |
+| `retirement_and_readiness_cannot_be_invented_from_control_state` | Partial: `control-retirement` requires provider receipt, cleanup and root release before gate completion; `server/tests/target/app/pack/tests/mod.rs::accepts_interleaved_tasks_and_partial_creation_failure_without_ready` allows valid Bound/Exited/Retired partial creation without Ready and validates ordering. Actual event emission still needs native evidence. |
 | `a_failed_delivery_does_not_advance_publication_state` | **Gap:** current publication/export admission and failed-delivery behavior needs the `Control::export` owner test; Identity revision publication alone is insufficient. |
 
 ### `namespace-installation`
