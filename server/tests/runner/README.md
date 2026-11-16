@@ -59,7 +59,17 @@ kernel console loss permits one fresh VM. Failed builds, nonzero exits,
 timeouts, missing or duplicated markers, failure text, missing output streams,
 and failed checker verdicts remain failures.
 
-On Linux, child processes receive PR_SET_PDEATHSIG; process-group termination
-also bounds timed-out commands. A hard kill of this runner kills each direct
-child, but Cargo may already have spawned compiler descendants; they may outlive
-that direct child. Do not treat cancellation as complete process-tree cleanup.
+On Linux, the runner acts as a child subreaper and records each command's
+process-group ID from its pre-exec hook. After the pinned Kernel process helper
+returns, the wrapper requires that group to be empty. Any remaining process is
+an unexpected descendant: the wrapper kills and reaps the group for up to one
+second, writes cleanup.json, and fails the command even if its leader exited
+successfully. Timed-out commands retain their timeout status and also record
+whether the group settled.
+
+Children receive PR_SET_PDEATHSIG. If this runner is hard-killed, the direct
+child receives that signal, but Cargo may already have spawned compiler
+descendants; they can outlive the direct child. The settlement check applies to
+normal wrapper return and timeout handling, not complete recovery after a
+hard-killed runner. Process-group settlement is verified on Linux; other host
+platforms retain the pinned process helper without this settlement check.

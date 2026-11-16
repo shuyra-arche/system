@@ -20,6 +20,38 @@ fn timeout_after_a_pass_marker_still_fails() {
     let log = runner::logs(&dir).unwrap();
     assert!(log.contains("PASS contract"));
     assert_eq!(outcome.status, "timeout");
+    let cleanup: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(dir.join("cleanup.json")).unwrap()).unwrap();
+    assert_eq!(cleanup["settled"], true);
+    assert!(!runner::case_passes(
+        &outcome,
+        &log,
+        &["PASS contract"],
+        &[]
+    ));
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_successful_leader_with_a_live_background_child_fails_and_reaps_it() {
+    let dir = scratch("background-child");
+    let mut command = Command::new("sh");
+    command.args(["-c", "sleep 30 & echo 'PASS contract'; exit 0"]);
+    let outcome = runner::run_command(&mut command, &dir, Duration::from_secs(2)).unwrap();
+    let log = runner::logs(&dir).unwrap();
+    let cleanup: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(dir.join("cleanup.json")).unwrap()).unwrap();
+    let receipt: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(dir.join("result.json")).unwrap()).unwrap();
+    assert!(log.contains("PASS contract"));
+    assert_eq!(outcome.code, Some(0));
+    assert_eq!(outcome.status, "cleanup-failed");
+    assert_eq!(receipt["passed"], false);
+    assert_eq!(cleanup["unexpected_descendants"], true);
+    assert_eq!(cleanup["killed"], true);
+    assert_eq!(cleanup["settled"], true);
+    assert!(cleanup["reaped"].as_u64().unwrap() >= 1);
     assert!(!runner::case_passes(
         &outcome,
         &log,
@@ -56,6 +88,10 @@ fn a_spawn_error_leaves_an_explicit_failed_receipt() {
         serde_json::from_slice(&std::fs::read(dir.join("result.json")).unwrap()).unwrap();
     assert_eq!(receipt["status"], "spawn-error");
     assert_eq!(receipt["passed"], false);
+    let cleanup: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(dir.join("cleanup.json")).unwrap()).unwrap();
+    assert!(cleanup["process_group"].as_i64().is_some());
+    assert_eq!(cleanup["settled"], true);
     let _ = std::fs::remove_dir_all(dir);
 }
 
