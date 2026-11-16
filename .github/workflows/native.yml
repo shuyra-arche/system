@@ -253,7 +253,7 @@ jobs:
 
   handoff:
     needs: platforms
-    name: Handoff / Kernel ${{ matrix.kernel }} / System ${{ matrix.system }} / Harts ${{ matrix.harts }}
+    name: Handoff / ${{ matrix.suite }} / Kernel ${{ matrix.kernel }} / System ${{ matrix.system }} / Harts ${{ matrix.harts }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -261,14 +261,20 @@ jobs:
       max-parallel: 6
       matrix:
         include:
-          - { kernel: debug, system: debug, harts: '1' }
-          - { kernel: debug, system: debug, harts: '2' }
-          - { kernel: debug, system: debug, harts: '4' }
-          - { kernel: debug, system: release, harts: '1' }
-          - { kernel: debug, system: release, harts: '2' }
-          - { kernel: debug, system: release, harts: '4' }
-          - { kernel: release, system: debug, harts: '1 2 4' }
-          - { kernel: release, system: release, harts: '1 2 4' }
+          - { kernel: debug, system: debug, harts: '1', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
+          - { kernel: debug, system: debug, harts: '2', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
+          - { kernel: debug, system: debug, harts: '4', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
+          - { kernel: debug, system: release, harts: '1', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
+          - { kernel: debug, system: release, harts: '2', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
+          - { kernel: debug, system: release, harts: '4', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
+          - { kernel: debug, system: debug, harts: '1', suite: supply, scenarios: 'supply install install-loss' }
+          - { kernel: debug, system: debug, harts: '2', suite: supply, scenarios: 'supply install install-loss' }
+          - { kernel: debug, system: debug, harts: '4', suite: supply, scenarios: 'supply install install-loss' }
+          - { kernel: debug, system: release, harts: '1', suite: supply, scenarios: 'supply install install-loss' }
+          - { kernel: debug, system: release, harts: '2', suite: supply, scenarios: 'supply install install-loss' }
+          - { kernel: debug, system: release, harts: '4', suite: supply, scenarios: 'supply install install-loss' }
+          - { kernel: release, system: debug, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply install install-loss' }
+          - { kernel: release, system: release, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply install install-loss' }
     container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
     env:
       QEMU_RISCV64: qemu-system-riscv64
@@ -291,7 +297,7 @@ jobs:
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
       - name: Independent-Team handoff and owner exit on 1/2/4 Harts
-        run: python3 tests/guest/system/run.py tests/ci/target/platforms/instructions/${{ matrix.kernel }} --handoff --kernel-profile ${{ matrix.kernel }} --profile ${{ matrix.system }} --harts ${{ matrix.harts }}
+        run: python3 tests/guest/system/run.py tests/ci/target/platforms/instructions/${{ matrix.kernel }} --handoff --kernel-profile ${{ matrix.kernel }} --profile ${{ matrix.system }} --harts ${{ matrix.harts }} --scenarios ${{ matrix.scenarios }}
       - name: CPU source admission with concurrent recipient traffic
         if: matrix.kernel == 'release' && matrix.system == 'release'
         run: python3 tests/guest/system/run.py tests/ci/target/platforms/instructions/release --handoff --kernel-profile release --profile release --harts ${{ matrix.harts }} --scenarios supply-contend
@@ -299,7 +305,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: handoff-kernel-${{ matrix.kernel }}-system-${{ matrix.system }}-harts-${{ matrix.harts }}-attempt-${{ github.run_attempt }}
+          name: handoff-${{ matrix.suite }}-kernel-${{ matrix.kernel }}-system-${{ matrix.system }}-harts-${{ matrix.harts }}-attempt-${{ github.run_attempt }}
           path: |
             tests/guest/system/target/handoff/
             tests/ci/target/platforms/

@@ -148,3 +148,10 @@ PT_LOAD file bytes are 319,496 locally versus the prior shared fixture's
 405,832 bytes. Lifecycle, provider and install feature selections, exact ELFs and hashes
 remain recorded per VM. Every role/VM/startup limit and behavioral/exit assertion
 is unchanged. This failed receipt is preserved rather than retried as acceptance.
+
+CI separates debug-Kernel lifecycle and supply scenario groups so the full
+campaign fits its unchanged 20-minute job bound. Each Hart/profile still runs
+every original and added scenario; only the job boundary and artifact suite name
+change. Native role/VM deadlines are not extended. The preceding combined jobs
+on double-debug one/two Harts were cancelled at 20 minutes during install-loss
+(CI 43793245104); their partial receipts remain unaccepted evidence.
