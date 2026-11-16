@@ -134,6 +134,7 @@ jobs:
         uses: ./tests/ci
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
+          platform-lock: server/tests/target/runtime/platform/Cargo.lock
       - name: Native heap, Supply and RPC on one and four Harts
         run: |
           mkdir -p .evidence
@@ -161,7 +162,16 @@ jobs:
             server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
             !server/tests/runner/target/evidence/**/deps/**
             !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/fingerprint/**
             !server/tests/runner/target/evidence/**/incremental/**
+            !server/tests/runner/target/evidence/**/*.rlib
+            !server/tests/runner/target/evidence/**/*.rmeta
+            !server/tests/runner/target/evidence/**/*.d
+            !server/tests/runner/target/evidence/**/*.o
+            Cargo.lock
+            server/tests/runner/Cargo.lock
+            server/tests/target/entry/Cargo.lock
+            server/tests/target/entry/pack/Cargo.lock
             server/tests/target/runtime/Cargo.lock
             server/tests/target/runtime/platform/Cargo.lock
             tests/ci/target/platforms/runtime/release
@@ -204,6 +214,7 @@ jobs:
         uses: ./tests/ci
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
+          platform-lock: server/tests/target/runtime/platform/Cargo.lock
       - name: Native ELF construction and User Team retirement on 1/2/4 Harts
         run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- loader --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/loader --harts 1 2 4
       - name: Preserve Loader execution evidence
@@ -216,7 +227,13 @@ jobs:
             server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
             !server/tests/runner/target/evidence/**/deps/**
             !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/fingerprint/**
             !server/tests/runner/target/evidence/**/incremental/**
+            !server/tests/runner/target/evidence/**/*.rlib
+            !server/tests/runner/target/evidence/**/*.rmeta
+            !server/tests/runner/target/evidence/**/*.d
+            !server/tests/runner/target/evidence/**/*.o
+            server/tests/runner/Cargo.lock
             tests/ci/target/platforms/
           include-hidden-files: true
           if-no-files-found: error
@@ -252,6 +269,7 @@ jobs:
         uses: ./tests/ci
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
+          platform-lock: server/tests/target/runtime/platform/Cargo.lock
       - name: Complete System application and ordinary User Teams on 1/2/4 Harts
         run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.system }} --kernel-profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/application --harts 1 2 4
       - name: Preserve complete application execution evidence
@@ -264,7 +282,17 @@ jobs:
             server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
             !server/tests/runner/target/evidence/**/deps/**
             !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/fingerprint/**
             !server/tests/runner/target/evidence/**/incremental/**
+            !server/tests/runner/target/evidence/**/*.rlib
+            !server/tests/runner/target/evidence/**/*.rmeta
+            !server/tests/runner/target/evidence/**/*.d
+            !server/tests/runner/target/evidence/**/*.o
+            Cargo.lock
+            server/tests/runner/Cargo.lock
+            server/tests/target/runtime/platform/Cargo.lock
+            server/tests/target/app/pack/Cargo.lock
+            server/tests/target/loader/image/Cargo.lock
             tests/ci/target/platforms/
           include-hidden-files: true
           if-no-files-found: error
@@ -314,6 +342,7 @@ jobs:
         uses: ./tests/ci
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
+          platform-lock: server/tests/target/runtime/platform/Cargo.lock
       - name: Independent-Team handoff and owner exit on 1/2/4 Harts
         run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --kernel-profile ${{ matrix.kernel }} --profile ${{ matrix.system }} --output server/tests/runner/target/evidence/handoff --harts ${{ matrix.harts }} --scenarios ${{ matrix.scenarios }}
       - name: CPU source admission with concurrent recipient traffic
@@ -329,7 +358,17 @@ jobs:
             server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
             !server/tests/runner/target/evidence/**/deps/**
             !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/fingerprint/**
             !server/tests/runner/target/evidence/**/incremental/**
+            !server/tests/runner/target/evidence/**/*.rlib
+            !server/tests/runner/target/evidence/**/*.rmeta
+            !server/tests/runner/target/evidence/**/*.d
+            !server/tests/runner/target/evidence/**/*.o
+            Cargo.lock
+            server/tests/runner/Cargo.lock
+            server/tests/target/runtime/platform/Cargo.lock
+            server/tests/target/app/pack/Cargo.lock
+            server/tests/target/handoff/Cargo.lock
             tests/ci/target/platforms/
           include-hidden-files: true
           if-no-files-found: error
