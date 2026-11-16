@@ -1,6 +1,6 @@
 # Legacy service test migration
 
-This is an assertion-level map from the retired Python SDK test crates to the current owners on `test/legacy-service-invariants` (based at `31cf6a6`). “Covered” means the named active assertion exercises the same stable predicate. It does not imply native execution or whole-product acceptance. “Gap” means the old assertion is not represented by an equivalent current assertion; keep the old source as historical evidence until its required native or integration evidence is deliberately replaced. Tests that depend on removed Python handles, fake Faces, session transports, or old wire layouts are marked retired where that behavior is no longer a contract.
+This is an assertion-level map from retired Rust SDK test crates to the current owners on `test/legacy-service-invariants` (based at `31cf6a6`). The old test surfaces use Rust `env`, `wire`, and `resource` crates plus PIE handles; they are not Python tests. “Covered” means the named active assertion exercises the same stable predicate. It does not imply native execution or whole-product acceptance. “Gap” means the old assertion is not represented by an equivalent current assertion; keep the old source as historical evidence until its required native or integration evidence is deliberately replaced. Tests that depend on removed SDK handles, fake Faces, session transports, or old wire layouts are marked retired where that behavior is no longer a contract.
 
 New portable assertions in this worktree:
 
@@ -11,7 +11,13 @@ New portable assertions in this worktree:
 
 ### `capability-import`
 
-All three old cases (`watch_rejects_forged_imports_without_mutating_existing_subscription`, `watch_retires_only_dead_subscription_and_keeps_other_tasks`, `closed_watch_can_rejoin_same_task_and_path_without_waiting_for_an_event`) protect runtime subscription/import behavior. The current owner is `server/src/system/operator/watch.rs`; current Host Operator and native Handoff targets do not assert these exact forged-import, per-task cleanup, and rejoin predicates. **Gap: retain as native/runtime work; no equivalent Host assertion is claimed.**
+The current owner is the real `server/src/system/operator/watch.rs`, compiled directly by the Host test crate `operator-watch` (`server/tests/operator/watch/mod.rs`). It ports the stable parts of all three old cases:
+
+- `watch_rejects_forged_imports_without_mutating_existing_subscription` -> `invalid_kernel_imports_do_not_replace_an_existing_live_subscription` rejects wrong lender/owner, inactive status, missing PUSH, and immutability while retaining the prior live subscription. The removed `Subscription::import` wrapper's mark/hole checks are retired with that constructor; the current service receives the caller's token and checks the predicates it owns.
+- `watch_retires_only_dead_subscription_and_keeps_other_tasks` -> `sweep_retires_only_the_dead_subscription_and_keeps_other_callers`.
+- `closed_watch_can_rejoin_same_task_and_path_without_waiting_for_an_event` -> `failed_return_keeps_closing_owner_and_allows_same_path_rejoin`; the replacement can join while return of the closing token is retried, then remains independently live.
+
+Additional current owner assertions cover slash-boundary prefix matching, Busy send retention, hard send cleanup, and return retry. These are Host state-machine/codec boundary tests with only Kernel and Clone transport effects faked; they are not native ABI evidence. Since all stable assertions in this package now have current owner tests and the old mark/hole constructor surface is retired, the legacy `tests/capability-import` crate has been removed.
 
 ### `identity`
 

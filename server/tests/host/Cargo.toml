@@ -27,6 +27,10 @@ name = "operator"
 path = "../operator/mod.rs"
 
 [[test]]
+name = "operator-watch"
+path = "../operator/watch/mod.rs"
+
+[[test]]
 name = "runtime"
 path = "../runtime/mod.rs"
 
