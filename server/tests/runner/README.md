@@ -44,6 +44,13 @@ retain their release-only fixtures. Loader's default hart set is 1/2/4;
 Runtime and Entry default to 1/4; Application and Handoff default to 1.
 Explicit harts must remain in each scenario's qualified set.
 
+Consumers may supply `--system-revision FULL_COMMIT_SHA` and
+`--kernel-sha256 FULL_SHA256` to reject a different checkout or Kernel ELF.
+The System source, ABI, service protocol and provider selection remain owned
+here; Vanllia selects the exact candidate revision and its cross-provider
+composition separately. This interface does not make Vanllia's older Runtime
+smoke test equivalent to the complete Application/Handoff matrix.
+
 Runtime and Entry QEMU calls are bounded to 120 and 90 seconds. Loader uses
 120 seconds. Application uses 90 seconds; Handoff uses 90 seconds with a
 release Kernel and 180 seconds with a debug Kernel, retaining the matching

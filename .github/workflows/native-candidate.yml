@@ -158,6 +158,10 @@ jobs:
           path: |
             .evidence/
             server/tests/runner/target/evidence/
+            server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
+            !server/tests/runner/target/evidence/**/deps/**
+            !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/incremental/**
             server/tests/target/runtime/Cargo.lock
             server/tests/target/runtime/platform/Cargo.lock
             tests/ci/target/platforms/runtime/release
@@ -209,6 +213,10 @@ jobs:
           name: candidate-native-loader-kernel-${{ matrix.kernel }}-attempt-${{ github.run_attempt }}
           path: |
             server/tests/runner/target/evidence/
+            server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
+            !server/tests/runner/target/evidence/**/deps/**
+            !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/incremental/**
             tests/ci/target/platforms/
           include-hidden-files: true
           if-no-files-found: error
@@ -253,6 +261,10 @@ jobs:
           name: candidate-system-application-kernel-${{ matrix.kernel }}-system-${{ matrix.system }}-attempt-${{ github.run_attempt }}
           path: |
             server/tests/runner/target/evidence/
+            server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
+            !server/tests/runner/target/evidence/**/deps/**
+            !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/incremental/**
             tests/ci/target/platforms/
           include-hidden-files: true
           if-no-files-found: error
@@ -314,6 +326,10 @@ jobs:
           name: candidate-handoff-${{ matrix.suite }}-kernel-${{ matrix.kernel }}-system-${{ matrix.system }}-harts-${{ matrix.harts }}-attempt-${{ github.run_attempt }}
           path: |
             server/tests/runner/target/evidence/
+            server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
+            !server/tests/runner/target/evidence/**/deps/**
+            !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/incremental/**
             tests/ci/target/platforms/
           include-hidden-files: true
           if-no-files-found: error

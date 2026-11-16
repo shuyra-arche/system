@@ -21,6 +21,7 @@ RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**
 | `server/src/runtime/` | Initial-Task heap and native memory result ownership |
 | `server/src/system/` | Services, declarations and supervisor migration; [`control/`](server/src/system/control/README.md) documents Control and construction receipt ownership |
 | `support/` | Borrowed boot archive, typed ledger and bounded platform facts |
+| `server/tests/` | Server Host owner contracts, native Guest definitions and candidate Host Runner |
 | `tests/` | Host contracts and explicit target component fixtures |
 
 Production packages keep `no_std`. Test code belongs under `tests/`.
@@ -83,6 +84,16 @@ cargo test --locked -p system-api -p system-client -p system-support --tests --t
 cargo test --locked --manifest-path server/tests/host/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo clippy --locked -p system-client -p system-support --lib --target riscv64gc-unknown-none-elf -- -D warnings
 ```
+
+Server Host contracts use the independent manifest under `server/tests/host/`.
+This keeps its default Cargo output separate from the native source packages
+under `server/tests/target/`. See the [owner suites](server/tests/README.md),
+[native scenarios](server/tests/target/README.md) and
+[candidate Rust Runner](server/tests/runner/README.md).
+The migration retains the original Native CI while an equivalent candidate
+matrix runs beside it. Historical safety assertions and the old runners remain
+until their replacements and the required checks are qualified; see
+[the fixed baseline](docs/native-test-baseline.md).
 
 The [runtime guest](tests/guest/runtime/README.md) exercises the production heap,
 Supply lease backend and Client/Ingress with real requests, replies and Task
