@@ -16,18 +16,20 @@ tables as the current checkout inventory. Since that snapshot, the active Host
 tests have moved to owner-aligned suites under `server/tests/host/`, and the
 native scenario tree has moved under `server/tests/target/`. The fixed M0 set of
 114 Host functions remains the migration baseline. At System
-`34b8aa9349795a7b489f68222a1812516fb2bada`, the active Host suites contain 130
-functions: 92 Server owner tests plus 38 API, Client and Support tests. The 16
+`de43b94a80eff4eb932313d08e6403b1679300e0`, the active Host suites contain 133
+functions: 95 Server owner tests plus 38 API, Client and Support tests. The 19
 additional assertions were added during owner migration and regression work.
-The candidate Rust runner has 11 unit tests and the App pack checker has 4
-tests; those counts are separate from the Host count.
+The candidate Rust runner has 11 unit tests and the App pack checker has 4;
+together with Host this is 148 tests.
 
 Only two historical packages have been removed after their current-owner
 assertions were added: `dynamic-units` (App declarations) and
 `capability-import` (Operator Watch). The remaining historical packages still
 contain unported stable safety assertions or native/integration-only gaps.
-Their source and gaps remain mapped in the [service migration map](service-test-migration.md),
-[Control migration map](control-test-migration.md), and the [fixed baseline](native-test-baseline.md).
+Their source and gaps remain mapped in the
+[service migration map](service-test-migration.md),
+[Control migration map](control-test-migration.md), and the
+[fixed baseline](native-test-baseline.md).
 No statement here declares M1, native parity, CI transition or clean-checkout
 acceptance complete.
 

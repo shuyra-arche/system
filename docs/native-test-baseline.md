@@ -208,18 +208,19 @@ selected inputs, original matrix and recorded CI result remain preserved above.
 The tables above are the fixed M0 snapshot at System
 `332d9d2e15f6bc4e1e8d94e4db2591b1a53ae613`. They remain unchanged as historical
 baseline evidence. The current status below was checked against System
-`34b8aa9349795a7b489f68222a1812516fb2bada`; it does not rewrite M0's CI result,
+`de43b94a80eff4eb932313d08e6403b1679300e0`; it does not rewrite M0's CI result,
 protected matrix or acceptance rules.
 
 ### M1: Host owner migration and history
 
 The original 114-function Host set is represented in the current suites, which
-now contain 130 functions: 92 Server tests (`app` 7, `control` 19,
-`control-retirement` 5, `identity` 19, `loader` 3, `operator` 21,
-`operator-watch` 4, `runtime` 6, `supply` 8) and 38 API/Client/Support tests.
-The additional 16 assertions came from follow-on migration and regression
-coverage. The candidate Rust Runner has 11 unit tests, and the App pack checker
-has 4; neither count is included in the 130 Host functions.
+now contain 133 functions: 95 Server tests (`app` 7, `control` 19,
+`control-namespace` 3, `control-retirement` 5, `identity` 19, `loader` 3,
+`operator` 21, `operator-watch` 4, `runtime` 6, `supply` 8) and 38
+API/Client/Support tests. The additional 19 assertions came from follow-on
+migration and regression coverage. The candidate Rust Runner has 11 unit tests,
+and the App pack checker has 4; with the 133 Host tests, the documented total is
+148.
 
 All production `#[cfg(test)]` hooks have been removed from `server/src/`.
 Private owner behavior is compiled through test-local facades. Recent Control
@@ -237,6 +238,15 @@ current owner assertion or require native evidence. See the assertion-level
 and [Control map](control-test-migration.md). Host fakes do not establish
 native Kernel behavior or product acceptance.
 
+The new `control-namespace` Host target compiles the real Control
+`Installation.install` / `Installation.finish` code and App `Layout` through an
+independent effect facade. Its three tests keep grant, binding, Kernel root and
+container receipts through scripted failures/retries, check stable mutation
+IDs and sibling Instance isolation, and preserve the current cleanup order
+`grants → bindings → roots → containers`. Operator replies and Kernel effects
+are scripted; this does not prove real native acknowledgment. The historical
+Unpart-before-root order is not asserted as current behavior.
+
 ### M2: target migration and candidate runner
 
 The target definitions are under `server/tests/target/`, and the Rust host
@@ -246,17 +256,21 @@ sign-off. On System `59b1a65`, the retained Native workflow run
 passed 22/23 jobs; `Handoff / supply / Kernel debug / System debug / Harts 1`
 failed. Candidate Rust Runner run
 [43812239288](https://github.com/shuyra-arche/system/actions/runs/43812239288)
-passed 23/23 jobs on that same System revision. A same-old-archive replay using
-the generic Rust process engine and current System checker passed, showing the
-failure is timing-sensitive and not simply a Runner check omission. The full
-scenario-by-scenario equivalence review and final acceptance are still open.
+passed 23/23 jobs on that same System revision. Separately, the same old debug
+archive was replayed through both Python and Rust execution paths. Both used an
+identical input SHA-256 manifest
+`8c73396c8e93ef0e593bc87b3bcd77eabed0fd8521ba9751024cc20551e388c2`; the Python
+acceptance reported success, and the Rust QEMU/checker commands exited 0 with
+the expected owner-checker PASS, admitted root exit and all-tasks-exited
+evidence. This demonstrates one observed passing replay across both paths and
+supports a timing-sensitive diagnosis; it does not erase the old 22/23 failure
+or sign off scenario-by-scenario equivalence. The full review and final
+acceptance are still open.
 This later evidence is separate from M0's 22/23 result at run 43802055998 and
 its Handoff timeout; neither should be reported as an all-green old gate.
 
-The same-old-archive replay using the generic Rust process engine and current
-System checker passed. This supports the timing-sensitive diagnosis; it is not
-the final scenario-by-scenario equivalence review. Raw execution logs remain
-invocation/CI artifacts rather than permanent documentation inputs.
+Raw execution logs remain invocation/CI artifacts rather than permanent
+documentation inputs.
 
 ### M3: CI transition
 

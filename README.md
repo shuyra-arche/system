@@ -14,10 +14,11 @@ RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**
 System #28 tracks test ownership and native runner migration. The fixed M0
 snapshot and current progress are recorded separately in the
 [migration status](docs/native-test-baseline.md). The original 114 Host
-functions remain represented; current suites contain 130 Host tests (92 Server
-owner tests and 38 API/Client/Support tests). Two historical packages were
-removed after their assertions moved to active owners, while other historical
-safety gaps remain open. Owner-aligned Host moves are in place, but M1's
+functions remain represented; current suites contain 133 Host tests (95 Server
+owner tests and 38 API/Client/Support tests). The Rust Runner's 11 unit tests
+and App pack checker's 4 tests bring the documented total to 148. Two historical
+packages were removed after their assertions moved to active owners; other
+historical safety gaps remain open. Owner-aligned Host moves are in place, but M1's
 remaining safety assertion migration, final Rust/native parity sign-off, CI
 transition and M4 acceptance are not complete.
 
@@ -109,10 +110,10 @@ under `server/tests/target/`. See the [owner suites](server/tests/README.md),
 The original Native CI and its Python runners remain the active gates. A
 candidate Rust Runner is available, and its recorded 23/23 run is not final
 equivalence sign-off. A later old-runner CI attempt on the same System revision
-was 22/23; the Handoff supply debug/debug one-Hart case timed out. An old-archive
-replay passed with the generic Rust process engine and current System checker,
-indicating timing sensitivity, but scenario-by-scenario equivalence review is
-still open. See [the fixed baseline and current status](docs/native-test-baseline.md).
+was 22/23; the Handoff supply debug/debug one-Hart case timed out. The same old
+debug archive has observed passing replays through both Python and Rust paths
+with identical input hashes, indicating timing sensitivity. Scenario-by-scenario
+equivalence review is still open. See [the fixed baseline and current status](docs/native-test-baseline.md).
 
 The [runtime guest](tests/guest/runtime/README.md) exercises the production heap,
 Supply lease backend and Client/Ingress with real requests, replies and Task

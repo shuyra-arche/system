@@ -140,15 +140,33 @@ deleted to make an inventory look complete.
 
 | Historical function | Mapping or reason |
 | --- | --- |
-| `same_team_instance_tasks_get_distinct_roots_and_reuse_one_per_key`, `instance_without_team_is_rejected_before_any_system_side_effect`, `unknown_logical_key_does_not_fall_back_to_root_or_another_entry`, `coordinates_are_immutable_and_failed_empty_receipt_does_not_block_another_task` | Partial owner mapping: `operator::roots::root_registration_and_transitions_replay_the_original_commit`, `ready_root_compare_replace_retains_history_and_closing_clears_discovery`, and `operator::namespace::root_entry_zero_tombstones_and_stale_revisions_stay_distinct` verify current Operator UnitRoot/CAS authority. **Gap:** current Control Instance namespace install must prove actual per-instance Task/Team roots, no fallback, retained partial grants and cleanup compensation. Keep the historical cases until a direct current-owner/native scenario covers these. |
+| `same_team_instance_tasks_get_distinct_roots_and_reuse_one_per_key` | **Gap:** `server/tests/control/namespace/cases.rs::instance_cleanup_uses_its_own_root_and_leaves_sibling_installation_intact` proves cleanup of a failed Instance preserves a sibling Instance's root/anchor. It does not install two Tasks in the same Team, prove per-Task roots, or check same-key reuse within an Instance. |
+| `instance_without_team_is_rejected_before_any_system_side_effect` | **Gap:** the new `control-namespace` effect facade supplies a live Unit/Team lookup; it does not test missing-Team admission or prove zero effects for that input. |
+| `unknown_logical_key_does_not_fall_back_to_root_or_another_entry` | **Gap:** the new `control-namespace` cases use instance-local paths through the real `Layout`; they do not request an unknown logical key or prove there is no fallback. |
+| `coordinates_are_immutable_and_failed_empty_receipt_does_not_block_another_task` | Partial: `server/tests/control/namespace/cases.rs::instance_cleanup_uses_its_own_root_and_leaves_sibling_installation_intact` shows one failed installation can be cleaned up while its sibling remains installed. **Gap:** immutable Task/Team coordinates and an empty failed receipt do not block a later Task remain untested. |
+
+The new `server/tests/control/namespace` target is an independent compilation
+boundary for the real `Installation.install` / `Installation.finish` source and
+the real App `Layout`. Only typed `Services` replies and Kernel-facing effects
+are scripted; state transitions and receipt decisions are not copied into the
+test. `server/tests/control/namespace/cases.rs::partial_install_retains_root_grant_and_containers_until_acknowledged`
+checks cleanup after grant failure, grant retention until Closed, stable
+Unbind/Unpart operation IDs until Applied, and root-return retry.
+`server/tests/control/namespace/cases.rs::finish_keeps_binding_root_and_container_receipts_until_each_acknowledgement`
+checks those retry boundaries and the current cleanup sequence
+`grants → bindings → roots → containers`. After Unbind has been acknowledged,
+the resource root has no remaining binding use before it is returned; the old
+Unpart-before-root sequence is not copied mechanically. The scripted replies
+do not prove that a native Operator or Kernel actually acknowledged those
+effects.
 
 ### `namespace-retirement`
 
 | Historical function | Mapping or reason |
 | --- | --- |
-| `retires_the_original_grant_through_the_stable_root` | Partial: Operator root tests retain stable current root/CAS identity; System Installation grant-retirement ordering has no current Host test. |
-| `denied_revoke_keeps_the_whole_receipt`, `revoking_keeps_the_receipt_until_the_grant_is_closed` | **Gap:** `control-retirement` retains provider roots, not Operator grants/bindings. Current `Installation::finish` revoke/unbind/unpart failure retention must be tested or preserved as native-only. |
-| `unpart_unknown_keeps_the_missing_directory_semantics` | Partial: Operator namespace tests cover tombstones and unknown/stale entries; per-Instance Directory removal/receipt retention remains a Control Installation gap. |
+| `retires_the_original_grant_through_the_stable_root` | Partial: `server/tests/control/namespace/cases.rs::partial_install_retains_root_grant_and_containers_until_acknowledged` retries the retained GrantId until Closed while preserving the Installation root receipt. The old test's exact grant-through-stable-root authority relation is not established by the scripted `Services` reply. |
+| `denied_revoke_keeps_the_whole_receipt`, `revoking_keeps_the_receipt_until_the_grant_is_closed` | Partial current mapping: `server/tests/control/namespace/cases.rs::partial_install_retains_root_grant_and_containers_until_acknowledged` scripts a failed revoke, Pending, then Closed for the same GrantId, and checks subsequent Unbind/Unpart receipt retention. This tests System's current `Installation::finish` decisions, not native Operator acknowledgment. |
+| `unpart_unknown_keeps_the_missing_directory_semantics` | Partial: `server/tests/control/namespace/cases.rs::finish_keeps_binding_root_and_container_receipts_until_each_acknowledgement` covers Pending, failure and Applied Unpart responses with stable operation IDs. **Gap:** Unknown/tombstoned per-Instance directory semantics remain untested; Operator's generic namespace tombstone tests do not prove Installation's native removal result. |
 
 ### `retirement-boundary`
 

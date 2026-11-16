@@ -13,6 +13,7 @@ The manifest exposes focused suites by semantic owner:
 | --- | --- |
 | `app` | 7 schema-2 declaration and startup selection tests |
 | `control` | 19 caller-scoped construction/install journal, publication, shutdown dependency and Program lifecycle tests |
+| `control-namespace` | 3 Instance Installation receipt and sibling isolation tests |
 | `identity` | 19 Identity book, monotonic revision publication and decoded service dispatch tests |
 | `loader` | 3 ELF admission, segment and entry validation tests |
 | `operator` | 21 authority, namespace, roots, admission policy and runtime state tests |
@@ -21,12 +22,22 @@ The manifest exposes focused suites by semantic owner:
 | `control-retirement` | 5 settlement, cleanup, release and cross-Instance retirement tests with scripted provider effects |
 | `operator-watch` | 4 subscription authority, replacement, prefix and cleanup tests with scripted Kernel/transport effects |
 
-The nine targets contain 92 tests and can be selected independently with
+The ten targets contain 95 tests and can be selected independently with
 `cargo test --manifest-path server/tests/host/Cargo.toml --test <target>`.
 The additional `control-retirement` target checks the real Instance retirement
 gate with scripted provider responses, cleanup failures and release retries.
 Its separate compilation boundary supplies a transport facade; it does not
 establish native provider settlement.
+
+`control-namespace` is a separate compilation entry for the production
+`Installation.install` / `Installation.finish` owner and production App
+`Layout`. Its test-local facade scripts typed Operator service responses and
+Kernel effects only. It checks grant, binding, root-return and container
+cleanup receipt retention and retry, including sibling Instance isolation.
+It follows the current `grants → bindings → roots → containers` cleanup order:
+after Unbind succeeds, the resource root has no remaining binding use before
+it is returned. Scripted service responses do not prove actual native Operator
+acknowledgment or Kernel release behavior.
 
 The Host manifest lives under `host/` so Cargo's default output and `cargo clean`
 cannot collide with the source packages under `target/`.
