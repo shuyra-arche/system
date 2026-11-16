@@ -1,10 +1,12 @@
 # Test and support migration inventory
 
-Baseline: System `470e97f38aa904c3702b665c0d225809b9f0d16e` (ABI/Ledger
-13/13), shared standards `.github`
-`7967d812c6c9d40fde6a174483073b788af3e3cc`. Inventory taken on 2026-11-15.
-This is a migration ledger for [System #13](https://github.com/shuyra-arche/system/issues/13),
-not a statement that its R0–R6 or Track S acceptance is complete.
+Historical snapshot: System `470e97f38aa904c3702b665c0d225809b9f0d16e`
+(ABI/Ledger 13/13), shared standards `.github`
+`7967d812c6c9d40fde6a174483073b788af3e3cc`, taken on 2026-11-15. Its
+assertion-port queue remains relevant to [System #13](https://github.com/shuyra-arche/system/issues/13),
+but its counts and path/status descriptions are not the current #28 M0
+baseline. See the [native test migration baseline](native-test-baseline.md)
+for System `332d9d2e15f6bc4e1e8d94e4db2591b1a53ae613` on 2026-11-16.
 
 ## Scope and evidence
 
