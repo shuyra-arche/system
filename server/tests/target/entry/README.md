@@ -13,12 +13,28 @@ Its library supplies a bounded contract-test application body. This tests entry
 and runtime contracts separately from the complete production application and
 does not launch a std User Unit or prove supervision recovery.
 
+The candidate Rust runner owns guest builds, archive creation, QEMU execution
+and evidence receipts. Set the QEMU/OpenSBI paths and use the qualified Kernel
+ELF selected for the requested Hart count:
+
 ```sh
 export QEMU_RISCV64=/path/to/qemu-system-riscv64
-export QEMU_OPENSBI=/path/to/fw_jump.bin
-python3 tests/guest/entry/run.py /path/to/shuyra
-cargo clippy --locked --manifest-path tests/guest/entry/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+export QEMU_OPENSBI=/path/to/fw_dynamic.bin
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --kernel PATH --output NEW --harts 1
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --kernel PATH --output NEW --harts 1 4 --abort
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --kernel PATH --output NEW --harts 1 --stall
 ```
+
+The separate abort and stall invocations preserve the original feature and
+execution boundaries. A target Clippy invocation for the moved fixture is:
+
+```sh
+cargo clippy --locked --manifest-path server/tests/target/entry/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+```
+
+These commands describe the candidate runner interface. They do not report a
+Rust runner pass or equivalence with the current `native.yml` checks; keep the
+existing checks until equivalence is verified.
 
 Requires boot-data, entry and actual-service markers within 90 seconds per guest.
 Boot-data checks immutable DTB/initrd grants, rejection of writable Publish and

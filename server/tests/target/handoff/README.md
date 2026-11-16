@@ -56,13 +56,22 @@ not share one global 60-second interval. Busy, polling and partial construction
 do not renew a stalled Unit's deadline. Native cleanup steps still have their
 own bounded retries.
 
-Use the instruction-qualified platform and runner documented in
-`../system/README.md`:
+Use the candidate Rust `handoff` subcommand and the instruction-qualified
+platform described in the [application guide](../app/README.md):
 
 ```sh
-python3 tests/guest/system/run.py /path/to/qualified/kernel --handoff --harts 1 2 4
-python3 tests/guest/system/run.py /path/to/qualified/kernel --handoff --profile debug --harts 1 2 4
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --kernel PATH --output NEW --profile release --kernel-profile release --harts 1 2 4
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --kernel PATH --output NEW --profile debug --kernel-profile release --harts 1 2 4
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --kernel PATH --output NEW --profile release --kernel-profile debug --harts 1 2 4
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --kernel PATH --output NEW --profile debug --kernel-profile debug --harts 1 2 4
 ```
+
+The second invocation selects a debug System with a release Kernel; the third
+pairs a release System with a debug Kernel. The fourth pairs both debug
+profiles. Use the matching qualified Kernel ELF for each
+`--kernel-profile`. The Rust runner and old/new parity remain under migration;
+these examples do not claim a runner pass. Keep the existing `native.yml`
+checks until candidate coverage, evidence and failure behavior are equivalent.
 
 The default handoff matrix also runs `owner`, `owner-cancel` and `owner-death`
 as independent VMs. Trusted Selected policy admits CreateFor; an ordinary
@@ -76,16 +85,23 @@ completion: its historical CreateFor receipt remains Completed if already
 committed, otherwise the retired failed attempt reports Interrupted. The typed
 checker still requires every native exit/retirement and the real System exit.
 
-Use `--scenarios owner owner-cancel owner-death` with `--handoff` for focused
-checks; omitting it retains every scenario. The original selected-owner campaign adds 36 cases to the first 48. Release Kernel runs retain 60-second role and 90-second VM bounds.
+Use `--scenarios owner owner-cancel owner-death` for focused checks; omitting
+it retains every scenario. For example:
+
+```sh
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --kernel PATH --output NEW --profile release --kernel-profile release --harts 1 2 4 --scenarios owner owner-cancel owner-death
+```
+
+The original selected-owner campaign adds 36 cases to the first 48. Release
+Kernel runs retain 60-second role and 90-second VM bounds.
 With `--kernel-profile debug`, the recorded bounds are 120/180 seconds; see the
-[production application guide](../system/README.md) for the measured migration cost.
+[production application guide](../app/README.md) for the measured migration cost.
 
 The User image stays release with LTO and one codegen unit in both cases.
 System and Kernel retain their separately selected profiles and production
 flags. Pair each with recorded debug and release Kernel images; a host test or RV64 build is separate evidence. Each
 invocation keeps its archive, ELFs, locks, hashes, serial logs and JSON results
-under `tests/guest/system/target/handoff/<profile>/`. Failed checks remain failed
+under the caller-selected `--output NEW` directory. Failed checks remain failed
 receipts. Only after every behavioral assertion passes, a missing admitted
 root-exit line accompanied by a positive Kernel `console-lost` count is marked
 inconclusive (checker status 2). The runner preserves that log/JSON with

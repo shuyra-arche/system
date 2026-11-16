@@ -4,6 +4,9 @@ This runner builds `system-server --bin system` from the root workspace. It
 packages that exact production binary and separately compiled ordinary User
 ELFs in pure schema-2 records; it does not substitute a fixture implementation
 for `system_server::run`.
+The ordinary User ELF source and manifest moved to
+[`../loader/image/Cargo.toml`](../loader/image/Cargo.toml), alongside the Loader-owned image
+contract used by this composition.
 
 The same scenarios run with either System build profile:
 
@@ -25,18 +28,21 @@ printed before a rejected terminal call is insufficient.
 These observations are backed by the production state owners' native checks;
 log text alone is not a physical-retirement proof.
 
-Use the instruction-qualified platform from the [Loader scenario](../loader/README.md):
+Use the instruction-qualified platform from the [Loader scenario](../loader/README.md).
+The candidate Rust host runner replaces the old Python invocation:
 
 ```sh
-cargo build --locked --manifest-path tests/guest/runtime/platform/Cargo.toml --features instructions --target-dir tests/guest/runtime/platform/target/instructions --release --target riscv64gc-unknown-none-elf
 export QEMU_RISCV64=/path/to/qemu-system-riscv64
 export QEMU_OPENSBI=/path/to/fw_dynamic.bin
-python3 tests/guest/system/run.py tests/guest/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --kernel PATH --output NEW --profile release --kernel-profile release --harts 1 2 4
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --kernel PATH --output NEW --profile release --kernel-profile debug --harts 1 2 4
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --kernel PATH --output NEW --profile debug --kernel-profile release --harts 1 2 4
+cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --kernel PATH --output NEW --profile debug --kernel-profile debug --harts 1 2 4
 ```
 
-The default selects one Hart. `--profile debug` selects the unoptimized System
-binary; the separately compiled User ELF remains the fixed release fixture.
-`--harts 1 2 4` is available for an explicitly SMP-qualified Kernel platform;
+The four commands cover both Kernel and System profiles. The User ELF remains
+the fixed release fixture. `--harts 1 2 4` is available for an explicitly
+SMP-qualified Kernel platform;
 it does not make an older single-Hart-only provider support SMP. Provider
 qualification covers paired coherent QEMU virt CPUs with no External requester,
 not hardware or device retirement.
@@ -75,19 +81,20 @@ Run both System profiles against both recorded Kernel profiles with
 `--harts 1 2 4`. The full matrix and CI preserve separate receipts; passing
 these native User ELF scenarios does not complete S1/S2 or Toolchain acceptance.
 
-`target/evidence/<profile>/` retains each serial log and JSON result, exact
-System/User/Kernel/firmware hashes, profile selection, locks, ELFs and archives.
-A timeout or failed assertion leaves a failed receipt. CI uploads this evidence.
+The caller-selected `--output NEW` directory retains the candidate's serial log
+and result receipts. Preserve System/User/Kernel/firmware hashes, profile
+selection, locks, ELFs and archives for every VM. A timeout or failed assertion
+must leave a failed receipt; CI evidence upload remains part of the migration.
 
 The User image is a native `no_std` test ELF, not a Toolchain std Unit. Full
 System/Toolchain acceptance, public Create/Claim/InstanceId/UnitRoot handoff,
 cross-Team application RPC, recovery and fault campaigns remain S1–S3 work.
 
-The separate `--handoff` mode uses the [independent-Team consumer](../handoff/README.md)
+The separate `handoff` subcommand uses the [independent-Team consumer](../handoff/README.md)
 against this same production Server. It exercises the Instance v1 subset,
 Operator UnitRoots, revision CAS, direct Driver RPC, native restricted lease
 withdrawal, replay/lost reply/cancellation and early owner exit. Its evidence
-lives under `target/handoff/`; it does not mark the complete S1/S2 or Toolchain
+lives in the caller-selected handoff output directory; it does not mark the complete S1/S2 or Toolchain
 acceptance checklist passed.
 
 For handoff against a Debug Kernel, pass `--kernel-profile debug` (CI supplies
@@ -98,4 +105,6 @@ replay completed round 0 after 69 seconds of boot/scenario work and exceeded the
 old 60-second guest workflow deadline in round 1. Per-request identity,
 progress-only bootstrap bounds, complete event/retirement assertions and normal
 exit requirements remain enforced. This is a bounded fixture budget, not a
-real-time or hardware latency guarantee.
+real-time or hardware latency guarantee. These CLI commands are the migration
+interface; they do not claim Rust runner parity or a full product pass. Keep
+the existing `native.yml` checks until candidate equivalence is demonstrated.
