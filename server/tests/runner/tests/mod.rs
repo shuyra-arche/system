@@ -1,35 +1,11 @@
 #![allow(dead_code)]
 
-use std::path::PathBuf;
-
-#[derive(Clone)]
-struct Common {
-    kernel: PathBuf,
-    output: PathBuf,
-    profile: String,
-    harts: Vec<u8>,
-    kernel_sha256: Option<String>,
-    system_revision: Option<String>,
-}
-struct Entry {
-    common: Common,
-    abort: bool,
-    stall: bool,
-}
-struct Loader {
-    common: Common,
-    toolchain_receipt: Option<PathBuf>,
-    toolchain_fixture: String,
-}
-struct Application {
-    common: Common,
-    kernel_profile: String,
-    scenarios: Vec<String>,
-}
+#[path = "../src/options.rs"]
+mod options;
+#[path = "../src/runner/mod.rs"]
+mod runner;
 
 mod execution;
-#[path = "../runner.rs"]
-mod runner;
 
 #[test]
 fn a_case_requires_normal_exit_all_markers_and_no_failure_evidence() {
@@ -123,4 +99,15 @@ fn kernel_hash_requires_exact_sha256_width_and_lowercase_hex() {
     assert!(!runner::hash_matches(&hash[..40], hash));
     assert!(!runner::hash_matches(&hash.to_uppercase(), hash));
     assert!(!runner::hash_matches(hash, "bad"));
+}
+
+#[test]
+fn evidence_harts_use_the_scenario_defaults_or_explicit_selection() {
+    assert_eq!(runner::effective_harts(&[], &[1, 4]), [1, 4]);
+    assert_eq!(runner::effective_harts(&[], &[1, 2, 4]), [1, 2, 4]);
+    assert_eq!(runner::effective_harts(&[], &[1]), [1]);
+    assert_eq!(runner::effective_harts(&[2, 4], &[1]), [2, 4]);
+    assert_eq!(runner::selected_harts(&[4], &[1, 2, 4]).unwrap(), [4]);
+    assert!(runner::selected_harts(&[3], &[1, 2, 4]).is_err());
+    assert!(runner::selected_harts(&[1, 1], &[1, 2, 4]).is_err());
 }

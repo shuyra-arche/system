@@ -9,7 +9,7 @@ autotests = false
 
 [[bin]]
 name = "system-runner"
-path = "main.rs"
+path = "src/main.rs"
 
 [[test]]
 name = "contracts"

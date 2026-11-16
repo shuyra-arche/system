@@ -1,17 +1,15 @@
 use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
-mod runner;
-
 #[derive(Parser)]
 #[command(about = "Run native System scenarios against a qualified RV64 Kernel")]
-struct Cli {
+pub(crate) struct Cli {
     #[command(subcommand)]
-    scenario: Scenario,
+    pub(crate) scenario: Scenario,
 }
 
 #[derive(Subcommand)]
-enum Scenario {
+pub(crate) enum Scenario {
     Runtime(Common),
     Entry(Entry),
     Loader(Loader),
@@ -20,61 +18,47 @@ enum Scenario {
 }
 
 #[derive(Clone, Args)]
-struct Common {
+pub(crate) struct Common {
     #[arg(long)]
-    kernel: PathBuf,
+    pub(crate) kernel: PathBuf,
     #[arg(long)]
-    output: PathBuf,
+    pub(crate) output: PathBuf,
     #[arg(long, value_parser = ["debug", "release"], default_value = "release")]
-    profile: String,
+    pub(crate) profile: String,
     #[arg(long, num_args = 1.., value_parser = clap::value_parser!(u8).range(1..=4))]
-    harts: Vec<u8>,
+    pub(crate) harts: Vec<u8>,
     #[arg(long)]
-    kernel_sha256: Option<String>,
+    pub(crate) kernel_sha256: Option<String>,
     #[arg(long)]
-    system_revision: Option<String>,
+    pub(crate) system_revision: Option<String>,
 }
 
 #[derive(Args)]
-struct Entry {
+pub(crate) struct Entry {
     #[command(flatten)]
-    common: Common,
+    pub(crate) common: Common,
     #[arg(long, conflicts_with = "stall")]
-    abort: bool,
+    pub(crate) abort: bool,
     #[arg(long)]
-    stall: bool,
+    pub(crate) stall: bool,
 }
 
 #[derive(Args)]
-struct Loader {
+pub(crate) struct Loader {
     #[command(flatten)]
-    common: Common,
+    pub(crate) common: Common,
     #[arg(long)]
-    toolchain_receipt: Option<PathBuf>,
+    pub(crate) toolchain_receipt: Option<PathBuf>,
     #[arg(long, value_parser = ["std-waits", "toolchain-std"], default_value = "std-waits")]
-    toolchain_fixture: String,
+    pub(crate) toolchain_fixture: String,
 }
 
 #[derive(Args)]
-struct Application {
+pub(crate) struct Application {
     #[command(flatten)]
-    common: Common,
+    pub(crate) common: Common,
     #[arg(long, value_parser = ["debug", "release"], default_value = "release")]
-    kernel_profile: String,
+    pub(crate) kernel_profile: String,
     #[arg(long, num_args = 1..)]
-    scenarios: Vec<String>,
-}
-
-fn main() {
-    let result = match Cli::parse().scenario {
-        Scenario::Runtime(args) => runner::runtime(args),
-        Scenario::Entry(args) => runner::entry(args),
-        Scenario::Loader(args) => runner::loader(args),
-        Scenario::Application(args) => runner::application(args, false),
-        Scenario::Handoff(args) => runner::application(args, true),
-    };
-    if let Err(error) = result {
-        eprintln!("{error}");
-        std::process::exit(1);
-    }
+    pub(crate) scenarios: Vec<String>,
 }
