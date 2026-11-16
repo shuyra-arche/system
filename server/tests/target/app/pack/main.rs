@@ -4,28 +4,12 @@ use unit_contract::{
     event::{self, Event},
 };
 mod handoff;
+mod observations;
 fn main() {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if args[0] == "check" {
         let log = std::fs::read(&args[1]).unwrap();
-        let events: Vec<_> = log
-            .split_inclusive(|byte| *byte == b'\n')
-            .filter_map(|line| {
-                let offset = line
-                    .windows(event::PREFIX.len())
-                    .position(|window| window == event::PREFIX)?;
-                Some(
-                    event::decode(
-                        &line[offset..]
-                            .iter()
-                            .copied()
-                            .filter(|byte| *byte != b'\r')
-                            .collect::<Vec<_>>(),
-                    )
-                    .unwrap(),
-                )
-            })
-            .collect();
+        let events = observations::decode(&log).expect("invalid typed event stream");
         if handoff::check(args[2].to_str().unwrap(), &events, &log) {
             return;
         }
