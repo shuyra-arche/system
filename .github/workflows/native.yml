@@ -116,7 +116,7 @@ jobs:
       - name: Install QEMU and build tools
         run: |
           apt-get update
-          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-misc
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
           qemu-system-riscv64 --version
           sha256sum "$QEMU_OPENSBI"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -182,7 +182,7 @@ jobs:
       - name: Install QEMU and build tools
         run: |
           apt-get update
-          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-misc
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
           qemu-system-riscv64 --version
           sha256sum "$QEMU_OPENSBI"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -226,7 +226,7 @@ jobs:
       - name: Install QEMU and build tools
         run: |
           apt-get update
-          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-misc
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
           qemu-system-riscv64 --version
           sha256sum "$QEMU_OPENSBI"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -284,7 +284,7 @@ jobs:
       - name: Install QEMU and build tools
         run: |
           apt-get update
-          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-misc
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
           qemu-system-riscv64 --version
           sha256sum "$QEMU_OPENSBI"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
