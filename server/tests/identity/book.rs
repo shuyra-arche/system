@@ -12,11 +12,18 @@ fn subject(p: PrincipalId, coalitions: &[CoalitionId]) -> Subject {
     Subject::new(p, coalitions).unwrap()
 }
 
+fn root() -> PrincipalId {
+    PrincipalId {
+        authority: TaskId::new(2),
+        slot: 0,
+    }
+}
+
 fn setup() -> (IdentityBook, TaskId, TaskId, PrincipalId) {
     let installer = TaskId::new(1);
     let task = TaskId::new(3);
     let mut book = IdentityBook::new(TaskId::new(2), installer).unwrap();
-    let p = book.derive(installer, book.root()).unwrap();
+    let p = book.derive(installer, root()).unwrap();
     book.bind(
         installer,
         super::BindingRequest {
@@ -180,7 +187,7 @@ fn install_is_sender_anchored_and_failures_leave_binding_unchanged() {
             task,
             super::BindingRequest {
                 task,
-                install: Install::Authorized(subject(book.root(), &[]))
+                install: Install::Authorized(subject(root(), &[]))
             }
         ),
         Err(Fail::Denied)
@@ -201,7 +208,7 @@ fn install_is_sender_anchored_and_failures_leave_binding_unchanged() {
     book.unbind(installer, task).unwrap();
     book.unbind(installer, task).unwrap();
     assert!(book.resolve(task).is_none());
-    assert_eq!(book.sire(p), Ok(Some(book.root())));
+    assert_eq!(book.sire(p), Ok(Some(root())));
 }
 
 #[test]
@@ -209,7 +216,7 @@ fn managers_are_exact_and_can_manage_offline_principals() {
     let (mut book, installer, task, p) = setup();
     let c = book.found(task, FoundId::new(1).unwrap()).unwrap();
     let descendant = book.derive(task, p).unwrap();
-    let offline = book.derive(installer, book.root()).unwrap();
+    let offline = book.derive(installer, root()).unwrap();
     book.admit(
         task,
         super::Membership {
@@ -387,7 +394,7 @@ fn revocation_of_origin_intersects_descendant_current_but_current_revocation_can
 fn pages_include_slot_zero_and_sort_with_explicit_continuations() {
     let (mut book, installer, task, p) = setup();
     let c = book.found(task, FoundId::new(1).unwrap()).unwrap();
-    let root = book.root();
+    let root = root();
     book.admit(
         installer,
         super::Membership {
@@ -514,7 +521,7 @@ fn activation_requires_the_actual_coalition_manager() {
     )
     .unwrap();
     let stranger = TaskId::new(11);
-    let principal = book.derive(installer, book.root()).unwrap();
+    let principal = book.derive(installer, root()).unwrap();
     book.bind(
         installer,
         BindingRequest {

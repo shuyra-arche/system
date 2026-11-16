@@ -13,6 +13,7 @@ use system_protocol::Name as IdentityName;
 mod coalition;
 mod limits;
 mod membership;
+
 mod principal;
 mod reference;
 mod roster;
@@ -79,10 +80,10 @@ struct InstallRecord {
     failure: Option<Fail>,
 }
 
-#[cfg(test)]
-#[path = "../../../../../tests/identity-state/book.rs"]
-mod tests;
-
 pub use membership::Membership;
 pub use reference::{Association, ReferenceQuery};
 pub use roster::{BindingRequest, InstallAction, InstallStatus, InstallationRequest, Selection};
+
+#[cfg(test)]
+#[path = "../../../../../server/tests/identity/book.rs"]
+mod tests;

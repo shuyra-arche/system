@@ -1,4 +1,5 @@
-use super::{declaration::Unit, program::Program};
+use super::program::Program;
+use crate::declaration::Unit;
 use alloc::sync::Arc;
 use system_protocol::control::instance::Sequence;
 use unit_contract::document as d;

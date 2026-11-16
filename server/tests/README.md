@@ -1,25 +1,29 @@
 # Server Host contracts
 
-Run from the repository root:
+Run every Server Host contract from the repository root:
 
 ```sh
 cargo test --locked --manifest-path server/tests/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo clippy --locked --manifest-path server/tests/Cargo.toml --all-targets --target x86_64-unknown-linux-gnu -- -D warnings
 ```
 
-The explicit `supervision` target compiles actual declaration, ELF admission,
-Program, Operation Journal and construction Ledger sources. It preserves policy
-checks for native rights/window conversion (including Nest's reserved-bit gap),
-invalid identities/limits, startup selection, missing/cyclic dependencies,
-borrowed record strings and explicit VNU1 rejection. Program intent and retained
-receipts remain separate from physical Instance evidence.
+The manifest exposes focused suites by semantic owner:
 
-The `organization` target exercises the actual external registration owner
-with explicit caller/grant/completion facts, including cancellation, failed
-withdrawal and same-name replacement. Native grant proof is established separately.
+| Target | Protected behavior |
+| --- | --- |
+| `app` | 6 schema-2 declaration and startup selection tests |
+| `control` | 15 caller-scoped construction/install journal, receipt and Program lifecycle tests |
+| `identity` | 18 Identity book, monotonic revision publication and decoded service dispatch tests |
+| `loader` | 3 ELF admission, segment and entry validation tests |
+| `operator` | 21 authority, namespace, roots, admission policy and runtime state tests |
+| `runtime` | 6 scripted memory delivery, retained version, mutation identity and continuation tests |
+| `supply` | 8 external registration, withdrawal and installation selection tests |
 
-The `runtime` target supplies a scripted memory transport to the actual memory
-owner. It checks retained requests, version ordering and continuation rules;
-it does not execute Kernel traps. Test facades live here rather than in
-production source. RV64 builds, native QEMU runs and hardware qualification are
-separate evidence; see the root README and [migration inventory](../../docs/test-inventory.md).
+The seven targets contain 77 tests and can be selected independently with
+`cargo test --manifest-path server/tests/Cargo.toml --test <target>`.
+
+These suites import production source through test-local facades where private
+source composition is required. Production packages retain `no_std`; host tests
+do not execute Kernel traps or establish RV64 or QEMU behavior. See the
+[migration inventory](../../docs/test-inventory.md) for historical assertions
+that still need owner-level migration.

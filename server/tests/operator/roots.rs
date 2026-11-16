@@ -1,7 +1,5 @@
 // Pure registry policy. Native foreign-Team proof belongs to the System guest.
-#[path = "../../server/src/system/operator/tree/unit.rs"]
-mod registry;
-use registry::Registry;
+use super::unit::Registry;
 use system_protocol::{
     EntryId, Mark, Name, TaskId, TeamId,
     control::instance::{InstanceId, Sequence},

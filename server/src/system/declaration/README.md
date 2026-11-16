@@ -18,7 +18,7 @@ indices. It orders selected startup Units and rejects readiness cycles; requeste
 Units stay available without being started. Optional absent `after` names do not
 become requirements. Old VNU1 records are rejected explicitly.
 
-`server/tests/supervision/declarations.rs` verifies these policy/record boundaries; the native entry
+`server/tests/app/declarations.rs` verifies these policy/record boundaries; the native entry
 fixture decodes a genuine schema-2 VNI1 archive from Kernel's boot arguments.
 The complete native Control application now consumes this interpreter. Its
 basic production startup is verified separately from the remaining public

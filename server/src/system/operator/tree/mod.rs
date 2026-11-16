@@ -13,6 +13,9 @@ use system_protocol::{
 pub mod gate;
 mod imports;
 pub(crate) mod journal;
+#[cfg(test)]
+#[path = "../../../../../server/tests/operator/roots.rs"]
+mod tests;
 pub(crate) mod unit;
 
 struct Slot {

@@ -633,5 +633,5 @@ fn grant_scope_narrows(parent: &GrantSpec, child: &GrantSpec, relative_anchor: &
 }
 
 #[cfg(test)]
-#[path = "../../../../tests/operator-policy/authority.rs"]
+#[path = "../../../../server/tests/operator/authority.rs"]
 mod tests;

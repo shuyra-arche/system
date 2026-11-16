@@ -9,14 +9,6 @@ pub(super) struct PrincipalNode {
 }
 
 impl IdentityBook {
-    #[cfg(test)]
-    pub fn root(&self) -> PrincipalId {
-        PrincipalId {
-            authority: self.authority,
-            slot: 0,
-        }
-    }
-
     pub(super) fn principal(&self, id: PrincipalId) -> Result<usize, Fail> {
         if id.authority != self.authority {
             return Err(Fail::WrongAuthority);

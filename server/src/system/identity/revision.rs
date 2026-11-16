@@ -80,7 +80,7 @@ pub fn consume(token: PendId, epoch: &Epoch) -> Result<u64, Error> {
 }
 
 #[cfg(test)]
-#[path = "../../../../tests/identity-state/revision.rs"]
+#[path = "../../../../server/tests/identity/revision.rs"]
 mod tests;
 
 impl core::fmt::Display for Error {

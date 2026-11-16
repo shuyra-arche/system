@@ -63,8 +63,8 @@ settles subscriptions/publications and returns every owned ingress root. Partial
 construction, progress failure and teardown failure retain a Service owner.
 Destruction is best effort and is not a retirement receipt.
 
-The actual production service is compiled by the host fixture in
-`tests/operator-policy` and exercised in a real ABI 9 guest by
+The actual production service is compiled by the Host fixture in
+`server/tests/operator` and exercised in a real ABI 9 guest by
 `tests/guest/client/run.py` on one and four Harts. That scenario uses distinct
 controller, Operator and publishing Tasks and verifies scoped/forged-source
 rejection, namespace association, event sources, retained consumer access after

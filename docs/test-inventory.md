@@ -35,26 +35,26 @@ assertions in the same package still need behavioral counterparts.
 
 | Baseline manifest | Decision and current location | Owner / retained assertion |
 | --- | --- | --- |
-| declarations | Moved → `server/tests/supervision/declarations.rs` (6) | Validated schema-2 intent, rights, startup ordering, authority domains |
-| loader-image | Moved → `server/tests/supervision/image.rs` (3) | Loader ELF admission and segment/entry validation |
+| declarations | Moved → `server/tests/app/declarations.rs` (6) | Validated schema-2 intent, rights, startup ordering, authority domains |
+| loader-image | Moved → `server/tests/loader/image.rs` (3) | Loader ELF admission and segment/entry validation |
 | native-memory | Moved → `server/tests/runtime/mod.rs` (6) | Scripted delivery, retained versions, mutation identity and explicit continuation; no native trap claim |
-| identity-state | Keep / port → `server/tests/organization/` | Identity book, revision publication and dispatch; 18 current tests |
-| operator-policy | Keep / port → `server/tests/organization/` | Operator grants, namespace roots, policy and dispatch; 21 current tests |
+| identity-state | Moved → `server/tests/identity/` (18) | Identity book, revision publication and decoded dispatch; suite remains independently runnable |
+| operator-policy | Moved → `server/tests/operator/` (21) | Operator grants, namespace roots, policy, runtime state and dispatch; suite remains independently runnable |
+| control | Current → `server/tests/control/` (15) | Construction/install journals, receipts and Program lifecycle decisions |
+| supply | Current → `server/tests/supply/` (8) | External registration/withdrawal ownership and caller-scoped installation selection |
 
 The eight Server Journal/Ledger tests formerly embedded in `api/tests/control.rs`
-now belong to `server/tests/supervision/control.rs`. API tests retain bounded
+now belong to `server/tests/control/construction.rs`. API tests retain bounded
 codec and nonzero-ID assertions. Four Program tests cover retained selection,
 resident/transient completion, physical-retirement dependence and supervision
-policy. The Server package uses explicit `[[test]]` targets with directory
-`mod.rs` entry points; it compiles actual owner sources through a test-local
-facade, without widening the production API or compiling the whole native runtime
-as a Host substitute.
-
-Remaining production test hooks are Identity book, Identity revision, Operator
-authority and Operator tree gate, plus the test-only Identity `root()` helper.
-Their tests include private-state exhaustion checks. Port them through meaningful
-owner transitions before removing the hooks; do not publish private counters or
-discard the exhaustion assertions merely to relocate files.
+policy. The seven Server owner suites contain 77 current Host tests and are
+registered explicitly with `[[test]]` targets and
+directory `mod.rs` entry points. Identity and Operator tests are now part of the
+same Server Host package and remain focused Cargo targets. Their prior inline
+test-module source paths now point into the owner-aligned test tree; these
+`cfg(test)` hooks remain where assertions inspect private owner state. The
+test-only Identity `root()` helper was removed, and the monotonic revision
+exhaustion assertion remains in the Identity suite.
 
 ## Guest and composition packages
 
