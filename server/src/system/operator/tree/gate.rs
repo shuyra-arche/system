@@ -51,10 +51,6 @@ pub fn verdict(facts: &impl Facts, who: TaskId, permit: Permit) -> Code {
     }
 }
 
-#[cfg(test)]
-#[path = "../../../../../server/tests/operator/policy.rs"]
-mod tests;
-
 /// The opener lookup comes from the serving Operator's own namespace state.
 /// Query endpoints come from an authenticated bootstrap receipt. Every query
 /// uses the same supplied absolute deadline and rechecks live native authority.

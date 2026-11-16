@@ -1,9 +1,19 @@
 #![allow(dead_code)]
 extern crate alloc;
-#[path = "../../src/system/identity/book/mod.rs"]
-pub mod book;
-#[path = "../../src/system/identity/revision.rs"]
-mod revision_owner;
+pub mod book {
+    include!("../../src/system/identity/book/mod.rs");
+
+    mod tests {
+        include!("book.rs");
+    }
+}
+mod revision_owner {
+    include!("../../src/system/identity/revision.rs");
+
+    mod tests {
+        include!("revision.rs");
+    }
+}
 
 #[path = "../../src/system/identity/service/answer.rs"]
 pub mod answer;
