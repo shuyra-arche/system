@@ -232,12 +232,13 @@ pub(crate) fn give(
         limits,
     }
     .to_bytes();
-    // Object Clone Busy precedes creation and recipient publication in the
-    // selected Kernel. Reuse this exact descriptor after yielding; other
-    // target kinds can have different withdrawal effects and retain their
-    // original failure handling.
-    let retry = matches!(limits.operations, Operations::Clone(_))
-        && matches!(limits.scope, PendScope::Object);
+    // Object Sign/Clone Busy precedes publication in the selected Kernel's
+    // CPU-only branch path. Reuse this exact descriptor after yielding;
+    // memory/device targets keep their separate effect/withdrawal handling.
+    let retry = matches!(
+        limits.operations,
+        Operations::Clone(_) | Operations::Sign(_)
+    ) && matches!(limits.scope, PendScope::Object);
     let deadline = if retry {
         room::clock().saturating_add(LIMIT_NS)
     } else {

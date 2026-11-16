@@ -2,6 +2,7 @@
 //! All native effects run through the instance's retained Job/Installation.
 mod construction;
 pub(crate) mod identity;
+mod installs;
 pub(crate) mod instance;
 mod operations;
 mod program;
@@ -47,6 +48,7 @@ pub(crate) struct Control {
     instances: Vec<Instance>,
     creates: construction::Ledger,
     operations: operations::Journal,
+    installs: installs::Journal,
     next: u64,
     pub loader: Loader,
     pub roster: Roster,
@@ -81,6 +83,7 @@ impl Control {
             instances,
             creates: construction::Ledger::new(CAPACITY)?,
             operations: operations::Journal::new(CAPACITY)?,
+            installs: installs::Journal::default(),
             next: 1,
             loader,
             roster: Roster::default(),
@@ -1184,6 +1187,76 @@ impl Control {
             .iter()
             .find(|instance| instance.running() && instance.contains_caller(caller))
             .and_then(|instance| instance.program.clone())
+    }
+    fn installed_status(&self, entry: installs::Intent) -> system_protocol::supply::InstallStatus {
+        match entry {
+            installs::Intent::Cancelled(id) => {
+                system_protocol::supply::InstallStatus::cancelled(id)
+            }
+            installs::Intent::Accepted(request) => self
+                .instance(request.instance.sequence)
+                .inspect_install(request.id),
+        }
+    }
+    pub fn install_supply(
+        &mut self,
+        services: &Services,
+        sources: &Registry,
+        caller: TaskId,
+        request: system_protocol::supply::Install,
+    ) -> Result<system_protocol::supply::InstallStatus, system_protocol::supply::Fail> {
+        use system_protocol::supply::Fail;
+        if let Some(old) = self.installs.replay(caller, &request)? {
+            return Ok(self.installed_status(old));
+        }
+        if self.closing || self.supply_unit(caller).is_none() {
+            return Err(Fail::Denied);
+        }
+        let at = self
+            .owned_instance(services, caller, request.instance)
+            .map_err(|error| match error {
+                system_protocol::control::instance::Fail::Unknown => Fail::Unknown,
+                _ => Fail::Denied,
+            })?;
+        let (root, key, resource) = sources.offered(caller, request.source, request.rights.0)?;
+        self.installs.reserve()?;
+        let request = Arc::new(request);
+        let delivery = self.instances[at].prepare_install(
+            caller,
+            request.clone(),
+            services,
+            root,
+            (key, resource),
+        )?;
+        self.installs.insert(caller, request.clone());
+        self.instances[at].commit_install(delivery);
+        Ok(self.instances[at].inspect_install(request.id))
+    }
+    pub fn inspect_install(
+        &self,
+        caller: TaskId,
+        id: system_protocol::supply::InstallId,
+    ) -> Result<system_protocol::supply::InstallStatus, system_protocol::supply::Fail> {
+        self.installs
+            .find(caller, id)
+            .map(|entry| self.installed_status(entry))
+            .ok_or(system_protocol::supply::Fail::Unknown)
+    }
+    pub fn cancel_install(
+        &mut self,
+        caller: TaskId,
+        id: system_protocol::supply::InstallId,
+    ) -> Result<system_protocol::supply::InstallStatus, system_protocol::supply::Fail> {
+        let entry = self.installs.cancel(caller, id)?;
+        if let installs::Intent::Accepted(request) = &entry {
+            let at = self
+                .instances
+                .iter_mut()
+                .find(|instance| instance.id == request.instance.sequence)
+                .expect("accepted installation Instance");
+            at.cancel_install(id);
+        }
+        Ok(self.installed_status(entry))
     }
     pub fn supply_provider(&self, caller: TaskId) -> Option<&'static str> {
         self.supply_unit(caller).map(|unit| unit.name())

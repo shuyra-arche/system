@@ -5,7 +5,7 @@ mod providers;
 use alloc::{string::String, vec::Vec};
 use kernel_api::model::{
     identity::{Mark, PendId, TaskId},
-    pend::Limits,
+    pend::{Limits, Operations, PendScope},
 };
 use native::{Resource, Source};
 use system_protocol::supply::{self as api, Fail, LeaseId, State};
@@ -37,6 +37,31 @@ impl Registry {
             .find(|row| row.source == source && row.resource == resource)
             .map(|row| (row.root, row.maximum))
             .or_else(|| self.providers.find(source, resource))
+    }
+    pub fn offered(
+        &self,
+        caller: TaskId,
+        id: api::RegistrationId,
+        rights: Limits,
+    ) -> Result<(PendId, &str, &str), Fail> {
+        let request = self.providers.owned(caller, id)?;
+        if !rights.valid()
+            || rights.operations.words()[1] == 0
+            || !request.maximum.0.permits_narrowing(rights)
+        {
+            return Err(Fail::Denied);
+        }
+        let root = PendId::try_from(request.offered).map_err(|_| Fail::Bad)?;
+        let info = native::inspect(root)?;
+        let mut derive = rights;
+        derive.distributable = kernel_api::model::pend::Distributable::Yes;
+        if info.status != kernel_api::model::pend::PendStatus::Active
+            || info.lender != caller
+            || !info.limits.permits_narrowing(derive)
+        {
+            return Err(Fail::SourceLost);
+        }
+        Ok((root, &request.source.name, &request.resource.name))
     }
     pub fn advance(&mut self, mut exited: impl FnMut(TaskId) -> bool) -> Result<(), Fail> {
         self.providers.advance(
@@ -87,14 +112,39 @@ impl Registry {
             // Publish the cleanup owner before registration can derive a root.
             owner.sources.push(source);
             let source = owner.sources.last_mut().unwrap();
-            source.register(Resource {
-                name: &binding.resource.name,
-                source: root,
-                maximum: binding.rights.0,
-                caller,
-                target: Some(target),
-                description: &[],
-            })?;
+            // This owner is already published. CPU Object registration Busy
+            // has no published heir/root in the pinned Kernel; retry only that
+            // unchanged operation, never identity or namespace installation.
+            let retry = matches!(
+                binding.rights.0.operations,
+                Operations::Sign(_) | Operations::Clone(_)
+            ) && matches!(binding.rights.0.scope, PendScope::Object);
+            let deadline = if retry {
+                kernel_client::call::room::clock()
+                    .saturating_add(crate::system::app::services::LIMIT_NS)
+            } else {
+                0
+            };
+            loop {
+                match source.register(Resource {
+                    name: &binding.resource.name,
+                    source: root,
+                    maximum: binding.rights.0,
+                    caller,
+                    target: Some(target),
+                    description: &[],
+                }) {
+                    Err(Fail::Pending)
+                        if retry && kernel_client::call::room::clock() < deadline =>
+                    {
+                        kernel_client::call::room::yield_();
+                    }
+                    result => {
+                        result?;
+                        break;
+                    }
+                }
+            }
             source.acquire(
                 caller,
                 api::Acquire {
@@ -266,6 +316,14 @@ impl Service {
                         .register(caller, provider, request, native::inspect)
                 };
                 answer!(Register, value)
+            }
+            // These methods are routed to the Instance coordinator by ingress.
+            Q::Install(_) => answer!(Install, Err::<api::InstallStatus, _>(Fail::Denied)),
+            Q::InspectInstall(_) => {
+                answer!(InspectInstall, Err::<api::InstallStatus, _>(Fail::Denied))
+            }
+            Q::CancelInstall(_) => {
+                answer!(CancelInstall, Err::<api::InstallStatus, _>(Fail::Denied))
             }
             Q::InspectSource(request) => answer!(
                 InspectSource,

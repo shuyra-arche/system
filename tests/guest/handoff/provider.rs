@@ -2,14 +2,20 @@
 //! No private System Source implementation participates in this scenario.
 use super::*;
 use supply::{Registration, RegistrationId, SourceState, SourceStatus};
-fn status(client: &mut system_client::supply::Client, id: RegistrationId) -> SourceStatus {
+pub(super) fn status(
+    client: &mut system_client::supply::Client,
+    id: RegistrationId,
+) -> SourceStatus {
     success(finish(
         client
             .begin::<supply::operations::InspectSource>(Registration { id }, deadline())
             .unwrap(),
     ))
 }
-fn register(client: &mut system_client::supply::Client, request: supply::Register) -> SourceStatus {
+pub(super) fn register(
+    client: &mut system_client::supply::Client,
+    request: supply::Register,
+) -> SourceStatus {
     loop {
         match finish(
             client
@@ -22,7 +28,7 @@ fn register(client: &mut system_client::supply::Client, request: supply::Registe
         }
     }
 }
-fn accord(source: PendId, target: AccordTarget, limits: Limits) -> PendId {
+pub(super) fn accord(source: PendId, target: AccordTarget, limits: Limits) -> PendId {
     let bytes = AccordRequest {
         src: source,
         target,
@@ -53,27 +59,33 @@ pub(super) fn self_lease(
         distributable: Distributable::No,
         scope: PendScope::Object,
     };
-    let mut value = success(finish(
-        client
-            .begin::<supply::operations::Acquire>(
-                supply::Acquire {
-                    lease,
-                    target: caller.into(),
-                    binding: supply::Binding {
-                        source: supply::Key {
-                            name: "controller".into(),
-                        },
-                        resource: supply::Key {
-                            name: "signal".into(),
-                        },
-                        slot: system_protocol::Mark::new(DEVICE + 1),
-                        rights: Rights(maximum),
-                    },
-                },
-                deadline(),
-            )
-            .unwrap(),
-    ));
+    let request = supply::Acquire {
+        lease,
+        target: caller.into(),
+        binding: supply::Binding {
+            source: supply::Key {
+                name: "controller".into(),
+            },
+            resource: supply::Key {
+                name: "signal".into(),
+            },
+            slot: system_protocol::Mark::new(DEVICE + 1),
+            rights: Rights(maximum),
+        },
+    };
+    let mut value = loop {
+        match finish(
+            client
+                .begin::<supply::operations::Acquire>(request.clone(), deadline())
+                .unwrap(),
+        ) {
+            Outcome::Success(value) => break value,
+            // Pre-commit contention accepts no lease; retain the same ID,
+            // request and original role deadline rather than minting a retry.
+            Outcome::Failure(supply::Fail::Pending) => query_tick(budget()),
+            failure => panic!("consumer acquisition {failure:?}"),
+        }
+    };
     while value.state != supply::State::Granted {
         query_tick(budget());
         value = success(finish(
@@ -193,74 +205,16 @@ pub(super) fn run(license: PendId, context: Context) {
             offered: remote.into(),
             maximum: Rights(maximum),
         };
+        assert_eq!(
+            register(&mut provider, request.clone()).state,
+            SourceState::Active
+        );
         if round == 0 {
-            let mut reserved = request.clone();
-            reserved.source.name = "system".into();
             assert_eq!(
-                finish(
-                    provider
-                        .begin::<supply::operations::Register>(reserved, deadline())
-                        .unwrap()
-                ),
-                Outcome::Failure(supply::Fail::Conflict)
-            );
-            let mut spoof = request.clone();
-            spoof.source.name = "driver".into();
-            assert_eq!(
-                finish(
-                    provider
-                        .begin::<supply::operations::Register>(spoof, deadline())
-                        .unwrap()
-                ),
-                Outcome::Failure(supply::Fail::Denied)
-            );
-            let mut escalation = request.clone();
-            escalation.maximum.0.operations =
-                Operations::Sign(SignRights::TRIGGER | SignRights::LISTEN);
-            assert_eq!(
-                finish(
-                    provider
-                        .begin::<supply::operations::Register>(escalation, deadline())
-                        .unwrap()
-                ),
-                Outcome::Failure(supply::Fail::Denied)
+                register(&mut provider, request.clone()).state,
+                SourceState::Active
             );
         }
-        assert_eq!(
-            register(&mut provider, request.clone()).state,
-            SourceState::Active
-        );
-        assert_eq!(
-            register(&mut provider, request.clone()).state,
-            SourceState::Active
-        );
-        let mut conflict = request.clone();
-        conflict.resource.name = "different".into();
-        assert_eq!(
-            finish(
-                provider
-                    .begin::<supply::operations::Register>(conflict, deadline())
-                    .unwrap()
-            ),
-            Outcome::Failure(supply::Fail::Conflict)
-        );
-        // Consumer cancellation has no authority over a registration with the
-        // same numeric ID. No cross-Task Acquire bypass is introduced.
-        let cancelled = success(finish(
-            provider
-                .begin::<supply::operations::Cancel>(
-                    supply::Lease {
-                        lease: supply::LeaseId::new(round + 1).unwrap(),
-                    },
-                    deadline(),
-                )
-                .unwrap(),
-        ));
-        assert_eq!(cancelled.state, supply::State::Closed);
-        assert_eq!(
-            status(&mut provider, registration).state,
-            SourceState::Active
-        );
         if let Some((old, resource, observed)) = previous.take() {
             // Same live Task, same source/resource, new root. The previous
             // Service source cache must not be reused for this Acquire.
@@ -389,24 +343,26 @@ pub(super) fn run(license: PendId, context: Context) {
         let resource = bind_resource(&mut discovery, target);
         ping(&resource, &observed, license, context.clone(), false);
         // The existing consumer contract still rejects an arbitrary other Task.
-        let unauthorized = supply::Acquire {
-            lease: supply::LeaseId::new(50 + round).unwrap(),
-            target: observed.task,
-            binding: supply::Binding {
-                source: request.source.clone(),
-                resource: request.resource.clone(),
-                slot: system_protocol::Mark::new(DEVICE),
-                rights: Rights(maximum),
-            },
-        };
-        assert_eq!(
-            finish(
-                provider
-                    .begin::<supply::operations::Acquire>(unauthorized, deadline())
-                    .unwrap()
-            ),
-            Outcome::Failure(supply::Fail::Denied)
-        );
+        if round == 0 {
+            let unauthorized = supply::Acquire {
+                lease: supply::LeaseId::new(50 + round).unwrap(),
+                target: observed.task,
+                binding: supply::Binding {
+                    source: request.source.clone(),
+                    resource: request.resource.clone(),
+                    slot: system_protocol::Mark::new(DEVICE),
+                    rights: Rights(maximum),
+                },
+            };
+            assert_eq!(
+                finish(
+                    provider
+                        .begin::<supply::operations::Acquire>(unauthorized, deadline())
+                        .unwrap()
+                ),
+                Outcome::Failure(supply::Fail::Denied)
+            );
+        }
         if round == 0 {
             let closing = success(finish(
                 provider
@@ -428,10 +384,6 @@ pub(super) fn run(license: PendId, context: Context) {
         while status(&mut provider, registration).state != SourceState::Closed {
             query_tick(budget());
         }
-        assert_eq!(
-            register(&mut provider, request.clone()).state,
-            SourceState::Closed
-        );
         ping(&resource, &observed, license, context.clone(), true);
         // Original provider authority survives withdrawal of the offered branch.
         sign::trigger(signal).unwrap();
@@ -461,6 +413,179 @@ pub(super) fn run(license: PendId, context: Context) {
             assert_eq!(observe(&mut control, target).phase, api::Phase::Retired);
         }
     }
+    retire(signal);
+    let _ = writeln!(
+        Console,
+        "PASS handoff provider=1 register=1 installed=1 replay=1 revoke=1 ancestor=1 rebind=1"
+    );
+}
+
+#[cfg(feature = "provider")]
+pub(super) fn pressure(license: PendId) {
+    let endpoint = find(|info| info.mark == Mark::new(8));
+    let root = clone_view::create(
+        license,
+        Mark::of("supply-contention"),
+        CloneLimits {
+            max_len: 1,
+            max_messages: 1,
+            max_bytes: 1,
+        },
+    )
+    .unwrap();
+    let bytes = AccordRequest {
+        src: root,
+        target: AccordTarget::Task(endpoint.owner),
+        mark: Mark::NONE,
+        limits: Limits {
+            operations: Operations::Clone(CloneRights::PEEK),
+            modifiable: Modifiable::No,
+            distributable: Distributable::No,
+            scope: PendScope::Object,
+        },
+    }
+    .to_bytes();
+    let until = room::clock() + 12_000_000_000;
+    let mut pairs = 0;
+    let mut busy = 0;
+    while room::clock() < until {
+        let token = loop {
+            match pend::accord(VirtAddr::new(bytes.as_ptr().addr())) {
+                Ok(token) => break token,
+                Err(error) if error.source.is_busy() => {
+                    busy += 1;
+                    tick(budget());
+                }
+                error => panic!("pressure accord {error:?}"),
+            }
+        };
+        while let Err(error) = pend::revoke(endpoint.owner, token) {
+            assert!(error.source.is_busy(), "pressure revoke {error:?}");
+            busy += 1;
+            tick(budget());
+        }
+        pairs += 1;
+        room::yield_();
+    }
+    retire(root);
+    let _ = writeln!(
+        Console,
+        "PASS supply-contention pairs={pairs} busy={busy} returned=1"
+    );
+}
+
+/// Admission/correlation obligations get their own role budget. The lifecycle
+/// VM keeps both Driver generations and the same-live-Driver replacement path.
+pub(super) fn auth(license: PendId, context: Context) {
+    let source_endpoint = find(|info| info.mark == Mark::new(8));
+    let mut provider = system_client::supply::Client::bind(
+        source_endpoint.token,
+        source_endpoint.owner,
+        license,
+        context,
+    )
+    .unwrap();
+    let signal = sign::create(license).unwrap();
+    let maximum = Limits {
+        operations: Operations::Sign(SignRights::TRIGGER),
+        modifiable: Modifiable::No,
+        distributable: Distributable::No,
+        scope: PendScope::Object,
+    };
+    let mut delegation = maximum;
+    delegation.distributable = Distributable::Yes;
+    let offer = accord(signal, AccordTarget::Caller, delegation);
+    let remote = accord(offer, AccordTarget::Task(source_endpoint.owner), delegation);
+    let registration = RegistrationId::new(1).unwrap();
+    let request = supply::Register {
+        id: registration,
+        source: supply::Key {
+            name: "controller".into(),
+        },
+        resource: supply::Key {
+            name: "signal".into(),
+        },
+        offered: remote.into(),
+        maximum: Rights(maximum),
+    };
+    let mut reserved = request.clone();
+    reserved.source.name = "system".into();
+    assert_eq!(
+        finish(
+            provider
+                .begin::<supply::operations::Register>(reserved, deadline())
+                .unwrap()
+        ),
+        Outcome::Failure(supply::Fail::Conflict)
+    );
+    let mut spoof = request.clone();
+    spoof.source.name = "driver".into();
+    assert_eq!(
+        finish(
+            provider
+                .begin::<supply::operations::Register>(spoof, deadline())
+                .unwrap()
+        ),
+        Outcome::Failure(supply::Fail::Denied)
+    );
+    let mut escalation = request.clone();
+    escalation.maximum.0.operations = Operations::Sign(SignRights::TRIGGER | SignRights::LISTEN);
+    assert_eq!(
+        finish(
+            provider
+                .begin::<supply::operations::Register>(escalation, deadline())
+                .unwrap()
+        ),
+        Outcome::Failure(supply::Fail::Denied)
+    );
+    assert_eq!(
+        register(&mut provider, request.clone()).state,
+        SourceState::Active
+    );
+    assert_eq!(
+        register(&mut provider, request.clone()).state,
+        SourceState::Active
+    );
+    let mut conflict = request.clone();
+    conflict.resource.name = "different".into();
+    assert_eq!(
+        finish(
+            provider
+                .begin::<supply::operations::Register>(conflict, deadline())
+                .unwrap()
+        ),
+        Outcome::Failure(supply::Fail::Conflict)
+    );
+    // Consumer cancellation has no authority over a registration with the
+    // same numeric ID. No cross-Task Acquire bypass is introduced.
+    let cancelled = success(finish(
+        provider
+            .begin::<supply::operations::Cancel>(
+                supply::Lease {
+                    lease: supply::LeaseId::new(1).unwrap(),
+                },
+                deadline(),
+            )
+            .unwrap(),
+    ));
+    assert_eq!(cancelled.state, supply::State::Closed);
+    assert_eq!(
+        status(&mut provider, registration).state,
+        SourceState::Active
+    );
+    success(finish(
+        provider
+            .begin::<supply::operations::Withdraw>(Registration { id: registration }, deadline())
+            .unwrap(),
+    ));
+    while status(&mut provider, registration).state != SourceState::Closed {
+        query_tick(budget());
+    }
+    assert_eq!(
+        register(&mut provider, request.clone()).state,
+        SourceState::Closed
+    );
+    retire(offer);
     let cancelled = RegistrationId::new(99).unwrap();
     assert_eq!(
         success(finish(
@@ -494,9 +619,16 @@ pub(super) fn run(license: PendId, context: Context) {
     // Cancelled never accepted the input. Retire the provider-owned offering
     // branch explicitly; Closed is reserved for an accepted branch's completion.
     retire(offer);
+    sign::trigger(signal).unwrap();
+    let kernel_api::abi::call::sign::SignReply::Triggered { sequence } =
+        sign::listen(signal, Wait::Poll).unwrap()
+    else {
+        panic!("original source lost")
+    };
+    sign::consume(signal, sequence).unwrap();
     retire(signal);
     let _ = writeln!(
         Console,
-        "PASS handoff provider=1 register=1 installed=1 replay=1 revoke=1 ancestor=1 rebind=1"
+        "PASS handoff supply-auth=1 replay=1 tombstone=1 rights=1 retained=1"
     );
 }

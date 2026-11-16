@@ -251,3 +251,24 @@ fn unseen_withdraw_cancels_late_registration_without_accepting_its_input_grant()
     assert!(p.closed());
     assert!(p.find("hub", "signal").is_none());
 }
+
+#[test]
+fn installation_selects_only_the_exact_callers_active_registration() {
+    let mut providers = Providers::default();
+    let old = request(1);
+    register(&mut providers, old.clone()).unwrap();
+    assert_eq!(providers.owned(caller(), old.id), Ok(&old));
+    assert_eq!(providers.owned(TaskId::new(8), old.id), Err(Fail::Unknown));
+    providers.withdraw(caller(), old.id).unwrap();
+    assert_eq!(providers.owned(caller(), old.id), Err(Fail::SourceLost));
+    providers.advance(|_, _| false, |_| Ok(true)).unwrap();
+    register(&mut providers, request(2)).unwrap();
+    assert_eq!(providers.owned(caller(), old.id), Err(Fail::SourceLost));
+    assert_eq!(
+        providers.owned(caller(), RegistrationId::new(2).unwrap()),
+        Ok(&request(2))
+    );
+    let cancelled = RegistrationId::new(3).unwrap();
+    providers.withdraw(caller(), cancelled).unwrap();
+    assert_eq!(providers.owned(caller(), cancelled), Err(Fail::SourceLost));
+}

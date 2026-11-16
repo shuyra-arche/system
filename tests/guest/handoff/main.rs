@@ -13,6 +13,8 @@ pub mod termination;
 pub mod runtime {
     pub use crate::{memory, termination};
 }
+#[cfg(feature = "install")]
+mod install;
 mod owner;
 #[path = "../../../server/src/protocol/mod.rs"]
 pub mod protocol;
@@ -819,7 +821,15 @@ fn cancellation(client: &mut system_client::instance::Client, subject: &identity
     let _ = writeln!(Console, "PASS handoff lost-reply=1 pending-cancel=1");
 }
 
-fn driver(license: PendId, context: Context, authorization: bool, installed: bool) -> ! {
+fn driver(
+    license: PendId,
+    context: Context,
+    authorization: bool,
+    installed: bool,
+    dynamic: bool,
+) -> ! {
+    let dynamic = cfg!(feature = "install") && dynamic;
+    let installed = cfg!(feature = "provider") && installed;
     let info = own();
     let UnitTarget::Task(caller) = info.target else {
         panic!("Task")
@@ -830,7 +840,7 @@ fn driver(license: PendId, context: Context, authorization: bool, installed: boo
         Operations::Sign(SignRights::TRIGGER)
     );
     assert_eq!(device.limits.distributable, Distributable::No);
-    if installed {
+    if installed || dynamic {
         assert_eq!(
             device.lender, info.creator,
             "System performs declared installation"
@@ -845,6 +855,8 @@ fn driver(license: PendId, context: Context, authorization: bool, installed: boo
     } else {
         None
     };
+    let second = dynamic.then(|| find(|info| info.mark == Mark::new(DEVICE + 1)).token);
+    let third = dynamic.then(|| find(|info| info.mark == Mark::new(DEVICE + 2)).token);
     let mut lease = 1;
     if let Some(client) = supplied.as_mut() {
         provider::self_lease(client, caller, lease, false);
@@ -861,6 +873,15 @@ fn driver(license: PendId, context: Context, authorization: bool, installed: boo
     .unwrap();
     assert_eq!(access.root.registration.task.get(), caller.get() as u64);
     assert_eq!(access.root.phase, operator::unit::Phase::Preparing);
+    #[cfg(feature = "install")]
+    if dynamic {
+        install::foreign(
+            license,
+            context.clone(),
+            access.root.registration.instance,
+            caller,
+        );
+    }
     let grant = &access.grant;
     assert_eq!(grant.spec.holder.get(), caller.get() as u64);
     assert_eq!(grant.spec.source.0, Some(caller.into()));
@@ -976,7 +997,18 @@ fn driver(license: PendId, context: Context, authorization: bool, installed: boo
                 if name == "observer" {
                     observer = true;
                 }
-                let reason = if name == "acquire" && installed {
+                let reason = if dynamic && name == "second" {
+                    sign::trigger(second.unwrap()).unwrap();
+                    2
+                } else if dynamic && name == "third" {
+                    sign::trigger(third.unwrap()).unwrap();
+                    3
+                } else if dynamic && name == "revoked-second" {
+                    let error =
+                        sign::trigger(second.unwrap()).expect_err("withdrawn second installation");
+                    assert!(!error.source.is_busy());
+                    4
+                } else if name == "acquire" && installed {
                     provider::self_lease(supplied.as_mut().unwrap(), caller, lease, true);
                     lease += 1;
                     2
@@ -1033,20 +1065,46 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
     });
     // SAFETY: Kernel supplies one copied word on this Task's live stack.
     let role = unsafe { *words };
-    if role == 9 {
+    if !cfg!(feature = "provider") && role == 9 {
         owner::driver(license, context)
     }
-    if matches!(role, 7 | 8 | 10 | 11 | 12 | 13) {
+    if !cfg!(feature = "provider") && matches!(role, 7 | 8 | 10 | 11 | 12 | 13) {
         owner::run(license, context, role);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
     }
-    if role == 14 {
+    #[cfg(feature = "provider")]
+    if role == 19 {
+        provider::pressure(license);
+        unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    }
+    #[cfg(feature = "install")]
+    if matches!(role, 16 | 18) {
+        install::run(license, context, role == 18);
+        unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    }
+    if cfg!(feature = "provider") && role == 20 {
+        provider::auth(license, context);
+        unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    }
+    if cfg!(feature = "provider") && role == 14 {
         provider::run(license, context);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
     }
-    if matches!(role, 1 | 5 | 15) {
-        driver(license, context, role == 1, role == 15)
+    if (!cfg!(feature = "provider") && matches!(role, 1 | 5))
+        || (cfg!(feature = "provider") && role == 15)
+        || (cfg!(feature = "install") && role == 17)
+    {
+        driver(
+            license,
+            context,
+            !cfg!(feature = "provider") && role == 1,
+            cfg!(feature = "provider") && role == 15,
+            cfg!(feature = "install") && role == 17,
+        )
     }
-    controller(license, context, role);
-    unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    if !cfg!(feature = "provider") {
+        controller(license, context, role);
+        unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    }
+    panic!("role unavailable in selected fixture feature")
 }

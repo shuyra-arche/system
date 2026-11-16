@@ -7,6 +7,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 pub const MAX_DESCRIPTION: usize = 128;
 pub const MAX_LEASES: usize = 256;
+pub const MAX_INSTALLATIONS: usize = 256;
 request_id!(LeaseId);
 #[derive(Clone, Copy, Debug, PartialEq, Eq, weave::Code)]
 #[repr(u8)]
@@ -29,6 +30,7 @@ pub enum Fail {
     Full = 5,
     Pending = 6,
     SourceLost = 7,
+    NotReady = 8,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Key {
@@ -234,6 +236,57 @@ pub struct SourceStatus {
     pub state: SourceState,
 }
 
+// Separate from consumer leases, registrations and Instance operation IDs.
+request_id!(InstallId);
+#[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
+pub struct Install {
+    pub id: InstallId,
+    pub source: RegistrationId,
+    pub instance: crate::control::instance::InstanceId,
+    /// Exact Task from the caller's Prepared observation; System revalidates it.
+    pub target: TaskId,
+    pub slot: Mark,
+    pub rights: Rights,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, weave::Frame)]
+pub struct Installation {
+    pub id: InstallId,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, weave::Code)]
+#[repr(u8)]
+pub enum InstallState {
+    Pending = 1,
+    Granted = 2,
+    Releasing = 3,
+    Released = 4,
+    Cancelled = 5,
+}
+#[derive(Clone, Debug, PartialEq, Eq, weave::Frame)]
+pub struct InstallStatus {
+    pub id: InstallId,
+    #[frame(code)]
+    pub state: InstallState,
+    pub instance: Optional<crate::control::instance::InstanceId>,
+    pub target: TaskId,
+    pub slot: Mark,
+    /// Recipient-local token, available only while Granted; never caller-local.
+    pub delivery: Optional<Delivery>,
+    pub failure: Optional<weave::Coded<Fail>>,
+}
+impl InstallStatus {
+    pub fn cancelled(id: InstallId) -> Self {
+        Self {
+            id,
+            state: InstallState::Cancelled,
+            instance: Optional(None),
+            target: TaskId::NONE,
+            slot: Mark::NONE,
+            delivery: Optional(None),
+            failure: Optional(None),
+        }
+    }
+}
+
 #[weave::interface(tag = u8)]
 pub mod operations {
     #[operation(code = 1, request = super::Acquire, response = super::Outcome<super::Reply, super::Fail>)]
@@ -250,6 +303,12 @@ pub mod operations {
     pub struct InspectSource;
     #[operation(code = 7, request = super::Registration, response = super::Outcome<super::SourceStatus, super::Fail>)]
     pub struct Withdraw;
+    #[operation(code = 8, request = super::Install, response = super::Outcome<super::InstallStatus, super::Fail>)]
+    pub struct Install;
+    #[operation(code = 9, request = super::Installation, response = super::Outcome<super::InstallStatus, super::Fail>)]
+    pub struct InspectInstall;
+    #[operation(code = 10, request = super::Installation, response = super::Outcome<super::InstallStatus, super::Fail>)]
+    pub struct CancelInstall;
 }
 
 #[derive(weave::Contract)]

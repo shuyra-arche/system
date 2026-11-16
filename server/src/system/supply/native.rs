@@ -135,7 +135,7 @@ impl Source {
             .find(|lease| lease.caller == caller && lease.request.lease == request.lease)
         {
             return if old.request == request {
-                reply(old)
+                self.inspect(caller, request.lease)
             } else {
                 Err(Fail::Conflict)
             };
@@ -231,15 +231,33 @@ impl Source {
             state: State::Acquiring,
             failure: None,
         });
-        reply(self.leases.last().unwrap())
+        self.inspect(caller, self.leases.last().unwrap().request.lease)
     }
-    pub fn inspect(&self, caller: TaskId, id: LeaseId) -> Result<api::Reply, Fail> {
-        if let Some(lease) = self
-            .leases
+    /// Physical lease facts remain observable after a failure. Existing Inspect
+    /// preserves its error contract; retirement owners must still settle roots.
+    pub fn evidence(
+        &self,
+        caller: TaskId,
+        id: LeaseId,
+    ) -> Option<(State, Option<Fail>, Option<api::Delivery>)> {
+        self.leases
             .iter()
             .find(|lease| lease.caller == caller && lease.request.lease == id)
-        {
-            return reply(lease);
+            .map(|lease| (lease.state, lease.failure, lease.delivery.clone()))
+    }
+    pub fn inspect(&self, caller: TaskId, id: LeaseId) -> Result<api::Reply, Fail> {
+        if let Some((state, failure, delivery)) = self.evidence(caller, id) {
+            return match failure {
+                Some(failure) => Err(failure),
+                None => Ok(api::Reply {
+                    state,
+                    delivery: Optional(if state == State::Granted {
+                        delivery
+                    } else {
+                        None
+                    }),
+                }),
+            };
         }
         if self.cancelled.contains(&(caller, id))
             || self
@@ -266,7 +284,7 @@ impl Source {
         if lease.state != State::Released {
             lease.state = State::Releasing;
         }
-        reply(lease)
+        self.inspect(caller, id)
     }
     /// Cancel-before-acquire closes this exact origin/ID; it cannot later mint.
     pub fn cancel(&mut self, caller: TaskId, id: LeaseId) -> Result<api::Reply, Fail> {
@@ -429,19 +447,6 @@ impl Source {
         }
         Ok(true)
     }
-}
-fn reply(lease: &Lease) -> Result<api::Reply, Fail> {
-    if let Some(failure) = lease.failure {
-        return Err(failure);
-    }
-    Ok(api::Reply {
-        state: lease.state,
-        delivery: Optional(if lease.state == State::Granted {
-            lease.delivery.clone()
-        } else {
-            None
-        }),
-    })
 }
 fn valid_key(name: &str) -> bool {
     !name.is_empty() && name.len() <= 128 && !name.chars().any(char::is_control)

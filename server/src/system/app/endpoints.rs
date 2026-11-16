@@ -170,13 +170,25 @@ impl Endpoints {
                 }),
         );
         check(self.supply.1.serve_once(Wait::Poll, |caller, request| {
-            supply.answer(
-                sources,
-                caller,
-                control.supply_provider(caller),
-                &control.supply_policy(caller),
-                request,
-            )
+            use supply::operations::{DecodedRequest as Q, Response as R};
+            match request {
+                Q::Install(request) => R::Install(outcome(
+                    control.install_supply(services, sources, caller, request),
+                )),
+                Q::InspectInstall(request) => {
+                    R::InspectInstall(outcome(control.inspect_install(caller, request.id)))
+                }
+                Q::CancelInstall(request) => {
+                    R::CancelInstall(outcome(control.cancel_install(caller, request.id)))
+                }
+                request => supply.answer(
+                    sources,
+                    caller,
+                    control.supply_provider(caller),
+                    &control.supply_policy(caller),
+                    request,
+                ),
+            }
         }));
     }
     pub fn finish(&mut self) {
@@ -209,5 +221,12 @@ fn check(result: Result<(), protocol::Error>) {
         // Retained receive/return obligations remain inside this live endpoint.
         Err(protocol::Error::Serve(_)) => (),
         Err(_) => fatal("system: ingress state lost"),
+    }
+}
+
+fn outcome<T, E>(result: Result<T, E>) -> system_protocol::value::Outcome<T, E> {
+    match result {
+        Ok(value) => system_protocol::value::Outcome::Success(value),
+        Err(failure) => system_protocol::value::Outcome::Failure(failure),
     }
 }
