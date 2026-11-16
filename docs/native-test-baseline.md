@@ -112,11 +112,10 @@ receipt. Retry does not overwrite first-attempt evidence.
 
 ## Host coverage: current entry to planned owner
 
-There are **114 current Host `#[test]` functions**, counted from Rust source
+At the fixed M0 snapshot, there were **114 current Host `#[test]` functions**, counted from Rust source
 under the active API, Client, Support, Server, Identity-state and Operator-policy
-test roots. This is a source count, not a claim that tests were run in this M0
-inventory. The current CI runs them through the commands in the root README and
-`native.yml`.
+test roots. This is the M0 source count, not a claim that tests were run in that
+snapshot. The baseline CI invoked them through the root README and `native.yml`.
 
 | Current entry and count | Semantic owner / contract | Planned entry after M1 |
 | --- | --- | --- |
@@ -139,13 +138,12 @@ CI Host invocation groups are: API/Client/Support integration tests;
 current test attributes rather than copied from the older inventory or prior
 CI notes.
 
-The Host-only production test hooks still called out by the current inventory
-must not be treated as assertion-free simply because M1 changes their test
-entry: Identity book, Identity revision, Operator authority, Operator tree
-gate, and test-only Identity `root()` helper/private exhaustion checks (the
-underlying hooks are enumerated in current source). Port exhaustion and
-behavior through meaningful transitions before hook removal; do not add public
-test counters or widen production API.
+At M0, the Identity book/revision and Operator authority/tree tests depended on
+production `#[cfg(test)]` hooks, including a test-only Identity `root()` helper
+and private exhaustion checks. In the current tree those hooks and the helper
+have been removed; `server/src/` contains no `#[cfg(test)]` test hooks. The
+owner suites reach private production behavior through test-local source
+facades instead of adding production test counters or public API.
 
 ## Native scenario mapping
 
@@ -180,8 +178,10 @@ CI-produced hashes as execution provenance.
 These historical manifests are not current coverage and are not to be
 revived by restoring retired Env/Wire/ECS or SDK dependency graphs. The
 semantic assertion must gain a current owner test before its old package is
-removed. The existing older inventory contains the longer assertion-by-assertion
-notes; this compact queue binds each to M1 owner work:
+removed. This queue is frozen as recorded at M0; current package dispositions
+are summarized below and individual maps are linked from the test inventory.
+The existing older inventory contains the longer assertion-by-assertion notes;
+this compact queue binds each to M1 owner work:
 
 | Historical entry | Safety/contract assertions still requiring current-owner disposition |
 | --- | --- |
@@ -200,7 +200,79 @@ the Host mock/script or a matching test name alone is insufficient.
 
 ## Completion status
 
-This page records M0 only. M1 host ownership migration, M2 native guest and
-runner migration, M3 CI transition, and M4 clean-checkout acceptance are not
-declared complete here. No behavior, deadline, retry rule, provider pin,
-profile/Hart selection or acceptance criterion is relaxed by this baseline.
+M0 is a fixed baseline, not a completion or all-green acceptance report. Its
+selected inputs, original matrix and recorded CI result remain preserved above.
+
+## Current migration status
+
+The tables above are the fixed M0 snapshot at System
+`332d9d2e15f6bc4e1e8d94e4db2591b1a53ae613`. They remain unchanged as historical
+baseline evidence. The current status below was checked against System
+`34b8aa9349795a7b489f68222a1812516fb2bada`; it does not rewrite M0's CI result,
+protected matrix or acceptance rules.
+
+### M1: Host owner migration and history
+
+The original 114-function Host set is represented in the current suites, which
+now contain 130 functions: 92 Server tests (`app` 7, `control` 19,
+`control-retirement` 5, `identity` 19, `loader` 3, `operator` 21,
+`operator-watch` 4, `runtime` 6, `supply` 8) and 38 API/Client/Support tests.
+The additional 16 assertions came from follow-on migration and regression
+coverage. The candidate Rust Runner has 11 unit tests, and the App pack checker
+has 4; neither count is included in the 130 Host functions.
+
+All production `#[cfg(test)]` hooks have been removed from `server/src/`.
+Private owner behavior is compiled through test-local facades. Recent Control
+work extracted private publication and shutdown policy helpers while keeping
+the effect order; the predicate suite grew from 17 to 19 tests. This is a
+production source refactor, not a claim of no production code changes.
+
+Two historical packages have been removed after migration: `dynamic-units`,
+whose stable declaration assertions now live in App Host tests, and
+`capability-import`, whose stable Watch owner transitions now compile the real
+Operator Watch source with scripted Host Kernel/transport effects. The rest of
+the historical safety queue remains open where stable invariants lack a
+current owner assertion or require native evidence. See the assertion-level
+[historical inventory](test-inventory.md), [service map](service-test-migration.md),
+and [Control map](control-test-migration.md). Host fakes do not establish
+native Kernel behavior or product acceptance.
+
+### M2: target migration and candidate runner
+
+The target definitions are under `server/tests/target/`, and the Rust host
+runner is under `server/tests/runner/`. A candidate result is not final parity
+sign-off. On System `59b1a65`, the retained Native workflow run
+[43812239225](https://github.com/shuyra-arche/system/actions/runs/43812239225)
+passed 22/23 jobs; `Handoff / supply / Kernel debug / System debug / Harts 1`
+failed. Candidate Rust Runner run
+[43812239288](https://github.com/shuyra-arche/system/actions/runs/43812239288)
+passed 23/23 jobs on that same System revision. A same-old-archive replay using
+the generic Rust process engine and current System checker passed, showing the
+failure is timing-sensitive and not simply a Runner check omission. The full
+scenario-by-scenario equivalence review and final acceptance are still open.
+This later evidence is separate from M0's 22/23 result at run 43802055998 and
+its Handoff timeout; neither should be reported as an all-green old gate.
+
+The same-old-archive replay using the generic Rust process engine and current
+System checker passed. This supports the timing-sensitive diagnosis; it is not
+the final scenario-by-scenario equivalence review. Raw execution logs remain
+invocation/CI artifacts rather than permanent documentation inputs.
+
+### M3: CI transition
+
+The original 23-job Native CI and its Python runners remain the repository's
+gates. The candidate Runner has not replaced that workflow, and M3 CI transition
+is not complete.
+
+The runner's process-settlement helper comes from independent Kernel PR #219,
+selected through System's Host-only `kernel-verification` pin
+`ad360f86c9472d79d6c087edb8d03aa1f0906161`. Product/native Kernel remains
+`789ffd19b5359f3de172fb9aad8a61f6a7113a64`; this helper pin does not change the
+provider selected by native builds.
+
+### M4: clean-checkout and product acceptance
+
+M4 clean-checkout acceptance is not complete. Full System/Toolchain, hardware,
+public S1/S2, and cross-provider product acceptance remain separate and open.
+No behavior, deadline, retry rule, provider pin, profile/Hart selection or
+acceptance criterion is relaxed by the candidate runner or this status update.

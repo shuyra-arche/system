@@ -6,7 +6,30 @@ Historical snapshot: System `470e97f38aa904c3702b665c0d225809b9f0d16e`
 assertion-port queue remains relevant to [System #13](https://github.com/shuyra-arche/system/issues/13),
 but its counts and path/status descriptions are not the current #28 M0
 baseline. See the [native test migration baseline](native-test-baseline.md)
-for System `332d9d2e15f6bc4e1e8d94e4db2591b1a53ae613` on 2026-11-16.
+for the fixed System `332d9d2e15f6bc4e1e8d94e4db2591b1a53ae613` M0 snapshot
+on 2026-11-16 and its separately dated current migration status.
+
+## Current #28 migration status
+
+This file preserves the #13 package/count snapshot below; do not read those
+tables as the current checkout inventory. Since that snapshot, the active Host
+tests have moved to owner-aligned suites under `server/tests/host/`, and the
+native scenario tree has moved under `server/tests/target/`. The fixed M0 set of
+114 Host functions remains the migration baseline. At System
+`34b8aa9349795a7b489f68222a1812516fb2bada`, the active Host suites contain 130
+functions: 92 Server owner tests plus 38 API, Client and Support tests. The 16
+additional assertions were added during owner migration and regression work.
+The candidate Rust runner has 11 unit tests and the App pack checker has 4
+tests; those counts are separate from the Host count.
+
+Only two historical packages have been removed after their current-owner
+assertions were added: `dynamic-units` (App declarations) and
+`capability-import` (Operator Watch). The remaining historical packages still
+contain unported stable safety assertions or native/integration-only gaps.
+Their source and gaps remain mapped in the [service migration map](service-test-migration.md),
+[Control migration map](control-test-migration.md), and the [fixed baseline](native-test-baseline.md).
+No statement here declares M1, native parity, CI transition or clean-checkout
+acceptance complete.
 
 ## Scope and evidence
 
@@ -51,10 +74,11 @@ policy. The seven Server owner suites contain 77 current Host tests and are
 registered explicitly with `[[test]]` targets and
 directory `mod.rs` entry points. Identity and Operator tests are now part of the
 same Server Host package and remain focused Cargo targets. Their prior inline
-test-module source paths now point into the owner-aligned test tree; these
-`cfg(test)` hooks remain where assertions inspect private owner state. The
-test-only Identity `root()` helper was removed, and the monotonic revision
-exhaustion assertion remains in the Identity suite.
+test-module source paths describe the #13 snapshot. At that snapshot,
+`cfg(test)` hooks remained where assertions inspected private owner state. In
+the later #28 migration these hooks and the test-only Identity `root()` helper
+were removed; the monotonic revision exhaustion assertion remains in the
+Identity owner suite. See the current status section above.
 
 ## Guest and composition packages
 
@@ -115,10 +139,10 @@ already covers every old fault or pressure campaign.
 | supply | Historical / port | Supply registry/leases: acquisition, rollback, release and device retirement |
 | system-shape | Historical / retire shape; port semantic assertions | Retire universal three-parameter and old ECS/injected-hook/path rules. Port retirement order, same-Team pause/resume, dependency direction and owner privacy as behavior or dependency checks |
 
-No historical sources or evidence archives are deleted by this first owner pass.
-The three migrated Host manifests are removed after their assertions and CI
-commands are relocated. One Server test manifest replaces them (42 manifests
-repository-wide below test directories, excluding the four workspace manifests).
+This #13 snapshot's manifest count is historical. In the later #28 migration,
+`dynamic-units` and `capability-import` were removed only after their stable
+assertions gained current owner tests. Other historical sources remain because
+their safety assertions have not all been ported or accepted as obsolete.
 
 ## `system-support` consumers
 

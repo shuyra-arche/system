@@ -11,6 +11,16 @@ application, provider selection and retirement fixes from #12, #15 and #16.
 progress and assembled-system acceptance. **The complete Server now builds in
 RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**
 
+System #28 tracks test ownership and native runner migration. The fixed M0
+snapshot and current progress are recorded separately in the
+[migration status](docs/native-test-baseline.md). The original 114 Host
+functions remain represented; current suites contain 130 Host tests (92 Server
+owner tests and 38 API/Client/Support tests). Two historical packages were
+removed after their assertions moved to active owners, while other historical
+safety gaps remain open. Owner-aligned Host moves are in place, but M1's
+remaining safety assertion migration, final Rust/native parity sign-off, CI
+transition and M4 acceptance are not complete.
+
 ## Code map
 
 | Entry | Responsibility |
@@ -52,6 +62,12 @@ ABI 11/12 images and old Task descriptors require a coordinated rebuild.
 Every external Capsule and ordinary Task executes in User mode through ECALL;
 Supervisor execution is restricted to Kernel internal work.
 
+The Rust Host Runner's process-settlement helper is independently pinned via
+`kernel-verification` revision
+`ad360f86c9472d79d6c087edb8d03aa1f0906161` from Kernel PR #219. It is used for
+Host process handling only; the native Kernel/provider pin remains
+`789ffd19b5359f3de172fb9aad8a61f6a7113a64`.
+
 System Loader now prepares target-Nest stack backing, argument words and an
 unmapped lower guard before submitting TaskStart. Runtime workers likewise use
 initial-Task-owned guarded heap backing. Worker/Loader records retain their real
@@ -90,10 +106,13 @@ This keeps its default Cargo output separate from the native source packages
 under `server/tests/target/`. See the [owner suites](server/tests/README.md),
 [native scenarios](server/tests/target/README.md) and
 [candidate Rust Runner](server/tests/runner/README.md).
-The migration retains the original Native CI while an equivalent candidate
-matrix runs beside it. Historical safety assertions and the old runners remain
-until their replacements and the required checks are qualified; see
-[the fixed baseline](docs/native-test-baseline.md).
+The original Native CI and its Python runners remain the active gates. A
+candidate Rust Runner is available, and its recorded 23/23 run is not final
+equivalence sign-off. A later old-runner CI attempt on the same System revision
+was 22/23; the Handoff supply debug/debug one-Hart case timed out. An old-archive
+replay passed with the generic Rust process engine and current System checker,
+indicating timing sensitivity, but scenario-by-scenario equivalence review is
+still open. See [the fixed baseline and current status](docs/native-test-baseline.md).
 
 The [runtime guest](tests/guest/runtime/README.md) exercises the production heap,
 Supply lease backend and Client/Ingress with real requests, replies and Task
