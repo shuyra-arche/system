@@ -110,7 +110,7 @@ pre-admission and accepted cancellation, sibling survival, live source withdrawa
 and target retirement are checked with real Kernel effects. `install-loss` is a
 separate VM: a required source disappears while Prepared; the target must retire
 without Ready, settle Released and reject late Start. All original eight scenarios
-remain in the default ten-scenario campaign (120 profile/Hart cases), with the
+remain in the default eleven-scenario campaign (132 profile/Hart cases), with the
 same role/VM/startup bounds and artifact hashing.
 
 The runner builds the seven lifecycle/owner scenarios with the default fixture,
@@ -130,7 +130,7 @@ separate User Team repeatedly deriving/revoking Object Clone grants to the real
 System recipient while public Sign source replacement and Driver construction
 run. Every successful grant and its local source must actually retire. CI runs
 this bounded probe on release Kernel/System at 1/2/4 Harts (three additional VMs;
-the default ten-scenario/four-profile campaign remains 120). Busy counts depend
+the default eleven-scenario/four-profile campaign is 132). Busy counts depend
 on scheduling; zero is valid. The pre-fix two-Hart diagnostic reproduced static
 CPU source registration Pending being treated as permanent construction failure.
 Readiness Sign delivery exposed the same missing CPU retry boundary. Production
@@ -155,3 +155,13 @@ every original and added scenario; only the job boundary and artifact suite name
 change. Native role/VM deadlines are not extended. The preceding combined jobs
 on double-debug one/two Harts were cancelled at 20 minutes during install-loss
 (CI 43793245104); their partial receipts remain unaccepted evidence.
+
+The independent `supply-auth` VM now carries the existing native provider
+name/rights, replay/conflict, consumer-ID isolation and cancellation-tombstone
+assertions. The `supply` VM still builds both Driver generations and proves
+same-live-Driver source replacement, discovery CAS, explicit/ancestor withdrawal,
+original provider rights and complete retirement. The old combined two-generation
+role exhausted its unchanged 120-second debug deadline in CI 43795947454; its
+failed log is retained. Moving the admission obligations to their own VM keeps
+all assertions while giving each bounded scenario its own existing role budget.
+The default is eleven scenarios/132 profile-Hart cases plus three CPU pressure VMs.

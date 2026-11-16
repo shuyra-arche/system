@@ -41,7 +41,7 @@ def main():
     parser.add_argument('--kernel-profile', choices=('debug', 'release'), default='release',
                         help='records the selected platform profile and its handoff execution budget')
     parser.add_argument('--handoff', action='store_true', help='independent-Team Instance/UnitRoot/Supply handoff')
-    scenarios = ('handoff', 'auth', 'cancel', 'death', 'owner', 'owner-cancel', 'owner-death', 'supply', 'install', 'install-loss')
+    scenarios = ('handoff', 'auth', 'cancel', 'death', 'owner', 'owner-cancel', 'owner-death', 'supply', 'supply-auth', 'install', 'install-loss')
     parser.add_argument('--scenarios', choices=(*scenarios, 'supply-contend'), nargs='+', help='selected handoff VMs; default runs every scenario')
     args = parser.parse_args()
     slow_handoff = args.handoff and args.kernel_profile == "debug"
@@ -65,7 +65,7 @@ def main():
     def kind_for(scenario):
         if scenario in ('install', 'install-loss'):
             return 'install'
-        return 'provider' if scenario in ('supply', 'supply-contend') else 'default'
+        return 'provider' if scenario in ('supply', 'supply-auth', 'supply-contend') else 'default'
     images = {}
     for kind in sorted({kind_for(scenario) for scenario in selected}):
         target = user / 'target' / kind if kind != 'default' else user / 'target'

@@ -196,7 +196,8 @@ Released plus actual target retirement, no Driver Ready and a failed late Start.
 Both retain typed exit/retirement and Kernel-admitted System root exit.
 
 The default handoff campaign retains the prior eight scenarios and adds these
-two: ten scenarios × four Kernel/System profile pairs × 1/2/4 Harts = 120 cases.
+two and an independent source-admission VM: eleven scenarios × four Kernel/System
+profile pairs × 1/2/4 Harts = 132 cases.
 Existing role/VM/startup bounds and behavioral criteria are unchanged. The runner
 compiles lifecycle/owner, external provider and post-Prepared roles into separate
 fixture images (default, `provider`, `install`). It records/copies every exact ELF,
@@ -207,7 +208,7 @@ coverage, Toolchain product and physical devices remain separate acceptance.
 
 The additional `supply-contend` release-only CPU probe uses a separate real User
 Team to contend on System's recipient ledger while sources are replaced and
-Drivers are built. CI runs it at 1/2/4 Harts, separately from the 120-case default
+Drivers are built. CI runs it at 1/2/4 Harts, separately from the 132-case default
 campaign. Pre-fix native diagnostics preserve the same construction failure with
 `declared resource lease: Pending`: static CPU registration had no continuation
 for pre-publication Busy. Registry now retains its already-published Source
@@ -218,3 +219,10 @@ as existing Clone delivery. The pinned Kernel's `pend/branch.rs` and
 memory/device effects remain outside this retry policy. The consumer fixture
 retains its original Acquire ID/request/deadline on pre-commit Pending. This
 bounded contention probe does not establish a full fault/pressure matrix.
+
+`supply-auth` carries native source-name/rights denial, exact replay/conflict,
+consumer-ID isolation and unseen-Withdraw tombstones in a separate VM. The main
+`supply` VM retains both Driver generations, the same-live-Driver acquisition
+from the replacement root, namespace CAS, explicit/ancestor withdrawal and actual
+retirement. This moves repeated admission RPCs out of the two-generation role's
+original budget; it removes no contract assertion and extends no deadline.

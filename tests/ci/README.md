@@ -80,11 +80,11 @@ feature/profile metadata, compiler identity and all artifact hashes.
 No workload was accepted based on a Complete event alone, and no target flags,
 warnings, guest deadlines or selected dependencies were changed.
 
-For the Prepared-install increment, the ten default handoff scenarios still run
-all four Kernel/System profile pairs and 1/2/4 Harts (120 VMs), plus the three
+For the Prepared-install increment, the eleven default handoff scenarios still run
+all four Kernel/System profile pairs and 1/2/4 Harts (132 VMs), plus the three
 release CPU contention VMs. Debug-Kernel matrix rows are split into lifecycle
-(seven scenarios) and supply (external provider plus two post-Prepared scenarios).
-Release-Kernel rows retain all ten. The 14 handoff jobs keep max-parallel 6 and
+(seven scenarios) and supply (provider lifecycle, source admission and two post-Prepared scenarios).
+Release-Kernel rows retain all eleven. The 14 handoff jobs keep max-parallel 6 and
 the existing 20-minute per-job bound, with suite-specific artifacts. This yields
 23 required workflow jobs and 22 evidence artifacts/cache posts, without changing
 any role/VM/startup deadline or behavioral/exit criterion. The prior two combined

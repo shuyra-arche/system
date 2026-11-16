@@ -14,6 +14,7 @@ pub fn scenario(value: &str) -> bool {
             | "owner-cancel"
             | "owner-death"
             | "supply"
+            | "supply-auth"
             | "supply-contend"
             | "install"
             | "install-loss"
@@ -102,7 +103,7 @@ pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
             ..Default::default()
         },
     ];
-    if matches!(scenario, "supply" | "supply-contend") {
+    if matches!(scenario, "supply" | "supply-auth" | "supply-contend") {
         catalog[0].loader.args = vec![14];
         catalog[0].control.ready = d::Ready::Signal(0xc0de);
         let mut service = catalog[0].supply.bindings[0].clone();
@@ -131,6 +132,10 @@ pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
         let mut consumer = catalog[0].supply.bindings[1].clone();
         consumer.slot = 9;
         catalog[1].supply.bindings.push(consumer);
+    }
+    if scenario == "supply-auth" {
+        catalog[0].loader.args = vec![20];
+        catalog[0].control.ready = d::Ready::Spawn;
     }
     if scenario == "supply-contend" {
         let mut pressure = catalog[0].clone();
@@ -196,6 +201,7 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
     let serial = String::from_utf8_lossy(log);
     assert!(!serial.contains("FAIL handoff") && !serial.contains("page fault killed"));
     let marker = match scenario {
+        "supply-auth" => "PASS handoff supply-auth=1 replay=1 tombstone=1 rights=1 retained=1",
         "install-loss" => "PASS handoff install-loss=1 start-gate=1 cleanup=1",
         "install" => {
             "PASS handoff post-prepared=1 target=1 replay=1 cancel=1 isolation=1 withdraw=1 retire=1"

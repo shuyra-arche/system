@@ -267,14 +267,14 @@ jobs:
           - { kernel: debug, system: release, harts: '1', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
           - { kernel: debug, system: release, harts: '2', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
           - { kernel: debug, system: release, harts: '4', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
-          - { kernel: debug, system: debug, harts: '1', suite: supply, scenarios: 'supply install install-loss' }
-          - { kernel: debug, system: debug, harts: '2', suite: supply, scenarios: 'supply install install-loss' }
-          - { kernel: debug, system: debug, harts: '4', suite: supply, scenarios: 'supply install install-loss' }
-          - { kernel: debug, system: release, harts: '1', suite: supply, scenarios: 'supply install install-loss' }
-          - { kernel: debug, system: release, harts: '2', suite: supply, scenarios: 'supply install install-loss' }
-          - { kernel: debug, system: release, harts: '4', suite: supply, scenarios: 'supply install install-loss' }
-          - { kernel: release, system: debug, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply install install-loss' }
-          - { kernel: release, system: release, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply install install-loss' }
+          - { kernel: debug, system: debug, harts: '1', suite: supply, scenarios: 'supply supply-auth install install-loss' }
+          - { kernel: debug, system: debug, harts: '2', suite: supply, scenarios: 'supply supply-auth install install-loss' }
+          - { kernel: debug, system: debug, harts: '4', suite: supply, scenarios: 'supply supply-auth install install-loss' }
+          - { kernel: debug, system: release, harts: '1', suite: supply, scenarios: 'supply supply-auth install install-loss' }
+          - { kernel: debug, system: release, harts: '2', suite: supply, scenarios: 'supply supply-auth install install-loss' }
+          - { kernel: debug, system: release, harts: '4', suite: supply, scenarios: 'supply supply-auth install install-loss' }
+          - { kernel: release, system: debug, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
+          - { kernel: release, system: release, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
     container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
     env:
       QEMU_RISCV64: qemu-system-riscv64

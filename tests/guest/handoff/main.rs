@@ -1082,6 +1082,10 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
         install::run(license, context, role == 18);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
     }
+    if cfg!(feature = "provider") && role == 20 {
+        provider::auth(license, context);
+        unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    }
     if cfg!(feature = "provider") && role == 14 {
         provider::run(license, context);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
