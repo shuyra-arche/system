@@ -9,6 +9,8 @@ name = "system-handoff-guest"
 path = "main.rs"
 test = false
 bench = false
+[features]
+install = []
 [dependencies]
 kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "789ffd19b5359f3de172fb9aad8a61f6a7113a64" }
 kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "789ffd19b5359f3de172fb9aad8a61f6a7113a64" }

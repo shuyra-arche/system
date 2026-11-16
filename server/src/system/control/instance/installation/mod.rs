@@ -105,11 +105,19 @@ impl Installation {
                         scope: PendScope::Object,
                     },
                 )
-                .map_err(|_| "readiness delivery")?;
+                .map_err(|failure| {
+                    crate::debug::put(&alloc::format!("system: readiness delivery: {failure:?}\n"));
+                    "readiness delivery"
+                })?;
             }
             sources
                 .lease(&mut self.supplies, services.caller, task, unit.supply())
-                .map_err(|_| "declared resource lease")?;
+                .map_err(|failure| {
+                    crate::debug::put(&alloc::format!(
+                        "system: declared resource lease: {failure:?}\n"
+                    ));
+                    "declared resource lease"
+                })?;
             self.namespaces
                 .install(
                     layout,

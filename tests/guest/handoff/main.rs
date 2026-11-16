@@ -13,6 +13,7 @@ pub mod termination;
 pub mod runtime {
     pub use crate::{memory, termination};
 }
+#[cfg(feature = "install")]
 mod install;
 mod owner;
 #[path = "../../../server/src/protocol/mod.rs"]
@@ -827,6 +828,7 @@ fn driver(
     installed: bool,
     dynamic: bool,
 ) -> ! {
+    let dynamic = cfg!(feature = "install") && dynamic;
     let info = own();
     let UnitTarget::Task(caller) = info.target else {
         panic!("Task")
@@ -870,6 +872,7 @@ fn driver(
     .unwrap();
     assert_eq!(access.root.registration.task.get(), caller.get() as u64);
     assert_eq!(access.root.phase, operator::unit::Phase::Preparing);
+    #[cfg(feature = "install")]
     if dynamic {
         install::foreign(
             license,
@@ -1068,6 +1071,12 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
         owner::run(license, context, role);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
     }
+    #[cfg(feature = "install")]
+    if role == 19 {
+        provider::pressure(license);
+        unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    }
+    #[cfg(feature = "install")]
     if matches!(role, 16 | 18) {
         install::run(license, context, role == 18);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)

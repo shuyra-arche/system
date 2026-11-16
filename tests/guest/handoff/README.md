@@ -112,3 +112,29 @@ separate VM: a required source disappears while Prepared; the target must retire
 without Ready, settle Released and reject late Start. All original eight scenarios
 remain in the default ten-scenario campaign (120 profile/Hart cases), with the
 same role/VM/startup bounds and artifact hashing.
+
+The runner builds the original eight scenarios with the default fixture feature
+set and the two post-Prepared scenarios with `--features install` into a separate
+target directory. Both stay release/LTO; the production Server is identical.
+This keeps new Install RPC monomorphizations out of every legacy Driver image.
+The initial combined image added 48,600 loaded bytes (96,432 ELF file bytes);
+a double-debug one-Hart legacy recovery VM completed its assertions and admitted
+System exit but missed the unchanged 180-second whole-VM bound. That failed
+receipt remains in PR #27. No timeout retry or budget increase accepts it.
+The runner records/copies every selected User ELF with its feature set and hash;
+each VM receipt identifies the actual selected image and archive hash.
+
+The optional `supply-contend` VM uses the `install` fixture feature and adds a
+separate User Team repeatedly deriving/revoking Object Clone grants to the real
+System recipient while public Sign source replacement and Driver construction
+run. Every successful grant and its local source must actually retire. CI runs
+this bounded probe on release Kernel/System at 1/2/4 Harts (three additional VMs;
+the default ten-scenario/four-profile campaign remains 120). Busy counts depend
+on scheduling; zero is valid. The pre-fix two-Hart diagnostic reproduced static
+CPU source registration Pending being treated as permanent construction failure.
+Readiness Sign delivery exposed the same missing CPU retry boundary. Production
+now retries only pre-publication Object Sign/Clone Busy in the existing five-second
+budget while retaining the original owner and request. Other kinds retain their
+original effect/retirement handling. The consumer fixture also retains its same
+LeaseId/request/deadline across a pre-commit Acquire Pending. Failed VMs remain
+failed receipts; no failed assertion or timeout is retried as acceptance.

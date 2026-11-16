@@ -23,7 +23,7 @@ response. The request header is little-endian and precedes the operation code.
 | 2 | Identity queries, binding and installation |
 | 3 | Operator discovery, references and watches |
 | 4 | Loader claim, construction, inspection and cancellation |
-| 5 | Supply lease acquisition, inspection, release and cancellation |
+| 5 | [Supply](../docs/supply.md) consumer leases, source registration and caller-owned Prepared installation |
 | 6 | Operator mutation and authority distribution |
 | 7 | Retirement request and explicit settlement receipt |
 | 8 | Trusted Operator bootstrap wiring |

@@ -197,7 +197,24 @@ Both retain typed exit/retirement and Kernel-admitted System root exit.
 
 The default handoff campaign retains the prior eight scenarios and adds these
 two: ten scenarios × four Kernel/System profile pairs × 1/2/4 Harts = 120 cases.
-Existing role/VM/startup bounds and evidence hashing are unchanged. Standalone
+Existing role/VM/startup bounds and behavioral criteria are unchanged. The runner
+compiles the two new scenarios with the fixture-only `install` feature, keeps
+the prior eight on their default User image, and records/copies both exact ELFs,
+feature sets and hashes with the actual image selected in each VM receipt. Standalone
 Hub boot/consumer integration, provider Task death with an independently owned
 surviving consumer, external Clone-specific campaigns, full pressure/fault
 coverage, Toolchain product and physical devices remain separate acceptance.
+
+The additional `supply-contend` release-only CPU probe uses a separate real User
+Team to contend on System's recipient ledger while sources are replaced and
+Drivers are built. CI runs it at 1/2/4 Harts, separately from the 120-case default
+campaign. Pre-fix native diagnostics preserve the same construction failure with
+`declared resource lease: Pending`: static CPU registration had no continuation
+for pre-publication Busy. Registry now retains its already-published Source
+owner and retries that exact CPU Object operation in the existing five-second
+budget. Object Sign readiness delivery uses the same bounded CPU-only guarantee
+as existing Clone delivery. The pinned Kernel's `pend/branch.rs` and
+`docs/pend-delegation.md` establish that these CPU errors publish no grant;
+memory/device effects remain outside this retry policy. The consumer fixture
+retains its original Acquire ID/request/deadline on pre-commit Pending. This
+bounded contention probe does not establish a full fault/pressure matrix.

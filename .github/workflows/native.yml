@@ -94,8 +94,10 @@ jobs:
         run: cargo clippy --locked --manifest-path tests/guest/runtime/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
       - name: RV64 production entry contract
         run: cargo clippy --locked --manifest-path tests/guest/entry/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
-      - name: RV64 independent-Team handoff consumer
-        run: cargo clippy --locked --manifest-path tests/guest/handoff/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: RV64 independent-Team handoff consumers
+        run: |
+          cargo clippy --locked --manifest-path tests/guest/handoff/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+          cargo clippy --locked --manifest-path tests/guest/handoff/Cargo.toml --features install --target riscv64gc-unknown-none-elf -- -D warnings
       - name: RV64 native Loader and ordinary image
         run: |
           cargo build --locked --manifest-path tests/guest/client/image/Cargo.toml --release --target riscv64gc-unknown-none-elf
@@ -289,6 +291,9 @@ jobs:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
       - name: Independent-Team handoff and owner exit on 1/2/4 Harts
         run: python3 tests/guest/system/run.py tests/ci/target/platforms/instructions/${{ matrix.kernel }} --handoff --kernel-profile ${{ matrix.kernel }} --profile ${{ matrix.system }} --harts ${{ matrix.harts }}
+      - name: CPU source admission with concurrent recipient traffic
+        if: matrix.kernel == 'release' && matrix.system == 'release'
+        run: python3 tests/guest/system/run.py tests/ci/target/platforms/instructions/release --handoff --kernel-profile release --profile release --harts ${{ matrix.harts }} --scenarios supply-contend
       - name: Preserve handoff execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

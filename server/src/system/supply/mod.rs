@@ -5,7 +5,7 @@ mod providers;
 use alloc::{string::String, vec::Vec};
 use kernel_api::model::{
     identity::{Mark, PendId, TaskId},
-    pend::Limits,
+    pend::{Limits, Operations, PendScope},
 };
 use native::{Resource, Source};
 use system_protocol::supply::{self as api, Fail, LeaseId, State};
@@ -112,14 +112,39 @@ impl Registry {
             // Publish the cleanup owner before registration can derive a root.
             owner.sources.push(source);
             let source = owner.sources.last_mut().unwrap();
-            source.register(Resource {
-                name: &binding.resource.name,
-                source: root,
-                maximum: binding.rights.0,
-                caller,
-                target: Some(target),
-                description: &[],
-            })?;
+            // This owner is already published. CPU Object registration Busy
+            // has no published heir/root in the pinned Kernel; retry only that
+            // unchanged operation, never identity or namespace installation.
+            let retry = matches!(
+                binding.rights.0.operations,
+                Operations::Sign(_) | Operations::Clone(_)
+            ) && matches!(binding.rights.0.scope, PendScope::Object);
+            let deadline = if retry {
+                kernel_client::call::room::clock()
+                    .saturating_add(crate::system::app::services::LIMIT_NS)
+            } else {
+                0
+            };
+            loop {
+                match source.register(Resource {
+                    name: &binding.resource.name,
+                    source: root,
+                    maximum: binding.rights.0,
+                    caller,
+                    target: Some(target),
+                    description: &[],
+                }) {
+                    Err(Fail::Pending)
+                        if retry && kernel_client::call::room::clock() < deadline =>
+                    {
+                        kernel_client::call::room::yield_();
+                    }
+                    result => {
+                        result?;
+                        break;
+                    }
+                }
+            }
             source.acquire(
                 caller,
                 api::Acquire {
