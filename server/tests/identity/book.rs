@@ -455,6 +455,114 @@ fn creation_quotas_fail_without_partial_nodes() {
 }
 
 #[test]
+fn allocation_failures_leave_authority_unchanged() {
+    use super::Membership;
+    use crate::without_allocating;
+
+    let installer = TaskId::new(1);
+    let authority = TaskId::new(2);
+    assert!(matches!(
+        without_allocating(|| IdentityBook::new(authority, installer)),
+        Err(Fail::Full)
+    ));
+
+    let mut book = IdentityBook::new(authority, installer).unwrap();
+    let p = root();
+    let mut last = p;
+    while let Ok(q) = without_allocating(|| book.derive(installer, p)) {
+        last = q;
+    }
+    let q = book.derive(installer, p).unwrap();
+    assert_eq!(q.slot, last.slot + 1);
+
+    let task = TaskId::new(3);
+    let authorized = subject(p, &[]);
+    assert_eq!(
+        without_allocating(|| {
+            book.bind(
+                installer,
+                BindingRequest {
+                    task,
+                    install: Install::Authorized(authorized.clone()),
+                },
+            )
+        }),
+        Err(Fail::Full)
+    );
+    assert!(book.resolve(task).is_none());
+    book.bind(
+        installer,
+        BindingRequest {
+            task,
+            install: Install::Authorized(authorized),
+        },
+    )
+    .unwrap();
+
+    let found = FoundId::new(1).unwrap();
+    assert_eq!(
+        without_allocating(|| book.found(task, found)),
+        Err(Fail::Full)
+    );
+    let coalition = book.found(task, found).unwrap();
+    assert_eq!(
+        without_allocating(|| book.found(task, found)),
+        Ok(coalition)
+    );
+    assert_eq!(
+        without_allocating(|| {
+            book.admit(
+                task,
+                Membership {
+                    coalition,
+                    principal: p,
+                },
+            )
+        }),
+        Err(Fail::Full)
+    );
+    assert_eq!(book.amid(p, coalition), Ok(false));
+    book.admit(
+        task,
+        Membership {
+            coalition,
+            principal: p,
+        },
+    )
+    .unwrap();
+    book.bind(
+        installer,
+        BindingRequest {
+            task,
+            install: Install::Authorized(subject(p, &[coalition])),
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        without_allocating(|| { book.page::<PrincipalId>(PageTarget::Members(coalition), None) }),
+        Err(Fail::Full)
+    );
+    assert_eq!(book.amid(p, coalition), Ok(true));
+    assert!(
+        book.page::<PrincipalId>(PageTarget::Members(coalition), None)
+            .is_ok()
+    );
+    assert_eq!(
+        book.expel(
+            task,
+            Membership {
+                coalition,
+                principal: p
+            }
+        ),
+        Ok(())
+    );
+    assert_eq!(book.waive(task), Ok(()));
+    assert_eq!(book.unbind(installer, task), Ok(()));
+}
+
+#[test]
 fn activation_checks_all_grants_before_mutation_and_preserves_attenuation() {
     let (mut book, installer, manager, p) = setup();
     let target = TaskId::new(8);

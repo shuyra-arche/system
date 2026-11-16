@@ -1,6 +1,6 @@
 use system_api::{
-    EntryId, Mark, Name, Path, PendId, TaskId, bootstrap, control, identity, loader, operator,
-    retirement, supply,
+    EntryId, Mark, Name, Path, PendId, TaskId, TeamId, bootstrap, control, identity, loader,
+    operator, retirement, supply,
     value::{Optional, Outcome, Request, Rights},
 };
 use weave::{Code, Codec};
@@ -122,6 +122,33 @@ fn all_service_families_have_bounded_complete_frames() {
     complete(&retirement::operations::Request::Retire(
         retirement::Target { task: TaskId::NONE },
     ));
+}
+
+#[test]
+fn loader_claim_keeps_its_wire_code_and_typed_build_identity() {
+    let request = loader::operations::Request::Claim(loader::Claim {
+        task: TaskId::new(0x0102030405060708),
+    });
+    let mut bytes = vec![
+        0;
+        <loader::operations::Request as Codec>::SIZE
+            .maximum()
+            .unwrap()
+    ];
+    let used = request.encode(&mut bytes).unwrap();
+    assert_eq!(bytes[0], 1);
+    assert!(matches!(
+        loader::operations::Request::decode_exact(&bytes[..used]),
+        Some(loader::operations::DecodedRequest::Claim(claim)) if claim.task == TaskId::new(0x0102030405060708)
+    ));
+    for end in 0..used {
+        assert!(loader::operations::Request::decode_exact(&bytes[..end]).is_none());
+    }
+    complete(&loader::Built {
+        team: TeamId::new(0x1112131415161718),
+        task: TaskId::new(0x2122232425262728),
+        resolve: PendId::new(0x3132333435363738),
+    });
 }
 
 #[test]
