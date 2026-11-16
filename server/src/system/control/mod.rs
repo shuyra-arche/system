@@ -7,6 +7,7 @@ pub(crate) mod instance;
 mod operations;
 mod program;
 mod publication;
+mod shutdown;
 use self::{
     identity::Roster,
     instance::{Instance, InstanceId, Intent},
@@ -336,27 +337,7 @@ impl Control {
         {
             return;
         }
-        let stoppable: Vec<_> = self
-            .programs
-            .iter()
-            .filter_map(|provider| {
-                let id = provider.current()?;
-                let name = provider.declaration.name();
-                let depended_on = self.programs.iter().any(|consumer| {
-                    consumer
-                        .current()
-                        .is_some_and(|other| other != id && !self.instance(other).retired())
-                        && (consumer.declaration.control().requires.contains(&name)
-                            || consumer
-                                .declaration
-                                .control()
-                                .retirement
-                                .iter()
-                                .any(|retirement| retirement.provider == name))
-                });
-                (!depended_on).then_some(id)
-            })
-            .collect();
+        let stoppable = shutdown::stoppable(&self.programs, |id| self.instance(id).retired());
         for instance in &mut self.instances {
             if stoppable.contains(&instance.id) && !instance.retired() {
                 let _ = instance.request(Intent::Stop);

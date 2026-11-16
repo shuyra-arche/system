@@ -93,7 +93,7 @@ deleted to make an inventory look complete.
 | `mutation_requests_enter_the_assembly_queue_with_the_native_parent` | Current owner is `Control::command`/Operation Journal; the journal proves admission/replay but not full Ingress-to-assembly effects. **Ingress composition gap.** |
 | `shared_queue_rotates_unmatched_work_without_starving_other_jobs` | Retired multi-client shared queue scheduler; current ingress facades each own one bounded service connection and Control serially processes commands. The queue fairness mechanism itself is no longer a contract. |
 | `publisher_query_dispatch_uses_marks_and_returns_task`, `named_query_returns_registered_live_task_from_control`, `missing_exited_and_zero_tasks_never_become_successful_facts` | **Gap:** current Control Observe/State/Task query dispatch is not exercised by the Host Control owner suite. Public frame codecs alone do not establish live caller scoping or native task facts. |
-| `shutdown_orders_users_before_providers_and_allows_independent_services`, `stopping_and_debarked_users_still_hold_their_providers`, `scene_users_stop_before_other_services_and_do_not_hold_each_other` | **Gap:** current `Control::close_round` dependency order and retirement declarations need current-owner/native evidence. Keep these behavior contracts; old Scene table APIs are retired. |
+| `shutdown_orders_users_before_providers_and_allows_independent_services`, `stopping_and_debarked_users_still_hold_their_providers`, `scene_users_stop_before_other_services_and_do_not_hold_each_other` | Partial current-owner mapping: `control::programs::shutdown_waits_for_live_required_and_retirement_dependents` checks `close_round`'s real declaration-based dependency selection; the retired Scene table behavior is obsolete. Actual Instance Stop effects, debarked-state liveness, and full close-round progression remain unproven at Host/native boundaries. |
 
 ### `control-rpc`
 
@@ -108,7 +108,7 @@ deleted to make an inventory look complete.
 | --- | --- |
 | `recovery_admission_accepts_only_a_named_supervisor_with_a_retired_target`, `recovery_admission_rejects_dynamic_copy_revocation_and_wrong_retirement`, `recovery_admission_rejects_scope_guard_intent_and_closing` | Partial mapping: current `control::programs::supervision_requires_matching_group_demand_and_unguarded_policy` tests group and guard demand; full Recover authorization/revalidation has no Host Control facade. |
 | `effect_recheck_accepts_the_minted_target_but_repeats_authority`, `pre_build_recheck_repeats_intent_caller_and_closing_before_construction` | **Gap:** current construction and Instance native effects revalidate at Control commit; no current Host test covers those effect boundary checks. |
-| `closing_stops_the_daemon_before_the_supervised_provider`, `intent_policy_keeps_cleanup_and_recovery_out_of_stop_semantics`, `duplicate_ruin_merges_and_nonrecovery_conflicts_keep_the_request`, `merged_ruin_commits_stop_before_and_after_old_pre_and_denies_recovery` | Current high-level Close/Ruin semantics are not represented by the old queue. Dependent shutdown order remains a current App/Control gap; old request-merge detail is retired. |
+| `closing_stops_the_daemon_before_the_supervised_provider`, `intent_policy_keeps_cleanup_and_recovery_out_of_stop_semantics`, `duplicate_ruin_merges_and_nonrecovery_conflicts_keep_the_request`, `merged_ruin_commits_stop_before_and_after_old_pre_and_denies_recovery` | Partial current-owner mapping: `control::programs::shutdown_releases_dependency_chain_from_leaf_toward_provider` checks the current close-round dependent selection order. Full close progression and physical Stop/Retire effects remain unproven; old request-merge detail is retired. |
 | `publisher_identity_survives_accepted_recovery_takeover_while_work_is_denied` | Partial mapping: Program retains its selected Sequence after stop (`control::programs::stopping_preserves_selection_and_does_not_invent_an_attempt`); old publisher takeover authorization is retired with PublisherAsk. |
 | `recovery_finish_transitions_to_embark_and_rolls_back_without_instance`, `explicit_ruin_takes_over_recovery_before_and_after_mint_without_dropping_the_team` | Old Recover/Embark state transitions are replaced by current Start/Stop/Retire and selected Instance ownership. `control::construction` covers retained operation intent; physical Team rollback remains a native gap. |
 | `observation_scope_is_the_same_static_supervisor_scope`, `supervision_validation_authorizes_only_a_complete_started_group` | Partial mapping: `control::programs::supervision_requires_matching_group_demand_and_unguarded_policy`; caller authorization and complete live group checks remain Control command/target behavior. |
@@ -202,6 +202,7 @@ be counted as export admission coverage.
   settled, cleaned and released.
 - The most important unmoved gaps in this queue are `Control::export` admission
   and lookup cleanup, per-Instance namespace installation/retirement
-  compensation, authenticated Control query/Ingress composition, dependent
-  shutdown ordering, and native guard/whole-Team retirement evidence. Keep the
-  historical packages that still contain those assertions.
+  compensation, authenticated Control query/Ingress composition, full
+  close-round progression and physical shutdown effects, and native guard/
+  whole-Team retirement evidence. Keep the historical packages that still
+  contain those assertions.

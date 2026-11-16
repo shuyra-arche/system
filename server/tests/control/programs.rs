@@ -1,5 +1,5 @@
 use super::program::Program;
-use crate::declaration::Unit;
+use crate::{declaration::Unit, shutdown};
 use alloc::sync::Arc;
 use system_protocol::control::instance::Sequence;
 use unit_contract::document as d;
@@ -79,4 +79,115 @@ fn supervision_requires_matching_group_demand_and_unguarded_policy() {
         program.stop();
         assert!(!program.supervised_by("workers"));
     }
+}
+
+fn selected(name: &'static str, id: u64, control: d::Control<&'static str>) -> Program {
+    let mut program = Program::new(Arc::new(
+        Unit::compile(d::v2::Unit {
+            schema: 2,
+            id: name,
+            loader: d::Loader {
+                image: name,
+                ..Default::default()
+            },
+            control,
+            ..Default::default()
+        })
+        .unwrap(),
+    ));
+    program.select(Sequence::new(id).unwrap());
+    program
+}
+
+#[test]
+fn shutdown_waits_for_live_required_and_retirement_dependents() {
+    let provider = selected("provider", 1, d::Control::default());
+    let consumer = selected(
+        "consumer",
+        2,
+        d::Control {
+            requires: vec!["provider"],
+            ..Default::default()
+        },
+    );
+    let programs = [provider, consumer];
+    let live = shutdown::stoppable(&programs, |_| false);
+    assert!(!live.contains(&Sequence::new(1).unwrap()));
+    assert!(live.contains(&Sequence::new(2).unwrap()));
+
+    let retired = shutdown::stoppable(&programs, |id| id == Sequence::new(2).unwrap());
+    assert!(retired.contains(&Sequence::new(1).unwrap()));
+
+    let unselected_dependent = Program::new(Arc::new(
+        Unit::compile(d::v2::Unit {
+            schema: 2,
+            id: "unselected-consumer",
+            loader: d::Loader {
+                image: "unselected-consumer",
+                ..Default::default()
+            },
+            control: d::Control {
+                requires: vec!["provider"],
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    ));
+    let programs = [selected("provider", 1, d::Control::default()), unselected_dependent];
+    let without_live_consumer = shutdown::stoppable(&programs, |_| false);
+    assert!(without_live_consumer.contains(&Sequence::new(1).unwrap()));
+
+    let retirement_consumer = selected(
+        "retirement-consumer",
+        3,
+        d::Control {
+            retirement: vec![d::Retirement {
+                provider: "provider",
+                namespace: 0,
+                face: "service",
+            }],
+            ..Default::default()
+        },
+    );
+    let programs = [
+        selected("provider", 1, d::Control::default()),
+        retirement_consumer,
+    ];
+    let live = shutdown::stoppable(&programs, |_| false);
+    assert!(!live.contains(&Sequence::new(1).unwrap()));
+    assert!(live.contains(&Sequence::new(3).unwrap()));
+}
+
+#[test]
+fn shutdown_releases_dependency_chain_from_leaf_toward_provider() {
+    let root = selected("root", 1, d::Control::default());
+    let middle = selected(
+        "middle",
+        2,
+        d::Control {
+            requires: vec!["root"],
+            ..Default::default()
+        },
+    );
+    let leaf = selected(
+        "leaf",
+        3,
+        d::Control {
+            requires: vec!["middle"],
+            ..Default::default()
+        },
+    );
+    let programs = [root, middle, leaf];
+    let first = shutdown::stoppable(&programs, |_| false);
+    assert_eq!(first, vec![Sequence::new(3).unwrap()]);
+
+    let second = shutdown::stoppable(&programs, |id| id == Sequence::new(3).unwrap());
+    assert!(second.contains(&Sequence::new(2).unwrap()));
+    assert!(!second.contains(&Sequence::new(1).unwrap()));
+
+    let final_round = shutdown::stoppable(&programs, |id| {
+        id == Sequence::new(3).unwrap() || id == Sequence::new(2).unwrap()
+    });
+    assert!(final_round.contains(&Sequence::new(1).unwrap()));
 }

@@ -15,6 +15,8 @@ mod installs;
 mod journal;
 #[path = "../../src/system/control/program.rs"]
 mod program;
+#[path = "../../src/system/control/shutdown.rs"]
+mod shutdown;
 
 mod construction;
 mod installations;
