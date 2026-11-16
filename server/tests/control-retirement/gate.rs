@@ -41,6 +41,23 @@ fn native_task(value: u64) -> TaskId {
     TaskId::try_from(system_protocol::TaskId::new(value)).unwrap()
 }
 
+fn single_fixture(effects: Effects) -> (Gate, Services, Layout) {
+    reset(effects);
+    let declarations = [Retirement {
+        provider: "sensor",
+        namespace: 1,
+        face: "retire",
+    }];
+    (
+        Gate::new(native_task(9), &declarations),
+        Services {
+            license: PendId::try_from(system_protocol::PendId::new(11)).unwrap(),
+            context: super::Context,
+        },
+        Layout,
+    )
+}
+
 fn advance(gate: &mut Gate, services: &Services, layout: &Layout) -> bool {
     gate.advance(services, layout, |provider, namespace| {
         assert!(matches!(
@@ -128,6 +145,73 @@ fn failed_begin_cleanup_and_root_release_remain_retryable() {
                 .filter(|call| call.as_str() == "begin:9")
                 .count(),
             4
+        );
+    });
+}
+
+#[test]
+fn missing_provider_and_transport_poll_failure_keep_the_gate_closed() {
+    let mut scripted = effects();
+    scripted.polls = VecDeque::from([Poll::TransportFailure, Poll::Settled(9)]);
+    let (mut gate, services, layout) = single_fixture(scripted);
+
+    assert!(!gate.advance(&services, &layout, |_, _| None));
+    super::EFFECTS.with(|slot| assert!(slot.borrow().calls.is_empty()));
+
+    assert!(!advance(&mut gate, &services, &layout)); // Begin provider request.
+    assert!(!advance(&mut gate, &services, &layout)); // Lost reply retains cleanup.
+    assert!(!advance(&mut gate, &services, &layout)); // Retry same declared provider.
+    assert!(!advance(&mut gate, &services, &layout)); // Settlement still needs cleanup.
+    assert!(advance(&mut gate, &services, &layout)); // Only settled, clean and released.
+
+    super::EFFECTS.with(|slot| {
+        let calls = &slot.borrow().calls;
+        assert_eq!(
+            calls,
+            &[
+                "begin:9", "poll", "cleanup", "begin:9", "poll", "cleanup", "release"
+            ]
+        );
+    });
+}
+
+#[test]
+fn another_instances_receipt_cannot_discharge_this_instance() {
+    reset(Effects {
+        polls: VecDeque::from([Poll::Settled(10), Poll::Settled(10), Poll::Settled(9)]),
+        ..effects()
+    });
+    let declaration = [Retirement {
+        provider: "sensor",
+        namespace: 1,
+        face: "retire",
+    }];
+    let mut first = Gate::new(native_task(9), &declaration);
+    let mut second = Gate::new(native_task(10), &declaration);
+    let services = Services {
+        license: PendId::try_from(system_protocol::PendId::new(11)).unwrap(),
+        context: super::Context,
+    };
+    let layout = Layout;
+    let mut lookup = |_: &str, _: usize| Some(anchor());
+
+    assert!(!first.advance(&services, &layout, &mut lookup));
+    assert!(!second.advance(&services, &layout, &mut lookup));
+    assert!(!first.advance(&services, &layout, &mut lookup));
+    assert!(!second.advance(&services, &layout, &mut lookup));
+    assert!(!first.advance(&services, &layout, &mut lookup));
+    assert!(second.advance(&services, &layout, &mut lookup));
+    assert!(!first.advance(&services, &layout, &mut lookup));
+    assert!(first.advance(&services, &layout, &mut lookup));
+
+    super::EFFECTS.with(|slot| {
+        let calls = &slot.borrow().calls;
+        assert_eq!(
+            calls,
+            &[
+                "begin:9", "begin:10", "poll", "poll", "cleanup", "begin:9", "cleanup", "release",
+                "poll", "cleanup", "release"
+            ]
         );
     });
 }

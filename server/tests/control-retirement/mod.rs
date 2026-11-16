@@ -26,6 +26,7 @@ pub enum Poll {
     Settled(u64),
     Unsettled(u64),
     Failure,
+    TransportFailure,
 }
 
 #[derive(Default)]
@@ -103,6 +104,7 @@ impl<T> Pending<T> {
                         system_protocol::retirement::Fail::Failed,
                     ),
                 })),
+                Poll::TransportFailure => Err(TransportError),
             }
         })
     }

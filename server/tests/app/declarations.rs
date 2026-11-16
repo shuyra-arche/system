@@ -56,6 +56,12 @@ fn capsule() -> Vec<u8> {
     bytes
 }
 fn catalog(documents: &[d::v2::Unit<&'static str>]) -> Result<Catalog, Error> {
+    catalog_with_user_system_image(documents, false)
+}
+fn catalog_with_user_system_image(
+    documents: &[d::v2::Unit<&'static str>],
+    wrong_system_kind: bool,
+) -> Result<Catalog, Error> {
     let records: Vec<_> = documents.iter().map(record).collect();
     let units: Vec<_> = documents
         .iter()
@@ -68,7 +74,9 @@ fn catalog(documents: &[d::v2::Unit<&'static str>]) -> Result<Catalog, Error> {
     let files: Vec<_> = documents
         .iter()
         .map(|unit| bundle::File {
-            kind: if unit.id == "system" {
+            kind: if unit.id == "system" && wrong_system_kind {
+                bundle::Kind::User
+            } else if unit.id == "system" {
                 bundle::Kind::Supervisor
             } else {
                 bundle::Kind::User
@@ -207,6 +215,14 @@ fn unresolved_authorities_and_readiness_cycles_are_rejected() {
         face: "retired",
     });
     assert!(matches!(catalog(&[system(), a]), Err(Error::Policy)));
+}
+
+#[test]
+fn system_image_kind_must_match_the_declared_supervisor_space() {
+    assert!(matches!(
+        catalog_with_user_system_image(&[system()], true),
+        Err(Error::Image)
+    ));
 }
 
 #[test]
