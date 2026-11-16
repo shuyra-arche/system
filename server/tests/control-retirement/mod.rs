@@ -36,6 +36,7 @@ pub struct Effects {
     pub polls: VecDeque<Poll>,
     pub cleanups: VecDeque<Result<(), TransportError>>,
     pub releases: VecDeque<bool>,
+    pub resource_failures: VecDeque<bool>,
 }
 
 pub mod call {
@@ -171,6 +172,15 @@ mod system {
                     _: op::Entry,
                     _: &str,
                 ) -> Result<op::Resource, op::Fail> {
+                    let fail = crate::EFFECTS.with(|slot| {
+                        slot.borrow_mut()
+                            .resource_failures
+                            .pop_front()
+                            .unwrap_or(false)
+                    });
+                    if fail {
+                        return Err(op::Fail::Unknown);
+                    }
                     Ok(op::Resource {
                         binding: op::Binding {
                             entry: op::Entry {

@@ -176,6 +176,24 @@ fn missing_provider_and_transport_poll_failure_keep_the_gate_closed() {
 }
 
 #[test]
+fn failed_resource_discovery_keeps_the_provider_requirement_for_retry() {
+    let mut scripted = effects();
+    scripted.resource_failures = VecDeque::from([true, false]);
+    scripted.polls = VecDeque::from([Poll::Settled(9)]);
+    let (mut gate, services, layout) = single_fixture(scripted);
+
+    assert!(!gate.advance(&services, &layout, |_, _| Some(anchor())));
+    assert!(!advance(&mut gate, &services, &layout)); // Retry lookup then begin.
+    assert!(!advance(&mut gate, &services, &layout)); // Settled receipt needs cleanup.
+    assert!(advance(&mut gate, &services, &layout)); // Requirement releases only now.
+
+    super::EFFECTS.with(|slot| {
+        let calls = &slot.borrow().calls;
+        assert_eq!(calls, &["begin:9", "poll", "cleanup", "release"]);
+    });
+}
+
+#[test]
 fn another_instances_receipt_cannot_discharge_this_instance() {
     reset(Effects {
         polls: VecDeque::from([Poll::Settled(10), Poll::Settled(10), Poll::Settled(9)]),
