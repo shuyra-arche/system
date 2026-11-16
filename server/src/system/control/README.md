@@ -38,3 +38,12 @@ Host owner contracts now live in `server/tests/` with explicit supervision and
 runtime targets. The complete baseline test/support migration inventory is in
 [`docs/test-inventory.md`](../../../../../docs/test-inventory.md); remaining
 Identity/Operator hooks and historical assertion ports are tracked there.
+
+`installs::Journal` correlates caller-scoped InstallIds with immutable requests or
+cancellation tombstones. It owns no native root or physical status. Each accepted
+post-Prepared delivery belongs to `instance::Installation` alongside declared
+Supply leases. That owner publishes partial work before effects, gates actual
+Start on delivery/settled cancellation, and completes all private branches before
+Instance Retired. Source registration identity, Instance management ownership and
+native target checks are serialized by Control at admission; Kernel rechecks
+actual authority during effects. See [Supply](../../../../../docs/supply.md).

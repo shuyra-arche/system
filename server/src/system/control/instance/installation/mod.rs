@@ -1,5 +1,6 @@
 //! Instance installation owns identity, publication, leases and readiness roots.
 //! Control owns execution; Operator and Identity remain the live authorities.
+pub(super) mod deliveries;
 mod namespace;
 use crate::system::{
     app::{
@@ -11,6 +12,8 @@ use crate::system::{
     supply::{Leases, Registry},
 };
 use alloc::sync::Arc;
+use alloc::vec::Vec;
+use deliveries::Delivery;
 use kernel_api::model::{
     identity::{Mark, PendId, TaskId},
     modifiable::Modifiable,
@@ -34,6 +37,7 @@ pub(crate) struct Installation {
     identity: Option<Installed>,
     pub namespaces: Namespaces,
     supplies: Leases,
+    deliveries: Vec<Delivery>,
     ready: Option<PendId>,
     acknowledged: bool,
     installed: bool,
@@ -128,6 +132,43 @@ impl Installation {
         self.installed = true;
         Ok(())
     }
+    pub fn reserve_delivery(&mut self) -> Result<(), system_protocol::supply::Fail> {
+        self.deliveries
+            .try_reserve(1)
+            .map_err(|_| system_protocol::supply::Fail::Full)
+    }
+    pub fn add_delivery(&mut self, delivery: Delivery) {
+        self.deliveries.push(delivery);
+    }
+    pub fn delivery(&self, id: system_protocol::supply::InstallId) -> Option<&Delivery> {
+        self.deliveries.iter().find(|entry| entry.id() == id)
+    }
+    pub fn cancel_delivery(&mut self, id: system_protocol::supply::InstallId) {
+        self.deliveries
+            .iter_mut()
+            .find(|entry| entry.id() == id)
+            .expect("accepted installation owner")
+            .cancel();
+    }
+    pub fn slot_busy(&self, slot: system_protocol::Mark) -> bool {
+        self.deliveries
+            .iter()
+            .any(|entry| entry.slot() == slot && !entry.released())
+    }
+    pub fn advance_deliveries(&mut self) -> Result<(), &'static str> {
+        for entry in &mut self.deliveries {
+            entry.advance().map_err(|_| "dynamic lease retirement")?;
+        }
+        Ok(())
+    }
+    pub fn deliveries_ready(&self) -> bool {
+        self.deliveries.iter().all(Delivery::ready)
+    }
+    pub fn delivery_failed(&self) -> bool {
+        self.deliveries
+            .iter()
+            .any(|entry| entry.required_failure().is_some())
+    }
     pub fn prepared(&mut self, services: &Services) -> Result<bool, &'static str> {
         if !self.installed {
             return Ok(false);
@@ -168,6 +209,13 @@ impl Installation {
         }
         if !self.supplies.finish().map_err(|_| "lease retirement")? {
             return Ok(false);
+        }
+        for entry in &mut self.deliveries {
+            if !entry.released() {
+                entry.cancel();
+                entry.advance().map_err(|_| "dynamic lease retirement")?;
+                return Ok(false);
+            }
         }
         if let Some(identity) = self.identity.as_mut() {
             if !identity

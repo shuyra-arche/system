@@ -77,9 +77,7 @@ committed, otherwise the retired failed attempt reports Interrupted. The typed
 checker still requires every native exit/retirement and the real System exit.
 
 Use `--scenarios owner owner-cancel owner-death` with `--handoff` for focused
-checks; omitting it retains all seven scenarios. The full four profile pairs
-and three Hart counts now qualify 84 handoff executions, including the original
-48. Release Kernel runs retain 60-second role and 90-second VM bounds.
+checks; omitting it retains every scenario. The original selected-owner campaign adds 36 cases to the first 48. Release Kernel runs retain 60-second role and 90-second VM bounds.
 With `--kernel-profile debug`, the recorded bounds are 120/180 seconds; see the
 [production application guide](../system/README.md) for the measured migration cost.
 
@@ -101,5 +99,16 @@ with no private native Source in that path. Its provider registers before Ready;
 System installs the declared Sign into independent Drivers. It checks explicit
 and ancestor withdrawal, cancellation-before-register, original provider rights,
 ordinary self Acquire and fresh registration selection from the same live Driver.
-The default campaign now has eight scenarios (96 profile/Hart cases). See
+The campaign retains those eight scenarios (96 profile/Hart cases). See
 [the contract](../../../docs/supply.md) for ownership and proof limits.
+
+The `install` scenario creates a Driver without declared device bindings and
+waits for completed Prepared before creating/registering Sign sources. Public
+Install operations then deliver three independent slots to the observed actual
+Task before Start. Replay, lost reply, foreign caller/target/source/slot/rights,
+pre-admission and accepted cancellation, sibling survival, live source withdrawal
+and target retirement are checked with real Kernel effects. `install-loss` is a
+separate VM: a required source disappears while Prepared; the target must retire
+without Ready, settle Released and reject late Start. All original eight scenarios
+remain in the default ten-scenario campaign (120 profile/Hart cases), with the
+same role/VM/startup bounds and artifact hashing.

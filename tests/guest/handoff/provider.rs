@@ -2,14 +2,20 @@
 //! No private System Source implementation participates in this scenario.
 use super::*;
 use supply::{Registration, RegistrationId, SourceState, SourceStatus};
-fn status(client: &mut system_client::supply::Client, id: RegistrationId) -> SourceStatus {
+pub(super) fn status(
+    client: &mut system_client::supply::Client,
+    id: RegistrationId,
+) -> SourceStatus {
     success(finish(
         client
             .begin::<supply::operations::InspectSource>(Registration { id }, deadline())
             .unwrap(),
     ))
 }
-fn register(client: &mut system_client::supply::Client, request: supply::Register) -> SourceStatus {
+pub(super) fn register(
+    client: &mut system_client::supply::Client,
+    request: supply::Register,
+) -> SourceStatus {
     loop {
         match finish(
             client
@@ -22,7 +28,7 @@ fn register(client: &mut system_client::supply::Client, request: supply::Registe
         }
     }
 }
-fn accord(source: PendId, target: AccordTarget, limits: Limits) -> PendId {
+pub(super) fn accord(source: PendId, target: AccordTarget, limits: Limits) -> PendId {
     let bytes = AccordRequest {
         src: source,
         target,

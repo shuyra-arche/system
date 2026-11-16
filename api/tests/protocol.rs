@@ -460,3 +460,73 @@ fn source_status_rejects_unknown_state_and_never_accepts_partial_frames() {
         assert!(supply::SourceStatus::decode_exact(&encoded).is_none());
     }
 }
+
+#[test]
+fn supply_install_frames_keep_distinct_nonzero_ids_and_physical_states() {
+    use kernel_api::model::{
+        modifiable::Modifiable,
+        pend::{Distributable, Limits, Operations, PendScope},
+        sign::SignRights,
+    };
+    let request = supply::Install {
+        id: supply::InstallId::new(1).unwrap(),
+        source: supply::RegistrationId::new(2).unwrap(),
+        instance: control::instance::InstanceId {
+            system: TaskId::new(3),
+            sequence: control::instance::Sequence::new(4).unwrap(),
+        },
+        target: TaskId::new(5),
+        slot: Mark::new(6),
+        rights: Rights(Limits {
+            operations: Operations::Sign(SignRights::TRIGGER),
+            modifiable: Modifiable::No,
+            distributable: Distributable::No,
+            scope: PendScope::Object,
+        }),
+    };
+    complete(&request);
+    assert_eq!(
+        supply::Install::decode_exact(&bytes(&request)),
+        Some(request.clone())
+    );
+    let encoded = bytes(&supply::operations::Request::Install(request.clone()));
+    assert_eq!(encoded[0], 8);
+    assert!(supply::InstallId::decode_exact(&[0; 8]).is_none());
+    for (code, value) in [
+        (
+            9,
+            supply::operations::Request::InspectInstall(supply::Installation { id: request.id }),
+        ),
+        (
+            10,
+            supply::operations::Request::CancelInstall(supply::Installation { id: request.id }),
+        ),
+    ] {
+        assert_eq!(bytes(&value)[0], code);
+        complete(&value);
+    }
+    for state in [
+        supply::InstallState::Pending,
+        supply::InstallState::Granted,
+        supply::InstallState::Releasing,
+        supply::InstallState::Released,
+        supply::InstallState::Cancelled,
+    ] {
+        let status = supply::InstallStatus {
+            id: request.id,
+            state,
+            instance: Optional(Some(request.instance)),
+            target: request.target,
+            slot: request.slot,
+            delivery: Optional(None),
+            failure: Optional(Some(weave::Coded(supply::Fail::SourceLost))),
+        };
+        complete(&status);
+        assert_eq!(
+            supply::InstallStatus::decode_exact(&bytes(&status)),
+            Some(status)
+        );
+    }
+    complete(&supply::InstallStatus::cancelled(request.id));
+    assert_eq!(supply::Fail::NotReady.code(), 8);
+}

@@ -14,6 +14,8 @@ pub fn scenario(value: &str) -> bool {
             | "owner-cancel"
             | "owner-death"
             | "supply"
+            | "install"
+            | "install-loss"
     )
 }
 
@@ -129,6 +131,18 @@ pub fn catalog(scenario: &str) -> Vec<d::v2::Unit<String>> {
         consumer.slot = 9;
         catalog[1].supply.bindings.push(consumer);
     }
+    if matches!(scenario, "install" | "install-loss") {
+        catalog[0].loader.args = vec![if scenario == "install-loss" { 18 } else { 16 }];
+        let mut service = catalog[0].supply.bindings[0].clone();
+        service.source = "system".into();
+        service.resource = "supply".into();
+        service.slot = 8;
+        catalog[0].supply.bindings.push(service.clone());
+        service.slot = 9;
+        catalog[1].supply.bindings.push(service);
+        // No Driver device binding: Create must complete before the source
+        // exists, and Install selects the actual observed Prepared Task.
+    }
     if scenario == "auth" {
         let mut observer = catalog[0].clone();
         observer.id = "observer".into();
@@ -173,6 +187,10 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
     let serial = String::from_utf8_lossy(log);
     assert!(!serial.contains("FAIL handoff") && !serial.contains("page fault killed"));
     let marker = match scenario {
+        "install-loss" => "PASS handoff install-loss=1 start-gate=1 cleanup=1",
+        "install" => {
+            "PASS handoff post-prepared=1 target=1 replay=1 cancel=1 isolation=1 withdraw=1 retire=1"
+        }
         "supply" => {
             "PASS handoff provider=1 register=1 installed=1 replay=1 revoke=1 ancestor=1 rebind=1"
         }
@@ -208,7 +226,10 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
         bound.len()
             >= if matches!(scenario, "handoff" | "auth" | "owner" | "supply") {
                 3
-            } else if matches!(scenario, "owner-cancel" | "owner-death") {
+            } else if matches!(
+                scenario,
+                "owner-cancel" | "owner-death" | "install" | "install-loss"
+            ) {
                 2
             } else {
                 1
@@ -253,6 +274,20 @@ pub fn check(scenario: &str, events: &[Event<String>], log: &[u8]) -> bool {
                     let retired = events.iter().position(|event| matches!(event, Event::Retired { task: observed } if observed == driver_task)).unwrap();
                     assert!(exit(task("owner")) < retired);
                 }
+            }
+        }
+    }
+    if scenario == "install-loss" {
+        for event in events {
+            if let Event::Bound { unit, task, .. } = event
+                && unit == "driver"
+            {
+                assert!(
+                    !events.iter().any(
+                        |event| matches!(event, Event::Ready { task: ready } if ready == task)
+                    ),
+                    "failed Prepared target became Ready"
+                );
             }
         }
     }

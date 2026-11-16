@@ -16,3 +16,7 @@ mod journal;
 #[path = "../../src/system/control/program.rs"]
 mod program;
 mod programs;
+
+mod installations;
+#[path = "../../src/system/control/installs.rs"]
+mod installs;

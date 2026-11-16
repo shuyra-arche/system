@@ -233,6 +233,18 @@ impl Source {
         });
         reply(self.leases.last().unwrap())
     }
+    /// Physical lease facts remain observable after a failure. Existing Inspect
+    /// preserves its error contract; retirement owners must still settle roots.
+    pub fn evidence(
+        &self,
+        caller: TaskId,
+        id: LeaseId,
+    ) -> Option<(State, Option<Fail>, Option<api::Delivery>)> {
+        self.leases
+            .iter()
+            .find(|lease| lease.caller == caller && lease.request.lease == id)
+            .map(|lease| (lease.state, lease.failure, lease.delivery.clone()))
+    }
     pub fn inspect(&self, caller: TaskId, id: LeaseId) -> Result<api::Reply, Fail> {
         if let Some(lease) = self
             .leases

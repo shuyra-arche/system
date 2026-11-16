@@ -160,6 +160,20 @@ impl Providers {
             _ => None,
         })
     }
+    pub fn owned(&self, caller: TaskId, id: RegistrationId) -> Result<&Register, Fail> {
+        let row = self
+            .records
+            .iter()
+            .find(|row| row.caller == caller && row.id() == id)
+            .ok_or(Fail::Unknown)?;
+        match &row.intent {
+            Intent::Accepted {
+                request,
+                phase: Phase::Active,
+            } => Ok(request),
+            _ => Err(Fail::SourceLost),
+        }
+    }
     /// Loss of a provider or grant closes admission. Only the executor's actual
     /// Return/strict missing-record completion may commit Closed. Busy and errors
     /// retain the same root; old records remain for replay and token alias checks.

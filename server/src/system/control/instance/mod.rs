@@ -14,7 +14,7 @@ use crate::system::{
 use alloc::sync::Arc;
 use installation::Installation;
 use kernel_api::model::{
-    identity::TaskId,
+    identity::{Mark, TaskId},
     unit::{UnitQuery, UnitState},
 };
 use retirement::Gate;
@@ -196,6 +196,77 @@ impl Instance {
     pub fn owns_caller(&self, caller: TaskId) -> bool {
         !self.retired() && (self.owner == caller || self.contains_caller(caller))
     }
+    pub fn prepare_install(
+        &mut self,
+        caller: TaskId,
+        request: Arc<system_protocol::supply::Install>,
+        services: &Services,
+        root: kernel_api::model::identity::PendId,
+        source: (&str, &str),
+    ) -> Result<installation::deliveries::Delivery, system_protocol::supply::Fail> {
+        use system_protocol::supply::Fail;
+        if caller != self.owner {
+            return Err(Fail::Denied);
+        }
+        if request.instance.system != services.caller.into() || request.instance.sequence != self.id
+        {
+            return Err(Fail::Unknown);
+        }
+        if self.stage != Stage::Prepared || self.intent != Intent::Dormant || !self.supplied {
+            return Err(Fail::NotReady);
+        }
+        let task = self.job.task().ok_or(Fail::NotReady)?;
+        if request.target != task.into() {
+            return Err(Fail::Denied);
+        }
+        let info = lookup(task).ok_or(Fail::Pending)?;
+        if info.creator != services.caller {
+            return Err(Fail::Denied);
+        }
+        if info.state != UnitState::Dormant || info.reclaimed {
+            return Err(Fail::NotReady);
+        }
+        let slot = Mark::new(request.slot.get());
+        let bootstrap = slot == Mark::NONE
+            || slot == Mark::of("system/operator/discovery")
+            || system_protocol::identity::Grant::ALL
+                .iter()
+                .any(|grant| slot == Mark::of(&alloc::format!("system/identity/{}", grant.name())));
+        let declared = self.program.as_ref().is_some_and(|unit| {
+            unit.supply()
+                .iter()
+                .any(|binding| binding.slot == request.slot)
+                || matches!(unit.control().ready,
+                    unit_contract::document::Ready::Signal(mark) if mark == slot.get())
+        });
+        if bootstrap || declared || self.installation.slot_busy(request.slot) {
+            return Err(Fail::Conflict);
+        }
+        self.installation.reserve_delivery()?;
+        installation::deliveries::Delivery::new(
+            request,
+            services.caller,
+            task,
+            root,
+            source.0,
+            source.1,
+        )
+    }
+    pub fn commit_install(&mut self, delivery: installation::deliveries::Delivery) {
+        self.installation.add_delivery(delivery);
+    }
+    pub fn inspect_install(
+        &self,
+        id: system_protocol::supply::InstallId,
+    ) -> system_protocol::supply::InstallStatus {
+        self.installation
+            .delivery(id)
+            .expect("accepted installation identity")
+            .status()
+    }
+    pub fn cancel_install(&mut self, id: system_protocol::supply::InstallId) {
+        self.installation.cancel_delivery(id);
+    }
     pub fn request(&mut self, intent: Intent) -> Result<(), Fail> {
         if self.retired() {
             return Err(Fail::NotReady);
@@ -267,6 +338,11 @@ impl Instance {
         if self.owner != services.caller
             && lookup(self.owner).is_some_and(|info| info.state == UnitState::Exited)
         {
+            self.intent = Intent::Stop;
+        }
+        self.installation.advance_deliveries()?;
+        if self.stage == Stage::Prepared && self.installation.delivery_failed() {
+            self.failure = Some(Fail::Denied);
             self.intent = Intent::Stop;
         }
         if self.intent == Intent::Stop
@@ -350,7 +426,7 @@ impl Instance {
                     }
                 };
                 self.supplied = prepared;
-                if prepared && self.intent == Intent::Run {
+                if prepared && self.installation.deliveries_ready() && self.intent == Intent::Run {
                     self.job.resume().map_err(|_| "instance start")?;
                     self.stage = Stage::Started;
                 }
