@@ -97,6 +97,7 @@ jobs:
       - name: RV64 independent-Team handoff consumers
         run: |
           cargo clippy --locked --manifest-path tests/guest/handoff/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+          cargo clippy --locked --manifest-path tests/guest/handoff/Cargo.toml --features provider --target riscv64gc-unknown-none-elf -- -D warnings
           cargo clippy --locked --manifest-path tests/guest/handoff/Cargo.toml --features install --target riscv64gc-unknown-none-elf -- -D warnings
       - name: RV64 native Loader and ordinary image
         run: |

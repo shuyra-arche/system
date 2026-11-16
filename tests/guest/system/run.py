@@ -63,17 +63,19 @@ def main():
     user = guest.parent / ('handoff' if args.handoff else 'client/image')
     selected = (args.scenarios or scenarios) if args.handoff else (0, 2, 1)
     def kind_for(scenario):
-        return 'install' if scenario in ('install', 'install-loss', 'supply-contend') else 'default'
+        if scenario in ('install', 'install-loss'):
+            return 'install'
+        return 'provider' if scenario in ('supply', 'supply-contend') else 'default'
     images = {}
     for kind in sorted({kind_for(scenario) for scenario in selected}):
-        target = user / 'target' / 'install' if kind == 'install' else user / 'target'
-        features = ['--features', 'install'] if kind == 'install' else []
+        target = user / 'target' / kind if kind != 'default' else user / 'target'
+        features = ['--features', kind] if kind != 'default' else []
         subprocess.run(['cargo', 'build', '--locked', '--manifest-path', user / 'Cargo.toml',
                         '--release', '--target', triple, '--target-dir', target, *features], check=True,
                        env={**os.environ, 'SHUYRA_HANDOFF_BUDGET_SECONDS': str(handoff_budget)})
         images[kind] = target / triple / 'release' / ('system-handoff-guest' if args.handoff else 'system-loader-image')
-    # Keep the original eight scenarios on their original fixture graph. New
-    # RPC monomorphizations must not inflate every legacy Driver ELF/VM budget.
+    # Compile only the selected lifecycle/provider/install role graphs. RPC
+    # monomorphizations for other scenarios must not consume each VM's budget.
     image = images.get('default', next(iter(images.values())))
     image_hashes = {kind: digest(path) for kind, path in images.items()}
     image_digest = (digest(image) if len(images) == 1 else
@@ -92,7 +94,7 @@ def main():
     boot = output / 'capsule'
     boot.write_bytes(capsule.initrd(system.read_bytes())[4096:])
     shutil.copyfile(system, output / 'system')
-    image_files = {kind: path.name + ('-install' if kind == 'install' else '') for kind, path in images.items()}
+    image_files = {kind: path.name + ('-' + kind if kind != 'default' else '') for kind, path in images.items()}
     for kind, path in images.items():
         shutil.copyfile(path, output / image_files[kind])
     for source, target in [(root / 'Cargo.lock', 'system.lock'),
@@ -110,7 +112,8 @@ def main():
                 'system_dirty': bool(subprocess.check_output([*git, 'status', '--porcelain', '--', '.', ':!.evidence'], cwd=root)),
                 'system_sha256': digest(system), 'user_sha256': digest(image),
                 'user_images': {kind: {'file': image_files[kind], 'sha256': image_hashes[kind],
-                                      'features': ['install'] if kind == 'install' else []}
+                                      'features': ['install', 'provider'] if kind == 'install' else
+                                                  (['provider'] if kind == 'provider' else [])}
                                 for kind in images},
                 'kernel': str(kernel), 'kernel_sha256': digest(kernel),
                 'firmware': firmware,

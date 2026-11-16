@@ -113,9 +113,10 @@ without Ready, settle Released and reject late Start. All original eight scenari
 remain in the default ten-scenario campaign (120 profile/Hart cases), with the
 same role/VM/startup bounds and artifact hashing.
 
-The runner builds the original eight scenarios with the default fixture feature
-set and the two post-Prepared scenarios with `--features install` into a separate
-target directory. Both stay release/LTO; the production Server is identical.
+The runner builds the seven lifecycle/owner scenarios with the default fixture,
+external Supply with `--features provider`, and post-Prepared operations with
+`--features install` (which enables provider). Each uses a separate target
+directory. Every image stays release/LTO; the production Server is identical.
 This keeps new Install RPC monomorphizations out of every legacy Driver image.
 The initial combined image added 48,600 loaded bytes (96,432 ELF file bytes);
 a double-debug one-Hart legacy recovery VM completed its assertions and admitted
@@ -124,7 +125,7 @@ receipt remains in PR #27. No timeout retry or budget increase accepts it.
 The runner records/copies every selected User ELF with its feature set and hash;
 each VM receipt identifies the actual selected image and archive hash.
 
-The optional `supply-contend` VM uses the `install` fixture feature and adds a
+The optional `supply-contend` VM uses the `provider` fixture feature and adds a
 separate User Team repeatedly deriving/revoking Object Clone grants to the real
 System recipient while public Sign source replacement and Driver construction
 run. Every successful grant and its local source must actually retire. CI runs
@@ -138,3 +139,12 @@ budget while retaining the original owner and request. Other kinds retain their
 original effect/retirement handling. The consumer fixture also retains its same
 LeaseId/request/deadline across a pre-commit Acquire Pending. Failed VMs remain
 failed receipts; no failed assertion or timeout is retried as acceptance.
+
+A later exact-head CI still timed out in the original Supply VM on double-debug
+two Harts: all provider assertions and typed Complete appeared, but the admitted
+root exit did not occur within 180 seconds (artifact 14192476785). The provider
+image now excludes unrelated legacy lifecycle/owner entry paths as well; its
+PT_LOAD file bytes are 319,496 locally versus the prior shared fixture's
+405,832 bytes. Lifecycle, provider and install feature selections, exact ELFs and hashes
+remain recorded per VM. Every role/VM/startup limit and behavioral/exit assertion
+is unchanged. This failed receipt is preserved rather than retried as acceptance.

@@ -513,7 +513,7 @@ pub(super) fn run(license: PendId, context: Context) {
     );
 }
 
-#[cfg(feature = "install")]
+#[cfg(feature = "provider")]
 pub(super) fn pressure(license: PendId) {
     let endpoint = find(|info| info.mark == Mark::new(8));
     let root = clone_view::create(

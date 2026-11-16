@@ -829,6 +829,7 @@ fn driver(
     dynamic: bool,
 ) -> ! {
     let dynamic = cfg!(feature = "install") && dynamic;
+    let installed = cfg!(feature = "provider") && installed;
     let info = own();
     let UnitTarget::Task(caller) = info.target else {
         panic!("Task")
@@ -1064,14 +1065,14 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
     });
     // SAFETY: Kernel supplies one copied word on this Task's live stack.
     let role = unsafe { *words };
-    if role == 9 {
+    if !cfg!(feature = "provider") && role == 9 {
         owner::driver(license, context)
     }
-    if matches!(role, 7 | 8 | 10 | 11 | 12 | 13) {
+    if !cfg!(feature = "provider") && matches!(role, 7 | 8 | 10 | 11 | 12 | 13) {
         owner::run(license, context, role);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
     }
-    #[cfg(feature = "install")]
+    #[cfg(feature = "provider")]
     if role == 19 {
         provider::pressure(license);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
@@ -1081,13 +1082,25 @@ extern "C" fn start(words: *const usize, count: usize) -> ! {
         install::run(license, context, role == 18);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
     }
-    if role == 14 {
+    if cfg!(feature = "provider") && role == 14 {
         provider::run(license, context);
         unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
     }
-    if matches!(role, 1 | 5 | 15 | 17) {
-        driver(license, context, role == 1, role == 15, role == 17)
+    if (!cfg!(feature = "provider") && matches!(role, 1 | 5))
+        || (cfg!(feature = "provider") && role == 15)
+        || (cfg!(feature = "install") && role == 17)
+    {
+        driver(
+            license,
+            context,
+            !cfg!(feature = "provider") && role == 1,
+            cfg!(feature = "provider") && role == 15,
+            cfg!(feature = "install") && role == 17,
+        )
     }
-    controller(license, context, role);
-    unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    if !cfg!(feature = "provider") {
+        controller(license, context, role);
+        unit::exit(17, 0, VirtAddr::new(0), 0, ExitScope::Task)
+    }
+    panic!("role unavailable in selected fixture feature")
 }

@@ -198,9 +198,9 @@ Both retain typed exit/retirement and Kernel-admitted System root exit.
 The default handoff campaign retains the prior eight scenarios and adds these
 two: ten scenarios × four Kernel/System profile pairs × 1/2/4 Harts = 120 cases.
 Existing role/VM/startup bounds and behavioral criteria are unchanged. The runner
-compiles the two new scenarios with the fixture-only `install` feature, keeps
-the prior eight on their default User image, and records/copies both exact ELFs,
-feature sets and hashes with the actual image selected in each VM receipt. Standalone
+compiles lifecycle/owner, external provider and post-Prepared roles into separate
+fixture images (default, `provider`, `install`). It records/copies every exact ELF,
+enabled feature set and hash with the actual image selected in each VM receipt. Standalone
 Hub boot/consumer integration, provider Task death with an independently owned
 surviving consumer, external Clone-specific campaigns, full pressure/fault
 coverage, Toolchain product and physical devices remain separate acceptance.
