@@ -18,7 +18,7 @@ longer compiles. Native evidence is named separately from Host evidence.
   scenarios are separately selected native evidence; see the exact paths below.
 
 `dynamic-units` has a complete current Host replacement in App declarations;
-all other packages below retain at least one native-only or current-owner gap
+its obsolete manifest, lock and schema-1 fixture have been removed. All other packages below retain at least one native-only or current-owner gap
 and their historical source must remain until that gap is moved or explicitly
 accepted by the owner.
 

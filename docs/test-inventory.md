@@ -85,14 +85,14 @@ already covers every old fault or pressure campaign.
 | Baseline manifest | Decision | Current semantic owner / assertion to port |
 | --- | --- | --- |
 | bootstrap-carrier | Historical / port | App boot + construction: partial delivery retains roots, retry identity, release order |
-| capability-import | Historical / port | Runtime/Ingress: authenticated source, grant kind/rights and malformed frames |
+| capability-import | Moved / removed | `server/tests/operator/watch/`: forged imports preserve live subscriptions, caller-local retirement and same-path rejoin; Kernel/transport effects remain scripted |
 | control-instance | Historical / port | Instance + Operation: lifecycle effects, partial failure and compensation |
 | control-lifetime | Historical / port | Instance: owner exit, explicit retirement and retained resource roots |
 | control-publisher | Historical / port | Program + Operation: publication CAS and historical receipts |
 | control-query | Historical / port | Control observation: caller scope, cursors and unknown identities |
 | control-rpc | Historical / port | Control ingress: grant authorization, decode and response correlation |
 | daemon-control | Historical / port | Program + Instance: resident demand, recovery and restart ordering |
-| dynamic-units | Historical / port | Declaration + construction: dynamic selection and image/record admission |
+| dynamic-units | Moved / removed | `server/tests/app/declarations.rs`: shared-image Requested Units stay unstarted, missing/cyclic references and image-kind admission reject invalid input |
 | guard-deployment | Historical / port | Control construction: guarded authority and deployment policy |
 | identity | Historical / port | Identity authority: principal, coalition and membership checks |
 | identity-publication | Historical / port | Identity revision publisher: coalesced publication and cache ordering |

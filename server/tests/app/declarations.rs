@@ -71,9 +71,12 @@ fn catalog_with_user_system_image(
             record,
         })
         .collect();
-    let files: Vec<_> = documents
-        .iter()
-        .map(|unit| bundle::File {
+    let mut files = Vec::<bundle::File<'_>>::new();
+    for unit in documents {
+        if files.iter().any(|file| file.name == unit.loader.image) {
+            continue;
+        }
+        files.push(bundle::File {
             kind: if unit.id == "system" && wrong_system_kind {
                 bundle::Kind::User
             } else if unit.id == "system" {
@@ -83,8 +86,8 @@ fn catalog_with_user_system_image(
             },
             name: unit.loader.image,
             bytes: b"ELF",
-        })
-        .collect();
+        });
+    }
     let bytes = Box::leak(
         bundle::pack(&units, &files, 0, 0, &capsule())
             .unwrap()
@@ -180,8 +183,10 @@ fn invalid_permissions_and_kernel_identity_domains_fail_before_effects() {
 fn selection_orders_startup_but_preserves_requested_units_without_starting_them() {
     let mut a = document("a");
     a.control.after = vec!["b", "optional"];
-    let b = document("b");
+    let mut b = document("b");
+    b.loader.image = "shared-bin";
     let mut requested = document("requested");
+    requested.loader.image = "shared-bin";
     requested.control.creation = d::Creation::Requested;
     a.control.requires.push("requested");
     let catalog = catalog(&[system(), a, b, requested]).unwrap();
@@ -194,7 +199,10 @@ fn selection_orders_startup_but_preserves_requested_units_without_starting_them(
             .collect::<Vec<_>>(),
         ["b", "a"]
     );
-    assert!(catalog.find("requested").is_some());
+    assert_eq!(
+        catalog.find("requested").unwrap().loader().image,
+        "shared-bin"
+    );
     assert_eq!(catalog.system(), "system");
 }
 

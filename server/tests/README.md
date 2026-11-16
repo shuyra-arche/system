@@ -11,15 +11,17 @@ The manifest exposes focused suites by semantic owner:
 
 | Target | Protected behavior |
 | --- | --- |
-| `app` | 6 schema-2 declaration and startup selection tests |
-| `control` | 15 caller-scoped construction/install journal, receipt and Program lifecycle tests |
-| `identity` | 18 Identity book, monotonic revision publication and decoded service dispatch tests |
+| `app` | 7 schema-2 declaration and startup selection tests |
+| `control` | 17 caller-scoped construction/install journal, receipt and Program lifecycle tests |
+| `identity` | 19 Identity book, monotonic revision publication and decoded service dispatch tests |
 | `loader` | 3 ELF admission, segment and entry validation tests |
 | `operator` | 21 authority, namespace, roots, admission policy and runtime state tests |
 | `runtime` | 6 scripted memory delivery, retained version, mutation identity and continuation tests |
 | `supply` | 8 external registration, withdrawal and installation selection tests |
+| `control-retirement` | 5 settlement, cleanup, release and cross-Instance retirement tests with scripted provider effects |
+| `operator-watch` | 4 subscription authority, replacement, prefix and cleanup tests with scripted Kernel/transport effects |
 
-The seven migrated targets contain 77 tests and can be selected independently with
+The nine targets contain 90 tests and can be selected independently with
 `cargo test --manifest-path server/tests/host/Cargo.toml --test <target>`.
 The additional `control-retirement` target checks the real Instance retirement
 gate with scripted provider responses, cleanup failures and release retries.
