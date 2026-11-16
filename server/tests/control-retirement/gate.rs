@@ -89,9 +89,9 @@ fn pending_provider_receipt_and_cleanup_block_stop_until_settled() {
 #[test]
 fn failed_begin_cleanup_and_root_release_remain_retryable() {
     let mut scripted = effects();
-    scripted.begins = VecDeque::from([Err(()), Ok(()), Ok(())]);
+    scripted.begins = VecDeque::from([Err(super::TransportError), Ok(()), Ok(())]);
     scripted.polls = VecDeque::from([Poll::Settled(8), Poll::Settled(9), Poll::Settled(9)]);
-    scripted.cleanups = VecDeque::from([Err(()), Ok(()), Ok(()), Ok(())]);
+    scripted.cleanups = VecDeque::from([Err(super::TransportError), Ok(()), Ok(()), Ok(())]);
     scripted.releases = VecDeque::from([false, true, true]);
     let (mut gate, services, layout) = fixture(scripted);
 

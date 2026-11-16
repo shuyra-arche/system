@@ -13,6 +13,8 @@ extern crate self as system_client;
 #[derive(Clone)]
 pub struct Context;
 pub struct Cleanup;
+#[derive(Debug)]
+pub struct TransportError;
 pub struct Pending<T>(PhantomData<T>);
 pub struct Response<T> {
     pub value: T,
@@ -29,9 +31,9 @@ pub enum Poll {
 #[derive(Default)]
 pub struct Effects {
     pub calls: Vec<String>,
-    pub begins: VecDeque<Result<(), ()>>,
+    pub begins: VecDeque<Result<(), TransportError>>,
     pub polls: VecDeque<Poll>,
-    pub cleanups: VecDeque<Result<(), ()>>,
+    pub cleanups: VecDeque<Result<(), TransportError>>,
     pub releases: VecDeque<bool>,
 }
 
@@ -52,7 +54,7 @@ pub fn reset(effects: Effects) {
 }
 
 impl Cleanup {
-    pub fn finish(&mut self) -> Result<(), ()> {
+    pub fn finish(&mut self) -> Result<(), TransportError> {
         EFFECTS.with(|slot| {
             let mut effects = slot.borrow_mut();
             effects.calls.push("cleanup".into());
@@ -73,7 +75,7 @@ impl<T> Pending<T> {
                 >,
             >,
         >,
-        (),
+        TransportError,
     > {
         EFFECTS.with(|slot| {
             let mut effects = slot.borrow_mut();
@@ -122,7 +124,12 @@ pub mod retirement {
     }
 
     impl Client {
-        pub fn bind(_: PendId, _: TaskId, _: PendId, _: super::Context) -> Result<Self, ()> {
+        pub fn bind(
+            _: PendId,
+            _: TaskId,
+            _: PendId,
+            _: super::Context,
+        ) -> Result<Self, super::TransportError> {
             Ok(Self)
         }
 
@@ -132,7 +139,7 @@ pub mod retirement {
                 effects.calls.push(format!("begin:{}", target.task.get()));
                 match effects.begins.pop_front().unwrap_or(Ok(())) {
                     Ok(()) => Ok(Pending(std::marker::PhantomData)),
-                    Err(()) => Err(BeginError { cleanup: Cleanup }),
+                    Err(_) => Err(BeginError { cleanup: Cleanup }),
                 }
             })
         }

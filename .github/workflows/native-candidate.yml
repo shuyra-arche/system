@@ -2,8 +2,6 @@ name: Candidate native System contracts
 
 on:
   pull_request:
-  push:
-    branches: [refactor/native-test-boundaries]
 
 permissions:
   contents: read
@@ -82,9 +80,8 @@ jobs:
           cargo clippy --locked --manifest-path server/tests/runner/Cargo.toml --all-targets --target x86_64-unknown-linux-gnu -- -D warnings
       - name: Host ownership and declaration contracts
         run: |
-          cargo test --locked --manifest-path server/tests/Cargo.toml --target x86_64-unknown-linux-gnu
-          cargo test --locked --manifest-path tests/identity-state/Cargo.toml --target x86_64-unknown-linux-gnu
-          cargo test --locked --manifest-path tests/operator-policy/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo test --locked --manifest-path server/tests/host/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo clippy --locked --manifest-path server/tests/host/Cargo.toml --all-targets --target x86_64-unknown-linux-gnu -- -D warnings
       - name: Complete RV64 Server in both profiles
         run: |
           cargo build --locked -p system-server --bin system --target riscv64gc-unknown-none-elf
@@ -141,15 +138,15 @@ jobs:
           rustc -Vv > .evidence/rustc.txt
           qemu-system-riscv64 --version > .evidence/qemu.txt
           sha256sum "$QEMU_OPENSBI" > .evidence/firmware.txt
-          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- runtime --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/runtime --harts 1 4 > .evidence/runtime.log 2>&1
+          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- runtime --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/runtime --harts 1 4 > .evidence/runtime.log 2>&1
           cat .evidence/runtime.log
       - name: Production entry, immutable boot data and native services on one Hart
-        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry --harts 1
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry --harts 1
       - name: Fatal root retirement and stalled bootstrap
         run: |
-          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry-abort --harts 1 4 --abort > .evidence/entry-abort.log 2>&1
+          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry-abort --harts 1 4 --abort > .evidence/entry-abort.log 2>&1
           cat .evidence/entry-abort.log
-          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry-stall --harts 1 --stall > .evidence/entry-stall.log 2>&1
+          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry-stall --harts 1 --stall > .evidence/entry-stall.log 2>&1
           cat .evidence/entry-stall.log
       - name: Preserve runtime composition evidence
         if: always()
@@ -202,7 +199,7 @@ jobs:
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
       - name: Native ELF construction and User Team retirement on 1/2/4 Harts
-        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- loader --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/loader --harts 1 2 4
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- loader --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/loader --harts 1 2 4
       - name: Preserve Loader execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -246,7 +243,7 @@ jobs:
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
       - name: Complete System application and ordinary User Teams on 1/2/4 Harts
-        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.system }} --kernel-profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/application --harts 1 2 4
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.system }} --kernel-profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/application --harts 1 2 4
       - name: Preserve complete application execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -304,10 +301,10 @@ jobs:
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
       - name: Independent-Team handoff and owner exit on 1/2/4 Harts
-        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --kernel-profile ${{ matrix.kernel }} --profile ${{ matrix.system }} --output server/tests/runner/target/evidence/handoff --harts ${{ matrix.harts }} --scenarios ${{ matrix.scenarios }}
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --kernel-profile ${{ matrix.kernel }} --profile ${{ matrix.system }} --output server/tests/runner/target/evidence/handoff --harts ${{ matrix.harts }} --scenarios ${{ matrix.scenarios }}
       - name: CPU source admission with concurrent recipient traffic
         if: matrix.kernel == 'release' && matrix.system == 'release'
-        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --kernel tests/ci/target/platforms/instructions/release --kernel-profile release --profile release --output server/tests/runner/target/evidence/contention --harts ${{ matrix.harts }} --scenarios supply-contend
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/release --kernel-profile release --profile release --output server/tests/runner/target/evidence/contention --harts ${{ matrix.harts }} --scenarios supply-contend
       - name: Preserve handoff execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

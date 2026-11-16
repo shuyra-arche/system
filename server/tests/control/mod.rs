@@ -9,12 +9,12 @@ mod system {
 #[path = "../../src/system/control/construction/receipts.rs"]
 #[allow(dead_code)]
 mod construction_receipts;
+#[path = "../../src/system/control/installs.rs"]
+mod installs;
 #[path = "../../src/system/control/operations.rs"]
 mod journal;
 #[path = "../../src/system/control/program.rs"]
 mod program;
-#[path = "../../src/system/control/installs.rs"]
-mod installs;
 
 mod construction;
 mod installations;
