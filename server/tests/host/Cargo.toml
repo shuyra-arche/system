@@ -14,6 +14,12 @@ path = "../app/mod.rs"
 name = "control"
 path = "../control/mod.rs"
 
+# This owner uses its own Services and Kernel-effect scripts; keeping it in a
+# separate crate prevents those fake effects from changing the Control suite.
+[[test]]
+name = "control-namespace"
+path = "../control/namespace/mod.rs"
+
 [[test]]
 name = "identity"
 path = "../identity/mod.rs"

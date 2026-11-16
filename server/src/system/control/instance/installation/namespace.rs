@@ -1,4 +1,4 @@
-//! One Instance retains namespace grants, publications and cleanup receipts.
+// One Instance retains namespace grants, publications and cleanup receipts.
 use crate::system::{
     app::{
         namespace::{Layout, result},
@@ -179,7 +179,7 @@ impl Installation {
                 source: Optional(Some(task.into())),
                 source_mark: Optional(ns.source_mark.map(Into::into)),
             };
-            let deadline = kernel_client::call::room::clock().saturating_add(services::LIMIT_NS);
+            let deadline = services::clock().saturating_add(services::LIMIT_NS);
             loop {
                 let granted =
                     result(services.mutate::<op::authority::operations::Grant>(request.clone()))?;
@@ -215,7 +215,7 @@ impl Installation {
                 limits,
             }
             .to_bytes();
-            let root = kernel_client::call::pend::accord(kernel_api::address::VirtAddr::new(
+            let root = services::accord(kernel_api::address::VirtAddr::new(
                 request.as_mut_ptr().addr(),
             ))
             .map_err(|_| op::Fail::Denied)?;
