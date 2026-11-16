@@ -448,7 +448,9 @@ fn pack_entry(root: &Path, boot: &Path, system: &Path, archive: &Path, log: &Pat
         .arg(system)
         .arg(archive)
         .current_dir(root);
-    let result = run_command(&mut command, log, Duration::from_secs(900))?;
+    let mut result = run_command(&mut command, log, Duration::from_secs(900))?;
+    result.passed = result.success();
+    json(&log.join("result.json"), &result)?;
     require(
         result.success(),
         format!("entry pack failed; evidence: {}", log.display()),
@@ -778,11 +780,13 @@ fn application_run(args: Application, handoff: bool) -> Result<()> {
         .arg(&archive)
         .arg(&scenario)
         .current_dir(&root);
-        let pack_result = run_command(
+        let mut pack_result = run_command(
             &mut pack,
             &out.join(format!("pack-{safe}")),
             Duration::from_secs(900),
         )?;
+        pack_result.passed = pack_result.success();
+        json(&out.join(format!("pack-{safe}/result.json")), &pack_result)?;
         require(
             pack_result.success(),
             format!("archive pack failed for {scenario}; see output"),
@@ -923,7 +927,9 @@ fn run_app_checker(
         .arg(target)
         .arg("--");
     command.arg("check").arg(&log).arg(scenario);
-    let result = run_command(&mut command, &dir.join("check"), Duration::from_secs(60))?;
+    let mut result = run_command(&mut command, &dir.join("check"), Duration::from_secs(60))?;
+    result.passed = result.success();
+    json(&dir.join("check/result.json"), &result)?;
     Ok(result.code.unwrap_or(-1))
 }
 
