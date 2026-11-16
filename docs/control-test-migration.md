@@ -185,11 +185,11 @@ be counted as export admission coverage.
 
 | Historical function | Current status |
 | --- | --- |
-| `identity_export_retry_requires_matching_program_and_delivered_receipt` | **Gap:** current Control Export validates a ready caller, declared alias, resolved principal, namespace entry and then calls Identity Associate. There is no test that retries only after matching delivery evidence. |
-| `identity_export_uses_authoritative_operator_entry_reference` | **Gap:** no Control Export owner test proves exact Operator identity/entry/revision matching. |
-| `identity_export_admission_uses_registered_source_and_roster_subtree` | **Gap:** current export checks caller unit and roster subject; namespace source/subtree admission is untested at this composition boundary. |
-| `identity_export_admission_preserves_source_owner_and_forged_reply_guards` | **Gap:** forged/mismatched source and response checks are not covered by the basic Identity revision suite. |
-| `private_lookup_cleanup_keeps_both_resources_and_deduplicates_shared_tokens` | **Gap:** current export must retain/release every lookup read root even when tokens alias. There is no current Host test for that cleanup path. |
+| `identity_export_retry_requires_matching_program_and_delivered_receipt` | Retired contract: current Control Export does not pre-register a grant and consume an `ExistingGrant` receipt. It proves the declared caller/subject/entry and submits one Identity Associate; restoring the old retry API would change the current contract. |
+| `identity_export_uses_authoritative_operator_entry_reference` | Pure current owner mapping: `control::publication::export_requires_the_exact_nonroot_operator_entry_reference` tests operator, node id (including Node 0), revision, and Root rejection. It does not prove live namespace lookup. |
+| `identity_export_admission_uses_registered_source_and_roster_subtree` | Partial: `control::publication::declared_alias_and_current_subject_are_required_for_export` tests exact alias and matching principal; the full live caller, ready Instance and rooted namespace source checks remain in `Control::export` and are not host proven. |
+| `identity_export_admission_preserves_source_owner_and_forged_reply_guards` | Partial: the same current owner test rejects an alias/principal mismatch. Export endpoint caller authentication and forged reply-route behavior remain at the current protocol/Context boundary; no Control Host test claims those effects. |
+| `private_lookup_cleanup_keeps_both_resources_and_deduplicates_shared_tokens` | Retired two-token mechanism: current `Layout::resource` returns one Resource backed by the actual task Context cleanup contract, and `Control::export` releases each successfully resolved Resource before Identity Associate. The test-local `locate`/`actual` token pair is not a current contract. Native cleanup/release acknowledgment remains target evidence. |
 
 ## First-phase changes and remaining work
 

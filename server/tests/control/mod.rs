@@ -19,3 +19,4 @@ mod program;
 mod construction;
 mod installations;
 mod programs;
+mod publication;

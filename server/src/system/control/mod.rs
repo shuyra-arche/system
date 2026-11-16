@@ -6,6 +6,7 @@ mod installs;
 pub(crate) mod instance;
 mod operations;
 mod program;
+mod publication;
 use self::{
     identity::Roster,
     instance::{Instance, InstanceId, Intent},
@@ -1279,14 +1280,12 @@ impl Control {
     ) -> Outcome<(), id::Fail> {
         let value = (|| {
             let unit = self.caller_unit(caller).ok_or(id::Fail::Denied)?;
-            if !unit.identity().aliases.contains(&request.alias.as_str()) {
+            if !publication::declares_alias(&unit.identity().aliases, request.alias.as_str()) {
                 return Err(id::Fail::Denied);
             }
-            let id::IdentityObject::Principal(principal) = request.object else {
-                return Err(id::Fail::Denied);
-            };
+            let principal = publication::principal(&request.object).ok_or(id::Fail::Denied)?;
             let subject = self.roster.subject(services, caller)?;
-            if *subject.principal() != principal {
+            if !publication::matches_subject(principal, &subject) {
                 return Err(id::Fail::Denied);
             }
             let instance = self
@@ -1303,14 +1302,7 @@ impl Control {
                     self.layout
                         .resource(services, anchor, request.binding.as_str())
                 {
-                    proven |= resource.binding.entry.operator == request.entry.operator
-                        && resource.binding.revision == request.entry.revision
-                        && match resource.binding.entry.target {
-                            system_protocol::operator::EntryTarget::Node(id) => {
-                                !request.entry.root && id == request.entry.id
-                            }
-                            system_protocol::operator::EntryTarget::Root => false,
-                        };
+                    proven |= publication::matches_entry(&resource.binding, &request.entry);
                     let token = PendId::try_from(resource.token).map_err(|_| id::Fail::Denied)?;
                     let deadline = kernel_client::call::room::clock()
                         .saturating_add(crate::system::app::services::LIMIT_NS);
