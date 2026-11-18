@@ -94,12 +94,13 @@ The [Loader guest](tests/guest/loader/README.md) separately creates independent
 ordinary User Teams from a native ELF, with private DATA/BSS, cached RX, fresh
 Task request journals, cancellation and explicit retirement on that same heap.
 Its explicit test-platform feature qualifies all-Hart instruction visibility
-for paired 1/2/4-Hart QEMU invocations.
+for explicitly requested multi-Hart QEMU invocations.
 
 The selected Kernel supports bounded all-Hart CPU data completion on the
-qualified coherent-RAM fixture. The runtime CI checks one and four Harts.
+qualified coherent-RAM fixture. Ordinary runtime CI checks one Hart.
 Executable SMP requires explicit all-Hart instruction qualification; the Loader
-CI exercises 1/2/4 Harts in both profiles. Local-only qualification still rejects SMP. The unqualified normal Vanllia platform still rejects native
+CI exercises one Hart in both profiles. Four-Hart SMP qualification remains
+an explicit non-CI target run; local-only qualification still rejects SMP. The unqualified normal Vanllia platform still rejects native
 Publish. Neither boundary may be bypassed by inventing completion proof.
 The [entry guest](tests/guest/entry/README.md) also exercises the production
 entry, native DTB/initrd projections and internal-service bootstrap. The broad
@@ -132,6 +133,7 @@ Release, including explicit retained Busy continuation. Fatal exits stop owned
 same-Team workers and observe reclamation before releasing the root's backing;
 normal completion uses Task scope. Bootstrap's five-second inactivity deadline
 renews only on actual acquired resources, acknowledged phases or completed
-worker initialization steps. Full SMP/debug-Kernel verification is recorded in
-the application scenario and System #13, separately from provider acceptance. Public S1/S2 lifecycle
+worker initialization steps. Historical SMP/debug-Kernel verification is recorded in
+the application scenario and System #13, separately from provider acceptance;
+ordinary CI no longer repeats the multi-Hart matrix. Public S1/S2 lifecycle
 contracts and S3/V0 are not accepted on this revision.
