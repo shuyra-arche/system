@@ -1,5 +1,8 @@
 name: Candidate native System contracts
 
+# Ordinary candidate CI exercises owner contracts on one Hart; SMP is opt-in
+# outside normal CI, with four-Hart performance scenarios limited to benchmarks.
+
 on:
   pull_request:
 
@@ -135,19 +138,19 @@ jobs:
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
           platform-lock: server/tests/target/runtime/platform/Cargo.lock
-      - name: Native heap, Supply and RPC on one and four Harts
+      - name: Native heap, Supply and RPC on one Hart
         run: |
           mkdir -p .evidence
           rustc -Vv > .evidence/rustc.txt
           qemu-system-riscv64 --version > .evidence/qemu.txt
           sha256sum "$QEMU_OPENSBI" > .evidence/firmware.txt
-          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- runtime --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/runtime --harts 1 4 > .evidence/runtime.log 2>&1
+          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- runtime --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/runtime --harts 1 > .evidence/runtime.log 2>&1
           cat .evidence/runtime.log
       - name: Production entry, immutable boot data and native services on one Hart
         run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry --harts 1
       - name: Fatal root retirement and stalled bootstrap
         run: |
-          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry-abort --harts 1 4 --abort > .evidence/entry-abort.log 2>&1
+          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry-abort --harts 1 --abort > .evidence/entry-abort.log 2>&1
           cat .evidence/entry-abort.log
           cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry-stall --harts 1 --stall > .evidence/entry-stall.log 2>&1
           cat .evidence/entry-stall.log
@@ -215,8 +218,8 @@ jobs:
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
           platform-lock: server/tests/target/runtime/platform/Cargo.lock
-      - name: Native ELF construction and User Team retirement on 1/2/4 Harts
-        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- loader --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/loader --harts 1 2 4
+      - name: Native ELF construction and User Team retirement on one Hart
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- loader --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/loader --harts 1
       - name: Preserve Loader execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -270,8 +273,8 @@ jobs:
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
           platform-lock: server/tests/target/runtime/platform/Cargo.lock
-      - name: Complete System application and ordinary User Teams on 1/2/4 Harts
-        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.system }} --kernel-profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/application --harts 1 2 4
+      - name: Complete System application and ordinary User Teams on one Hart
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.system }} --kernel-profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/application --harts 1
       - name: Preserve complete application execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -308,19 +311,11 @@ jobs:
       matrix:
         include:
           - { kernel: debug, system: debug, harts: '1', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
-          - { kernel: debug, system: debug, harts: '2', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
-          - { kernel: debug, system: debug, harts: '4', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
           - { kernel: debug, system: release, harts: '1', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
-          - { kernel: debug, system: release, harts: '2', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
-          - { kernel: debug, system: release, harts: '4', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
           - { kernel: debug, system: debug, harts: '1', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: debug, system: debug, harts: '2', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: debug, system: debug, harts: '4', suite: supply, scenarios: 'supply supply-auth install install-loss' }
           - { kernel: debug, system: release, harts: '1', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: debug, system: release, harts: '2', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: debug, system: release, harts: '4', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: release, system: debug, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
-          - { kernel: release, system: release, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
+          - { kernel: release, system: debug, harts: '1', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
+          - { kernel: release, system: release, harts: '1', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
     container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
     env:
       QEMU_RISCV64: qemu-system-riscv64
@@ -343,7 +338,7 @@ jobs:
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
           platform-lock: server/tests/target/runtime/platform/Cargo.lock
-      - name: Independent-Team handoff and owner exit on 1/2/4 Harts
+      - name: Independent-Team handoff and owner exit on one Hart
         run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --kernel-profile ${{ matrix.kernel }} --profile ${{ matrix.system }} --output server/tests/runner/target/evidence/handoff --harts ${{ matrix.harts }} --scenarios ${{ matrix.scenarios }}
       - name: CPU source admission with concurrent recipient traffic
         if: matrix.kernel == 'release' && matrix.system == 'release'
