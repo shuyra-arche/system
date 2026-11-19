@@ -1,5 +1,5 @@
-//! Stable namespace identities, revisions and publication ownership. Entry IDs
-//! never reuse a tombstone. Root is structural and never aliases entry zero.
+// Stable namespace identities, revisions and publication ownership. Entry IDs
+// never reuse a tombstone. Root is structural and never aliases entry zero.
 use crate::system::operator::authority::{Authority, AuthorityError, GrantKey, GrantSubmission};
 use alloc::{string::String, vec::Vec};
 use kernel_api::model::identity::PendId;

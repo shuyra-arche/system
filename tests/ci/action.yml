@@ -5,6 +5,10 @@ inputs:
     description: Artifact ID emitted by the shared platform producer
     required: false
     default: ''
+  platform-lock:
+    description: Repository-relative lockfile used to qualify the shared platform
+    required: false
+    default: tests/guest/runtime/platform/Cargo.lock
 runs:
   using: composite
   steps:
@@ -37,4 +41,4 @@ runs:
     - name: Verify shared platform identity and contents
       if: inputs.artifact-id != ''
       shell: bash
-      run: tests/ci/verify-platforms.sh tests/ci/target/platforms
+      run: tests/ci/verify-platforms.sh tests/ci/target/platforms "${{ inputs.platform-lock }}"

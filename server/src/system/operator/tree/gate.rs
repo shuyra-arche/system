@@ -85,7 +85,3 @@ impl<F: Fn(EntryId) -> Result<Option<TaskId>, Unavailable>> Facts for Court<'_, 
         (self.openers)(at)
     }
 }
-
-#[cfg(test)]
-#[path = "../../../../../tests/operator-policy/policy.rs"]
-mod tests;

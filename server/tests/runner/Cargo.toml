@@ -1,0 +1,21 @@
+[package]
+name = "system-native-runner"
+version = "0.1.0"
+edition = "2024"
+publish = false
+autotests = false
+
+[workspace]
+
+[[bin]]
+name = "system-runner"
+path = "src/main.rs"
+
+[[test]]
+name = "contracts"
+path = "tests/mod.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+kernel-verification = { git = "https://github.com/shuyra-arche/kernel.git", rev = "ad360f86c9472d79d6c087edb8d03aa1f0906161" }
+serde_json = "1"

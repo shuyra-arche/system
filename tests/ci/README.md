@@ -91,3 +91,61 @@ any role/VM/startup deadline or behavioral/exit criterion. The prior two combine
 double-debug jobs were cancelled at 20 minutes while their last VM was running;
 completed scenarios were not failures, but those cancelled campaigns are not
 accepted as full verification. Their logs remain in PR #27/CI 43793245104.
+
+## Rust runner candidate review
+
+The staged `.github/workflows/native-candidate.yml` keeps the baseline native
+matrix while replacing Python scenario orchestration with the Rust runner. Its
+static profile/Hart/scenario accounting is:
+
+| Suite | Baseline and candidate selection | Cases |
+| --- | --- | ---: |
+| Runtime and entry | Runtime Harts 1/4 (2); normal entry 1, abort 1/4, stall 1 (4) | 6 |
+| Loader | Kernel debug/release × Harts 1/2/4 | 6 |
+| Application | Kernel debug/release × System debug/release × Harts 1/2/4 × scenarios 0/2/1 | 36 |
+| Handoff | Debug Kernel: six lifecycle rows × 7 scenarios and six supply rows × 4 scenarios; Release Kernel: two System profiles × Harts 1/2/4 × all 11 scenarios | 132 |
+| Contention | Release Kernel + Release System × Harts 1/2/4 × `supply-contend` | 3 |
+
+The handoff job matrix has 14 rows in both workflows, keeps
+`max-parallel: 6`, and retains 20-minute job limits. The final cutover must
+preserve the baseline job display names: `platforms`, `components`,
+`runtime-entry`, `Loader / Kernel ...`, `Application / Kernel ...`, and
+`Handoff / ...`. That yields the same 23 workflow check contexts. The candidate
+workflow currently prefixes several display names and is not itself the
+cutover; the scratch patch prepared for the review restores the baseline names
+and push-to-main trigger.
+
+The source runner and former Python entrypoints use the same per-run limits:
+runtime and Loader 120 seconds, entry 90 seconds, ordinary application/handoff
+90 seconds with a 60-second role budget, and debug-Kernel handoff 180 seconds
+with a 120-second role budget. The producer and consumers keep the same pinned
+container, RV64 target, `RUSTFLAGS`, warning policy, feature/profile builds and
+20-minute QEMU job timeout.
+
+The runner records the System revision, runner revision/hash, QEMU and firmware
+identity, selected Harts, inputs, lockfile hashes, build logs, and per-Hart
+serial/stderr/result evidence. The workflow uploads the runner executable,
+platform ELFs, source locks, and evidence while excluding Cargo dependency and
+incremental compiler output. Runtime and entry also retain their outer command
+logs. Shared platform verification remains SHA-256-bound to the source/tree,
+toolchain, target flags, compiler, platform lock and all three ELFs. The source
+and target-tree lockfiles currently have the same SHA-256; the candidate passes
+its explicit target-tree lock path to the unchanged strict verifier rather than
+weakening or overriding that check (`5f0dddba5e91cc9acc0076a2c4e635ca3a3ec5c4dd3f5d8db2b7514387252f7b`).
+
+The observed run results are not interchangeable full-green evidence: baseline
+run [43812239225](https://github.com/shuyra-arche/system/actions/runs/43812239225)
+had 22/23 jobs pass, with the same Supply debug/debug Hart-1 failure tracked in
+the task; candidate run
+[43812239288](https://github.com/shuyra-arche/system/actions/runs/43812239288)
+had 23/23 pass. Static matrix equality does not erase that result difference.
+No full QEMU campaign was run during this review.
+
+Reproduce the static comparison from the repository root:
+
+```sh
+git diff --no-index -- .github/workflows/native.yml .github/workflows/native-candidate.yml || test "$?" -eq 1
+rg -n 'matrix:|kernel:|system:|harts:|scenarios:|timeout-minutes|max-parallel|--harts|--scenarios|--abort|--stall' .github/workflows/native.yml .github/workflows/native-candidate.yml
+sha256sum tests/guest/runtime/platform/Cargo.lock server/tests/target/runtime/platform/Cargo.lock
+bash -n tests/ci/verify-platforms.sh
+```

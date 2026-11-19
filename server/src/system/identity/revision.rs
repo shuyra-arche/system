@@ -1,4 +1,4 @@
-//! Release publication, coalesced notification and consume-before-read ordering.
+// Release publication, coalesced notification and consume-before-read ordering.
 use alloc::sync::Arc;
 use core::sync::atomic::{AtomicU64, Ordering};
 use erra::Error as KernelError;
@@ -78,10 +78,6 @@ pub fn consume(token: PendId, epoch: &Epoch) -> Result<u64, Error> {
     }
     Ok(epoch.current())
 }
-
-#[cfg(test)]
-#[path = "../../../../tests/identity-state/revision.rs"]
-mod tests;
 
 impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

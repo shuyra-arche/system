@@ -631,7 +631,3 @@ fn grant_scope_narrows(parent: &GrantSpec, child: &GrantSpec, relative_anchor: &
         parent.scope.narrows_at(relative_anchor, &child.scope)
     }
 }
-
-#[cfg(test)]
-#[path = "../../../../tests/operator-policy/authority.rs"]
-mod tests;

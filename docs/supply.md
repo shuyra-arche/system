@@ -180,7 +180,7 @@ Instance retirement and Kernel-admitted System root exit.
 
 ```sh
 cargo test --locked -p system-api -p system-client -p system-support --tests --target x86_64-unknown-linux-gnu
-cargo test --locked --manifest-path server/tests/Cargo.toml --target x86_64-unknown-linux-gnu
+cargo test --locked --manifest-path server/tests/host/Cargo.toml --target x86_64-unknown-linux-gnu
 python3 tests/guest/system/run.py /path/to/qualified/kernel --handoff --profile release --kernel-profile release --harts 1 2 4 --scenarios supply
 ```
 

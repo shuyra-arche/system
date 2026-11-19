@@ -11,6 +11,17 @@ application, provider selection and retirement fixes from #12, #15 and #16.
 progress and assembled-system acceptance. **The complete Server now builds in
 RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**
 
+System #28 tracks test ownership and native runner migration. The fixed M0
+snapshot and current progress are recorded separately in the
+[migration status](docs/native-test-baseline.md). The original 114 Host
+functions remain represented; current suites contain 133 Host tests (95 Server
+owner tests and 38 API/Client/Support tests). The Rust Runner's 11 unit tests
+and App pack checker's 4 tests bring the documented total to 148. Two historical
+packages were removed after their assertions moved to active owners; other
+historical safety gaps remain open. Owner-aligned Host moves are in place, but M1's
+remaining safety assertion migration, final Rust/native parity sign-off, CI
+transition and M4 acceptance are not complete.
+
 ## Code map
 
 | Entry | Responsibility |
@@ -21,6 +32,7 @@ RV64 debug/release. S1–S3 and full product acceptance remain incomplete.**
 | `server/src/runtime/` | Initial-Task heap and native memory result ownership |
 | `server/src/system/` | Services, declarations and supervisor migration; [`control/`](server/src/system/control/README.md) documents Control and construction receipt ownership |
 | `support/` | Borrowed boot archive, typed ledger and bounded platform facts |
+| `server/tests/` | Server Host owner contracts, native Guest definitions and candidate Host Runner |
 | `tests/` | Host contracts and explicit target component fixtures |
 
 Production packages keep `no_std`. Test code belongs under `tests/`.
@@ -51,6 +63,12 @@ ABI 11/12 images and old Task descriptors require a coordinated rebuild.
 Every external Capsule and ordinary Task executes in User mode through ECALL;
 Supervisor execution is restricted to Kernel internal work.
 
+The Rust Host Runner's process-settlement helper is independently pinned via
+`kernel-verification` revision
+`ad360f86c9472d79d6c087edb8d03aa1f0906161` from Kernel PR #219. It is used for
+Host process handling only; the native Kernel/provider pin remains
+`789ffd19b5359f3de172fb9aad8a61f6a7113a64`.
+
 System Loader now prepares target-Nest stack backing, argument words and an
 unmapped lower guard before submitting TaskStart. Runtime workers likewise use
 initial-Task-owned guarded heap backing. Worker/Loader records retain their real
@@ -80,11 +98,22 @@ Rustfmt and Clippy). From this repository root:
 
 ```sh
 cargo test --locked -p system-api -p system-client -p system-support --tests --target x86_64-unknown-linux-gnu
-cargo test --locked --manifest-path server/tests/Cargo.toml --target x86_64-unknown-linux-gnu
-cargo test --locked --manifest-path tests/identity-state/Cargo.toml --target x86_64-unknown-linux-gnu
-cargo test --locked --manifest-path tests/operator-policy/Cargo.toml --target x86_64-unknown-linux-gnu
+cargo test --locked --manifest-path server/tests/host/Cargo.toml --target x86_64-unknown-linux-gnu
 cargo clippy --locked -p system-client -p system-support --lib --target riscv64gc-unknown-none-elf -- -D warnings
 ```
+
+Server Host contracts use the independent manifest under `server/tests/host/`.
+This keeps its default Cargo output separate from the native source packages
+under `server/tests/target/`. See the [owner suites](server/tests/README.md),
+[native scenarios](server/tests/target/README.md) and
+[candidate Rust Runner](server/tests/runner/README.md).
+The original Native CI and its Python runners remain the active gates. A
+candidate Rust Runner is available, and its recorded 23/23 run is not final
+equivalence sign-off. A later old-runner CI attempt on the same System revision
+was 22/23; the Handoff supply debug/debug one-Hart case timed out. The same old
+debug archive has observed passing replays through both Python and Rust paths
+with identical input hashes, indicating timing sensitivity. Scenario-by-scenario
+equivalence review is still open. See [the fixed baseline and current status](docs/native-test-baseline.md).
 
 The [runtime guest](tests/guest/runtime/README.md) exercises the production heap,
 Supply lease backend and Client/Ingress with real requests, replies and Task

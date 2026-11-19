@@ -34,8 +34,8 @@ until the actual target's safe-retirement receipt permits Stop. Neither a moved
 file nor a stopped Task substitutes for that receipt. Instance's owner is fixed
 at construction and exposed only as an observation to Control.
 
-Host owner contracts now live in `server/tests/` with explicit supervision and
-runtime targets. The complete baseline test/support migration inventory is in
+Host owner contracts now live in `server/tests/` with explicit App, Control,
+Identity, Loader, Operator, Runtime and Supply targets. The complete baseline test/support migration inventory is in
 [`docs/test-inventory.md`](../../../../../docs/test-inventory.md); remaining
 Identity/Operator hooks and historical assertion ports are tracked there.
 

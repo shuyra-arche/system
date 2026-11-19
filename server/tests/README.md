@@ -1,25 +1,52 @@
 # Server Host contracts
 
-Run from the repository root:
+Run every Server Host contract from the repository root:
 
 ```sh
-cargo test --locked --manifest-path server/tests/Cargo.toml --target x86_64-unknown-linux-gnu
-cargo clippy --locked --manifest-path server/tests/Cargo.toml --all-targets --target x86_64-unknown-linux-gnu -- -D warnings
+cargo test --locked --manifest-path server/tests/host/Cargo.toml --target x86_64-unknown-linux-gnu
+cargo clippy --locked --manifest-path server/tests/host/Cargo.toml --all-targets --target x86_64-unknown-linux-gnu -- -D warnings
 ```
 
-The explicit `supervision` target compiles actual declaration, ELF admission,
-Program, Operation Journal and construction Ledger sources. It preserves policy
-checks for native rights/window conversion (including Nest's reserved-bit gap),
-invalid identities/limits, startup selection, missing/cyclic dependencies,
-borrowed record strings and explicit VNU1 rejection. Program intent and retained
-receipts remain separate from physical Instance evidence.
+The manifest exposes focused suites by semantic owner:
 
-The `organization` target exercises the actual external registration owner
-with explicit caller/grant/completion facts, including cancellation, failed
-withdrawal and same-name replacement. Native grant proof is established separately.
+| Target | Protected behavior |
+| --- | --- |
+| `app` | 7 schema-2 declaration and startup selection tests |
+| `control` | 19 caller-scoped construction/install journal, publication, shutdown dependency and Program lifecycle tests |
+| `control-namespace` | 3 Instance Installation receipt and sibling isolation tests |
+| `identity` | 19 Identity book, monotonic revision publication and decoded service dispatch tests |
+| `loader` | 3 ELF admission, segment and entry validation tests |
+| `operator` | 21 authority, namespace, roots, admission policy and runtime state tests |
+| `runtime` | 6 scripted memory delivery, retained version, mutation identity and continuation tests |
+| `supply` | 8 external registration, withdrawal and installation selection tests |
+| `control-retirement` | 5 settlement, cleanup, release and cross-Instance retirement tests with scripted provider effects |
+| `operator-watch` | 4 subscription authority, replacement, prefix and cleanup tests with scripted Kernel/transport effects |
 
-The `runtime` target supplies a scripted memory transport to the actual memory
-owner. It checks retained requests, version ordering and continuation rules;
-it does not execute Kernel traps. Test facades live here rather than in
-production source. RV64 builds, native QEMU runs and hardware qualification are
-separate evidence; see the root README and [migration inventory](../../docs/test-inventory.md).
+The ten targets contain 95 tests and can be selected independently with
+`cargo test --manifest-path server/tests/host/Cargo.toml --test <target>`.
+The additional `control-retirement` target checks the real Instance retirement
+gate with scripted provider responses, cleanup failures and release retries.
+Its separate compilation boundary supplies a transport facade; it does not
+establish native provider settlement.
+
+`control-namespace` is a separate compilation entry for the production
+`Installation.install` / `Installation.finish` owner and production App
+`Layout`. Its test-local facade scripts typed Operator service responses and
+Kernel effects only. It checks grant, binding, root-return and container
+cleanup receipt retention and retry, including sibling Instance isolation.
+It follows the current `grants → bindings → roots → containers` cleanup order:
+after Unbind succeeds, the resource root has no remaining binding use before
+it is returned. Scripted service responses do not prove actual native Operator
+acknowledgment or Kernel release behavior.
+
+The Host manifest lives under `host/` so Cargo's default output and `cargo clean`
+cannot collide with the source packages under `target/`.
+
+These suites import production source through test-local facades where private
+source composition is required. No `#[cfg(test)]` hooks remain in `server/src/`;
+the Host targets compile production owners through separate test entry points.
+Production packages retain `no_std`; host tests
+do not execute Kernel traps or establish RV64 or QEMU behavior. See the
+[migration status](../../docs/native-test-baseline.md) for the fixed M0 snapshot
+and current progress, and the [historical assertion maps](../../docs/test-inventory.md)
+for the remaining owner-level work.

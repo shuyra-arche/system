@@ -1,0 +1,369 @@
+name: Candidate native System contracts
+
+# Ordinary candidate CI exercises owner contracts on one Hart; SMP is opt-in
+# outside normal CI, with four-Hart performance scenarios limited to benchmarks.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  platforms:
+    name: Candidate platforms
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      artifact-id: ${{ steps.platforms-artifact.outputs.artifact-id }}
+    container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
+    env:
+      RUSTFLAGS: -Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium -Dwarnings
+    steps:
+      - name: Install Git and Rust build tools
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Mark checkout as safe for container Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install declared toolchain
+        uses: ./tests/ci
+      - name: Build shared QEMU platforms
+        run: |
+          cargo build --locked --manifest-path server/tests/target/runtime/platform/Cargo.toml --release --target riscv64gc-unknown-none-elf
+          cargo build --locked --manifest-path server/tests/target/runtime/platform/Cargo.toml --features instructions --target-dir server/tests/target/runtime/platform/target/instructions --release --target riscv64gc-unknown-none-elf
+          cargo build --locked --manifest-path server/tests/target/runtime/platform/Cargo.toml --features instructions --target-dir server/tests/target/runtime/platform/target/instructions --target riscv64gc-unknown-none-elf
+          mkdir -p tests/ci/target/platforms/runtime tests/ci/target/platforms/instructions
+          cp server/tests/target/runtime/platform/target/riscv64gc-unknown-none-elf/release/system-runtime-platform tests/ci/target/platforms/runtime/release
+          cp server/tests/target/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/release/system-runtime-platform tests/ci/target/platforms/instructions/release
+          cp server/tests/target/runtime/platform/target/instructions/riscv64gc-unknown-none-elf/debug/system-runtime-platform tests/ci/target/platforms/instructions/debug
+          {
+            printf 'revision=%s\ntree=%s\n' "$(git rev-parse HEAD)" "$(git rev-parse HEAD^{tree})"
+            printf 'toolchain-sha256=%s\n' "$(sha256sum rust-toolchain.toml | cut -d' ' -f1)"
+            printf 'target=riscv64gc-unknown-none-elf\nflags=%s\n' "$RUSTFLAGS"
+            printf 'platform-lock-sha256=%s\n' "$(sha256sum server/tests/target/runtime/platform/Cargo.lock | cut -d' ' -f1)"
+            printf 'runtime-feature=default;profile=release\ninstructions-feature=instructions;profiles=debug,release\n'
+          } > tests/ci/target/platforms/manifest.txt
+          rustc -Vv > tests/ci/target/platforms/rustc-vv.txt
+          sha256sum tests/ci/target/platforms/rustc-vv.txt | cut -d' ' -f1 > tests/ci/target/platforms/rustc-vv.sha256
+          (cd tests/ci/target/platforms && sha256sum runtime/release instructions/release instructions/debug manifest.txt rustc-vv.txt > SHA256SUMS)
+      - name: Preserve shared platforms
+        id: platforms-artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: candidate-qualified-platforms-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            tests/ci/target/platforms/runtime/release
+            tests/ci/target/platforms/instructions/release
+            tests/ci/target/platforms/instructions/debug
+            tests/ci/target/platforms/manifest.txt
+            tests/ci/target/platforms/rustc-vv.txt
+            tests/ci/target/platforms/rustc-vv.sha256
+            tests/ci/target/platforms/SHA256SUMS
+          include-hidden-files: true
+          if-no-files-found: error
+
+  components:
+    name: Candidate components
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install declared toolchain
+        run: rustup show
+      - name: Host API, client and boot contracts
+        run: cargo test --locked -p system-api -p system-client -p system-support --tests --target x86_64-unknown-linux-gnu
+      - name: Host runner failure and evidence contracts
+        run: |
+          cargo test --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo clippy --locked --manifest-path server/tests/runner/Cargo.toml --all-targets --target x86_64-unknown-linux-gnu -- -D warnings
+          cargo test --locked --manifest-path server/tests/target/app/pack/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo clippy --locked --manifest-path server/tests/target/app/pack/Cargo.toml --all-targets --target x86_64-unknown-linux-gnu -- -D warnings
+      - name: Host ownership and declaration contracts
+        run: |
+          cargo test --locked --manifest-path server/tests/host/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo clippy --locked --manifest-path server/tests/host/Cargo.toml --all-targets --target x86_64-unknown-linux-gnu -- -D warnings
+      - name: Complete RV64 Server in both profiles
+        run: |
+          cargo build --locked -p system-server --bin system --target riscv64gc-unknown-none-elf
+          cargo build --locked -p system-server --bin system --release --target riscv64gc-unknown-none-elf
+          cargo clippy --locked -p system-server --bin system --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: Complete production dependency graph
+        run: |
+          cargo metadata --locked --format-version 1
+          cargo tree --locked -p system-server -e normal,build --target riscv64gc-unknown-none-elf
+      - name: RV64 native libraries
+        run: cargo clippy --locked -p system-api -p system-client -p system-support --lib --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: RV64 runtime component guest
+        run: cargo clippy --locked --manifest-path server/tests/target/runtime/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: RV64 production entry contract
+        run: cargo clippy --locked --manifest-path server/tests/target/entry/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: RV64 independent-Team handoff consumers
+        run: |
+          cargo clippy --locked --manifest-path server/tests/target/handoff/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+          cargo clippy --locked --manifest-path server/tests/target/handoff/Cargo.toml --features provider --target riscv64gc-unknown-none-elf -- -D warnings
+          cargo clippy --locked --manifest-path server/tests/target/handoff/Cargo.toml --features install --target riscv64gc-unknown-none-elf -- -D warnings
+      - name: RV64 native Loader and ordinary image
+        run: |
+          cargo build --locked --manifest-path server/tests/target/loader/image/Cargo.toml --release --target riscv64gc-unknown-none-elf
+          SYSTEM_LOADER_IMAGE="$GITHUB_WORKSPACE/server/tests/target/loader/image/target/riscv64gc-unknown-none-elf/release/system-loader-image" cargo clippy --locked --manifest-path server/tests/target/loader/Cargo.toml --target riscv64gc-unknown-none-elf -- -D warnings
+  runtime-entry:
+    name: Candidate runtime-entry
+    needs: platforms
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
+    env:
+      QEMU_RISCV64: qemu-system-riscv64
+      QEMU_OPENSBI: /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.bin
+      RUSTFLAGS: -Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium -Dwarnings
+    steps:
+      - name: Install QEMU and build tools
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
+          qemu-system-riscv64 --version
+          sha256sum "$QEMU_OPENSBI"
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Mark checkout as safe for container Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install toolchain and restore shared platforms
+        uses: ./tests/ci
+        with:
+          artifact-id: ${{ needs.platforms.outputs.artifact-id }}
+          platform-lock: server/tests/target/runtime/platform/Cargo.lock
+      - name: Native heap, Supply and RPC on one Hart
+        run: |
+          mkdir -p .evidence
+          rustc -Vv > .evidence/rustc.txt
+          qemu-system-riscv64 --version > .evidence/qemu.txt
+          sha256sum "$QEMU_OPENSBI" > .evidence/firmware.txt
+          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- runtime --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/runtime --harts 1 > .evidence/runtime.log 2>&1
+          cat .evidence/runtime.log
+      - name: Production entry, immutable boot data and native services on one Hart
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry --harts 1
+      - name: Fatal root retirement and stalled bootstrap
+        run: |
+          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry-abort --harts 1 --abort > .evidence/entry-abort.log 2>&1
+          cat .evidence/entry-abort.log
+          cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- entry --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/runtime/release --output server/tests/runner/target/evidence/entry-stall --harts 1 --stall > .evidence/entry-stall.log 2>&1
+          cat .evidence/entry-stall.log
+      - name: Preserve runtime composition evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: candidate-native-runtime-attempt-${{ github.run_attempt }}
+          path: |
+            .evidence/
+            server/tests/runner/target/evidence/
+            server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
+            !server/tests/runner/target/evidence/**/deps/**
+            !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/fingerprint/**
+            !server/tests/runner/target/evidence/**/incremental/**
+            !server/tests/runner/target/evidence/**/*.rlib
+            !server/tests/runner/target/evidence/**/*.rmeta
+            !server/tests/runner/target/evidence/**/*.d
+            !server/tests/runner/target/evidence/**/*.o
+            Cargo.lock
+            server/tests/runner/Cargo.lock
+            server/tests/target/entry/Cargo.lock
+            server/tests/target/entry/pack/Cargo.lock
+            server/tests/target/runtime/Cargo.lock
+            server/tests/target/runtime/platform/Cargo.lock
+            tests/ci/target/platforms/runtime/release
+            tests/ci/target/platforms/instructions/release
+            tests/ci/target/platforms/instructions/debug
+            tests/ci/target/platforms/manifest.txt
+            tests/ci/target/platforms/rustc-vv.txt
+            tests/ci/target/platforms/rustc-vv.sha256
+            tests/ci/target/platforms/SHA256SUMS
+          include-hidden-files: true
+          if-no-files-found: error
+
+  loader:
+    needs: platforms
+    name: Candidate Loader / Kernel ${{ matrix.kernel }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        kernel: [debug, release]
+    container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
+    env:
+      QEMU_RISCV64: qemu-system-riscv64
+      QEMU_OPENSBI: /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.bin
+      RUSTFLAGS: -Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium -Dwarnings
+    steps:
+      - name: Install QEMU and build tools
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
+          qemu-system-riscv64 --version
+          sha256sum "$QEMU_OPENSBI"
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Mark checkout as safe for container Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install toolchain and restore shared platforms
+        uses: ./tests/ci
+        with:
+          artifact-id: ${{ needs.platforms.outputs.artifact-id }}
+          platform-lock: server/tests/target/runtime/platform/Cargo.lock
+      - name: Native ELF construction and User Team retirement on one Hart
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- loader --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/loader --harts 1
+      - name: Preserve Loader execution evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: candidate-native-loader-kernel-${{ matrix.kernel }}-attempt-${{ github.run_attempt }}
+          path: |
+            server/tests/runner/target/evidence/
+            server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
+            !server/tests/runner/target/evidence/**/deps/**
+            !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/fingerprint/**
+            !server/tests/runner/target/evidence/**/incremental/**
+            !server/tests/runner/target/evidence/**/*.rlib
+            !server/tests/runner/target/evidence/**/*.rmeta
+            !server/tests/runner/target/evidence/**/*.d
+            !server/tests/runner/target/evidence/**/*.o
+            server/tests/runner/Cargo.lock
+            tests/ci/target/platforms/
+          include-hidden-files: true
+          if-no-files-found: error
+
+  application:
+    needs: platforms
+    name: Candidate Application / Kernel ${{ matrix.kernel }} / System ${{ matrix.system }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        kernel: [debug, release]
+        system: [debug, release]
+    container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
+    env:
+      QEMU_RISCV64: qemu-system-riscv64
+      QEMU_OPENSBI: /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.bin
+      RUSTFLAGS: -Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium -Dwarnings
+    steps:
+      - name: Install QEMU and build tools
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
+          qemu-system-riscv64 --version
+          sha256sum "$QEMU_OPENSBI"
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Mark checkout as safe for container Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install toolchain and restore shared platforms
+        uses: ./tests/ci
+        with:
+          artifact-id: ${{ needs.platforms.outputs.artifact-id }}
+          platform-lock: server/tests/target/runtime/platform/Cargo.lock
+      - name: Complete System application and ordinary User Teams on one Hart
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- application --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.system }} --kernel-profile ${{ matrix.kernel }} --output server/tests/runner/target/evidence/application --harts 1
+      - name: Preserve complete application execution evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: candidate-system-application-kernel-${{ matrix.kernel }}-system-${{ matrix.system }}-attempt-${{ github.run_attempt }}
+          path: |
+            server/tests/runner/target/evidence/
+            server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
+            !server/tests/runner/target/evidence/**/deps/**
+            !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/fingerprint/**
+            !server/tests/runner/target/evidence/**/incremental/**
+            !server/tests/runner/target/evidence/**/*.rlib
+            !server/tests/runner/target/evidence/**/*.rmeta
+            !server/tests/runner/target/evidence/**/*.d
+            !server/tests/runner/target/evidence/**/*.o
+            Cargo.lock
+            server/tests/runner/Cargo.lock
+            server/tests/target/runtime/platform/Cargo.lock
+            server/tests/target/app/pack/Cargo.lock
+            server/tests/target/loader/image/Cargo.lock
+            tests/ci/target/platforms/
+          include-hidden-files: true
+          if-no-files-found: error
+
+  handoff:
+    needs: platforms
+    name: Candidate Handoff / ${{ matrix.suite }} / Kernel ${{ matrix.kernel }} / System ${{ matrix.system }} / Harts ${{ matrix.harts }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - { kernel: debug, system: debug, harts: '1', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
+          - { kernel: debug, system: release, harts: '1', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
+          - { kernel: debug, system: debug, harts: '1', suite: supply, scenarios: 'supply supply-auth install install-loss' }
+          - { kernel: debug, system: release, harts: '1', suite: supply, scenarios: 'supply supply-auth install install-loss' }
+          - { kernel: release, system: debug, harts: '1', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
+          - { kernel: release, system: release, harts: '1', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
+    container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
+    env:
+      QEMU_RISCV64: qemu-system-riscv64
+      QEMU_OPENSBI: /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_dynamic.bin
+      RUSTFLAGS: -Crelocation-model=static -Cforce-frame-pointers=yes -Ccode-model=medium -Dwarnings
+    steps:
+      - name: Install QEMU and build tools
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
+          qemu-system-riscv64 --version
+          sha256sum "$QEMU_OPENSBI"
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Mark checkout as safe for container Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install toolchain and restore shared platforms
+        uses: ./tests/ci
+        with:
+          artifact-id: ${{ needs.platforms.outputs.artifact-id }}
+          platform-lock: server/tests/target/runtime/platform/Cargo.lock
+      - name: Independent-Team handoff and owner exit on one Hart
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/${{ matrix.kernel }} --kernel-profile ${{ matrix.kernel }} --profile ${{ matrix.system }} --output server/tests/runner/target/evidence/handoff --harts ${{ matrix.harts }} --scenarios ${{ matrix.scenarios }}
+      - name: CPU source admission with concurrent recipient traffic
+        if: matrix.kernel == 'release' && matrix.system == 'release'
+        run: cargo run --locked --manifest-path server/tests/runner/Cargo.toml --target x86_64-unknown-linux-gnu -- handoff --system-revision "$GITHUB_SHA" --kernel tests/ci/target/platforms/instructions/release --kernel-profile release --profile release --output server/tests/runner/target/evidence/contention --harts ${{ matrix.harts }} --scenarios supply-contend
+      - name: Preserve handoff execution evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: candidate-handoff-${{ matrix.suite }}-kernel-${{ matrix.kernel }}-system-${{ matrix.system }}-harts-${{ matrix.harts }}-attempt-${{ github.run_attempt }}
+          path: |
+            server/tests/runner/target/evidence/
+            server/tests/runner/target/x86_64-unknown-linux-gnu/debug/system-runner
+            !server/tests/runner/target/evidence/**/deps/**
+            !server/tests/runner/target/evidence/**/.fingerprint/**
+            !server/tests/runner/target/evidence/**/fingerprint/**
+            !server/tests/runner/target/evidence/**/incremental/**
+            !server/tests/runner/target/evidence/**/*.rlib
+            !server/tests/runner/target/evidence/**/*.rmeta
+            !server/tests/runner/target/evidence/**/*.d
+            !server/tests/runner/target/evidence/**/*.o
+            Cargo.lock
+            server/tests/runner/Cargo.lock
+            server/tests/target/runtime/platform/Cargo.lock
+            server/tests/target/app/pack/Cargo.lock
+            server/tests/target/handoff/Cargo.lock
+            tests/ci/target/platforms/
+          include-hidden-files: true
+          if-no-files-found: error

@@ -201,6 +201,14 @@ pub(crate) fn inspect(token: PendId) -> PendInfo {
         }
     }
 }
+pub(crate) fn accord(
+    address: VirtAddr,
+) -> Result<PendId, erra::Error<kernel_api::abi::call::pend::PendFail>> {
+    pend::accord(address)
+}
+pub(crate) fn clock() -> u64 {
+    room::clock()
+}
 pub(crate) fn observe(
     query: kernel_api::model::unit::UnitQuery,
 ) -> kernel_api::model::unit::UnitInfo {

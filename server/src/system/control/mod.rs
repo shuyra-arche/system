@@ -6,6 +6,8 @@ mod installs;
 pub(crate) mod instance;
 mod operations;
 mod program;
+mod publication;
+mod shutdown;
 use self::{
     identity::Roster,
     instance::{Instance, InstanceId, Intent},
@@ -335,27 +337,7 @@ impl Control {
         {
             return;
         }
-        let stoppable: Vec<_> = self
-            .programs
-            .iter()
-            .filter_map(|provider| {
-                let id = provider.current()?;
-                let name = provider.declaration.name();
-                let depended_on = self.programs.iter().any(|consumer| {
-                    consumer
-                        .current()
-                        .is_some_and(|other| other != id && !self.instance(other).retired())
-                        && (consumer.declaration.control().requires.contains(&name)
-                            || consumer
-                                .declaration
-                                .control()
-                                .retirement
-                                .iter()
-                                .any(|retirement| retirement.provider == name))
-                });
-                (!depended_on).then_some(id)
-            })
-            .collect();
+        let stoppable = shutdown::stoppable(&self.programs, |id| self.instance(id).retired());
         for instance in &mut self.instances {
             if stoppable.contains(&instance.id) && !instance.retired() {
                 let _ = instance.request(Intent::Stop);
@@ -1279,14 +1261,12 @@ impl Control {
     ) -> Outcome<(), id::Fail> {
         let value = (|| {
             let unit = self.caller_unit(caller).ok_or(id::Fail::Denied)?;
-            if !unit.identity().aliases.contains(&request.alias.as_str()) {
+            if !publication::declares_alias(&unit.identity().aliases, request.alias.as_str()) {
                 return Err(id::Fail::Denied);
             }
-            let id::IdentityObject::Principal(principal) = request.object else {
-                return Err(id::Fail::Denied);
-            };
+            let principal = publication::principal(&request.object).ok_or(id::Fail::Denied)?;
             let subject = self.roster.subject(services, caller)?;
-            if *subject.principal() != principal {
+            if !publication::matches_subject(principal, &subject) {
                 return Err(id::Fail::Denied);
             }
             let instance = self
@@ -1303,14 +1283,7 @@ impl Control {
                     self.layout
                         .resource(services, anchor, request.binding.as_str())
                 {
-                    proven |= resource.binding.entry.operator == request.entry.operator
-                        && resource.binding.revision == request.entry.revision
-                        && match resource.binding.entry.target {
-                            system_protocol::operator::EntryTarget::Node(id) => {
-                                !request.entry.root && id == request.entry.id
-                            }
-                            system_protocol::operator::EntryTarget::Root => false,
-                        };
+                    proven |= publication::matches_entry(&resource.binding, &request.entry);
                     let token = PendId::try_from(resource.token).map_err(|_| id::Fail::Denied)?;
                     let deadline = kernel_client::call::room::clock()
                         .saturating_add(crate::system::app::services::LIMIT_NS);

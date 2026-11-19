@@ -1,4 +1,3 @@
 [workspace]
 members = ["api", "server", "client", "support"]
 resolver = "3"
-exclude = ["tests/dynamic-units"]

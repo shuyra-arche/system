@@ -1,10 +1,37 @@
 # Test and support migration inventory
 
-Baseline: System `470e97f38aa904c3702b665c0d225809b9f0d16e` (ABI/Ledger
-13/13), shared standards `.github`
-`7967d812c6c9d40fde6a174483073b788af3e3cc`. Inventory taken on 2026-11-15.
-This is a migration ledger for [System #13](https://github.com/shuyra-arche/system/issues/13),
-not a statement that its R0–R6 or Track S acceptance is complete.
+Historical snapshot: System `470e97f38aa904c3702b665c0d225809b9f0d16e`
+(ABI/Ledger 13/13), shared standards `.github`
+`7967d812c6c9d40fde6a174483073b788af3e3cc`, taken on 2026-11-15. Its
+assertion-port queue remains relevant to [System #13](https://github.com/shuyra-arche/system/issues/13),
+but its counts and path/status descriptions are not the current #28 M0
+baseline. See the [native test migration baseline](native-test-baseline.md)
+for the fixed System `332d9d2e15f6bc4e1e8d94e4db2591b1a53ae613` M0 snapshot
+on 2026-11-16 and its separately dated current migration status.
+
+## Current #28 migration status
+
+This file preserves the #13 package/count snapshot below; do not read those
+tables as the current checkout inventory. Since that snapshot, the active Host
+tests have moved to owner-aligned suites under `server/tests/host/`, and the
+native scenario tree has moved under `server/tests/target/`. The fixed M0 set of
+114 Host functions remains the migration baseline. At System
+`de43b94a80eff4eb932313d08e6403b1679300e0`, the active Host suites contain 133
+functions: 95 Server owner tests plus 38 API, Client and Support tests. The 19
+additional assertions were added during owner migration and regression work.
+The candidate Rust runner has 11 unit tests and the App pack checker has 4;
+together with Host this is 148 tests.
+
+Only two historical packages have been removed after their current-owner
+assertions were added: `dynamic-units` (App declarations) and
+`capability-import` (Operator Watch). The remaining historical packages still
+contain unported stable safety assertions or native/integration-only gaps.
+Their source and gaps remain mapped in the
+[service migration map](service-test-migration.md),
+[Control migration map](control-test-migration.md), and the
+[fixed baseline](native-test-baseline.md).
+No statement here declares M1, native parity, CI transition or clean-checkout
+acceptance complete.
 
 ## Scope and evidence
 
@@ -33,26 +60,27 @@ assertions in the same package still need behavioral counterparts.
 
 | Baseline manifest | Decision and current location | Owner / retained assertion |
 | --- | --- | --- |
-| declarations | Moved → `server/tests/supervision/declarations.rs` (6) | Validated schema-2 intent, rights, startup ordering, authority domains |
-| loader-image | Moved → `server/tests/supervision/image.rs` (3) | Loader ELF admission and segment/entry validation |
+| declarations | Moved → `server/tests/app/declarations.rs` (6) | Validated schema-2 intent, rights, startup ordering, authority domains |
+| loader-image | Moved → `server/tests/loader/image.rs` (3) | Loader ELF admission and segment/entry validation |
 | native-memory | Moved → `server/tests/runtime/mod.rs` (6) | Scripted delivery, retained versions, mutation identity and explicit continuation; no native trap claim |
-| identity-state | Keep / port → `server/tests/organization/` | Identity book, revision publication and dispatch; 18 current tests |
-| operator-policy | Keep / port → `server/tests/organization/` | Operator grants, namespace roots, policy and dispatch; 21 current tests |
+| identity-state | Moved → `server/tests/identity/` (18) | Identity book, revision publication and decoded dispatch; suite remains independently runnable |
+| operator-policy | Moved → `server/tests/operator/` (21) | Operator grants, namespace roots, policy, runtime state and dispatch; suite remains independently runnable |
+| control | Current → `server/tests/control/` (15) | Construction/install journals, receipts and Program lifecycle decisions |
+| supply | Current → `server/tests/supply/` (8) | External registration/withdrawal ownership and caller-scoped installation selection |
 
 The eight Server Journal/Ledger tests formerly embedded in `api/tests/control.rs`
-now belong to `server/tests/supervision/control.rs`. API tests retain bounded
+now belong to `server/tests/control/construction.rs`. API tests retain bounded
 codec and nonzero-ID assertions. Four Program tests cover retained selection,
 resident/transient completion, physical-retirement dependence and supervision
-policy. The Server package uses explicit `[[test]]` targets with directory
-`mod.rs` entry points; it compiles actual owner sources through a test-local
-facade, without widening the production API or compiling the whole native runtime
-as a Host substitute.
-
-Remaining production test hooks are Identity book, Identity revision, Operator
-authority and Operator tree gate, plus the test-only Identity `root()` helper.
-Their tests include private-state exhaustion checks. Port them through meaningful
-owner transitions before removing the hooks; do not publish private counters or
-discard the exhaustion assertions merely to relocate files.
+policy. The seven Server owner suites contain 77 current Host tests and are
+registered explicitly with `[[test]]` targets and
+directory `mod.rs` entry points. Identity and Operator tests are now part of the
+same Server Host package and remain focused Cargo targets. Their prior inline
+test-module source paths describe the #13 snapshot. At that snapshot,
+`cfg(test)` hooks remained where assertions inspected private owner state. In
+the later #28 migration these hooks and the test-only Identity `root()` helper
+were removed; the monotonic revision exhaustion assertion remains in the
+Identity owner suite. See the current status section above.
 
 ## Guest and composition packages
 
@@ -83,14 +111,14 @@ already covers every old fault or pressure campaign.
 | Baseline manifest | Decision | Current semantic owner / assertion to port |
 | --- | --- | --- |
 | bootstrap-carrier | Historical / port | App boot + construction: partial delivery retains roots, retry identity, release order |
-| capability-import | Historical / port | Runtime/Ingress: authenticated source, grant kind/rights and malformed frames |
+| capability-import | Moved / removed | `server/tests/operator/watch/`: forged imports preserve live subscriptions, caller-local retirement and same-path rejoin; Kernel/transport effects remain scripted |
 | control-instance | Historical / port | Instance + Operation: lifecycle effects, partial failure and compensation |
 | control-lifetime | Historical / port | Instance: owner exit, explicit retirement and retained resource roots |
 | control-publisher | Historical / port | Program + Operation: publication CAS and historical receipts |
 | control-query | Historical / port | Control observation: caller scope, cursors and unknown identities |
 | control-rpc | Historical / port | Control ingress: grant authorization, decode and response correlation |
 | daemon-control | Historical / port | Program + Instance: resident demand, recovery and restart ordering |
-| dynamic-units | Historical / port | Declaration + construction: dynamic selection and image/record admission |
+| dynamic-units | Moved / removed | `server/tests/app/declarations.rs`: shared-image Requested Units stay unstarted, missing/cyclic references and image-kind admission reject invalid input |
 | guard-deployment | Historical / port | Control construction: guarded authority and deployment policy |
 | identity | Historical / port | Identity authority: principal, coalition and membership checks |
 | identity-publication | Historical / port | Identity revision publisher: coalesced publication and cache ordering |
@@ -113,10 +141,10 @@ already covers every old fault or pressure campaign.
 | supply | Historical / port | Supply registry/leases: acquisition, rollback, release and device retirement |
 | system-shape | Historical / retire shape; port semantic assertions | Retire universal three-parameter and old ECS/injected-hook/path rules. Port retirement order, same-Team pause/resume, dependency direction and owner privacy as behavior or dependency checks |
 
-No historical sources or evidence archives are deleted by this first owner pass.
-The three migrated Host manifests are removed after their assertions and CI
-commands are relocated. One Server test manifest replaces them (42 manifests
-repository-wide below test directories, excluding the four workspace manifests).
+This #13 snapshot's manifest count is historical. In the later #28 migration,
+`dynamic-units` and `capability-import` were removed only after their stable
+assertions gained current owner tests. Other historical sources remain because
+their safety assertions have not all been ported or accepted as obsolete.
 
 ## `system-support` consumers
 

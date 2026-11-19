@@ -1,4 +1,4 @@
-//! One authority owns the principal tree, coalitions, membership, and atomic task identity snapshots.
+// One authority owns the principal tree, coalitions, membership, and atomic task identity snapshots.
 use alloc::vec::Vec;
 use system_protocol::PendId;
 use system_protocol::TaskId;
@@ -13,6 +13,7 @@ use system_protocol::Name as IdentityName;
 mod coalition;
 mod limits;
 mod membership;
+
 mod principal;
 mod reference;
 mod roster;
@@ -78,10 +79,6 @@ struct InstallRecord {
     state: InstallState,
     failure: Option<Fail>,
 }
-
-#[cfg(test)]
-#[path = "../../../../../tests/identity-state/book.rs"]
-mod tests;
 
 pub use membership::Membership;
 pub use reference::{Association, ReferenceQuery};

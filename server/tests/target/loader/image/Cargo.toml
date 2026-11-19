@@ -1,0 +1,17 @@
+[package]
+name = "system-loader-image"
+version = "0.0.0"
+edition = "2024"
+publish = false
+[workspace]
+[[bin]]
+name = "system-loader-image"
+path = "main.rs"
+test = false
+bench = false
+[dependencies]
+kernel-api = { git = "https://github.com/shuyra-arche/kernel.git", rev = "789ffd19b5359f3de172fb9aad8a61f6a7113a64" }
+kernel-client = { git = "https://github.com/shuyra-arche/kernel.git", rev = "789ffd19b5359f3de172fb9aad8a61f6a7113a64" }
+[profile.release]
+panic = "abort"
+strip = "debuginfo"
