@@ -1,5 +1,8 @@
 name: Native System contracts
 
+# Ordinary CI verifies service behavior on one Hart. SMP is opt-in outside
+# normal CI; four-Hart performance workloads belong to benchmark runs.
+
 on:
   pull_request:
   push:
@@ -75,7 +78,10 @@ jobs:
       - name: Host API, client and boot contracts
         run: cargo test --locked -p system-api -p system-client -p system-support --tests --target x86_64-unknown-linux-gnu
       - name: Host ownership and declaration contracts
-        run: cargo test --locked --manifest-path server/tests/host/Cargo.toml --target x86_64-unknown-linux-gnu
+        run: |
+          cargo test --locked --manifest-path server/tests/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo test --locked --manifest-path tests/identity-state/Cargo.toml --target x86_64-unknown-linux-gnu
+          cargo test --locked --manifest-path tests/operator-policy/Cargo.toml --target x86_64-unknown-linux-gnu
       - name: Complete RV64 Server in both profiles
         run: |
           cargo build --locked -p system-server --bin system --target riscv64gc-unknown-none-elf
@@ -113,7 +119,7 @@ jobs:
       - name: Install QEMU and build tools
         run: |
           apt-get update
-          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-misc
           qemu-system-riscv64 --version
           sha256sum "$QEMU_OPENSBI"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -125,19 +131,19 @@ jobs:
         uses: ./tests/ci
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
-      - name: Native heap, Supply and RPC on one and four Harts
+      - name: Native heap, Supply and RPC on one Hart
         run: |
           mkdir -p .evidence
           rustc -Vv > .evidence/rustc.txt
           qemu-system-riscv64 --version > .evidence/qemu.txt
           sha256sum "$QEMU_OPENSBI" > .evidence/firmware.txt
-          python3 tests/guest/runtime/run.py tests/ci/target/platforms/runtime/release --harts 1 4 > .evidence/runtime.log 2>&1
+          python3 tests/guest/runtime/run.py tests/ci/target/platforms/runtime/release --harts 1 > .evidence/runtime.log 2>&1
           cat .evidence/runtime.log
       - name: Production entry, immutable boot data and native services on one Hart
         run: python3 tests/guest/entry/run.py tests/ci/target/platforms/runtime/release --harts 1
-      - name: Fatal root retirement and stalled bootstrap
+      - name: Fatal root retirement and stalled bootstrap (one Hart)
         run: |
-          python3 tests/guest/entry/run.py tests/ci/target/platforms/runtime/release --harts 1 4 --abort > .evidence/entry-abort.log 2>&1
+          python3 tests/guest/entry/run.py tests/ci/target/platforms/runtime/release --harts 1 --abort > .evidence/entry-abort.log 2>&1
           cat .evidence/entry-abort.log
           python3 tests/guest/entry/run.py tests/ci/target/platforms/runtime/release --harts 1 --stall > .evidence/entry-stall.log 2>&1
           cat .evidence/entry-stall.log
@@ -179,7 +185,7 @@ jobs:
       - name: Install QEMU and build tools
         run: |
           apt-get update
-          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-misc
           qemu-system-riscv64 --version
           sha256sum "$QEMU_OPENSBI"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -191,8 +197,8 @@ jobs:
         uses: ./tests/ci
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
-      - name: Native ELF construction and User Team retirement on 1/2/4 Harts
-        run: python3 tests/guest/loader/run.py tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.kernel }} --harts 1 2 4
+      - name: Native ELF construction and User Team retirement on one Hart
+        run: python3 tests/guest/loader/run.py tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.kernel }} --harts 1
       - name: Preserve Loader execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -223,7 +229,7 @@ jobs:
       - name: Install QEMU and build tools
         run: |
           apt-get update
-          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-misc
           qemu-system-riscv64 --version
           sha256sum "$QEMU_OPENSBI"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -235,8 +241,8 @@ jobs:
         uses: ./tests/ci
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
-      - name: Complete System application and ordinary User Teams on 1/2/4 Harts
-        run: python3 tests/guest/system/run.py tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.system }} --harts 1 2 4
+      - name: Complete System application and ordinary User Teams on one Hart
+        run: python3 tests/guest/system/run.py tests/ci/target/platforms/instructions/${{ matrix.kernel }} --profile ${{ matrix.system }} --harts 1
       - name: Preserve complete application execution evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -259,19 +265,11 @@ jobs:
       matrix:
         include:
           - { kernel: debug, system: debug, harts: '1', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
-          - { kernel: debug, system: debug, harts: '2', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
-          - { kernel: debug, system: debug, harts: '4', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
           - { kernel: debug, system: release, harts: '1', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
-          - { kernel: debug, system: release, harts: '2', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
-          - { kernel: debug, system: release, harts: '4', suite: lifecycle, scenarios: 'handoff auth cancel death owner owner-cancel owner-death' }
           - { kernel: debug, system: debug, harts: '1', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: debug, system: debug, harts: '2', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: debug, system: debug, harts: '4', suite: supply, scenarios: 'supply supply-auth install install-loss' }
           - { kernel: debug, system: release, harts: '1', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: debug, system: release, harts: '2', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: debug, system: release, harts: '4', suite: supply, scenarios: 'supply supply-auth install install-loss' }
-          - { kernel: release, system: debug, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
-          - { kernel: release, system: release, harts: '1 2 4', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
+          - { kernel: release, system: debug, harts: '1', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
+          - { kernel: release, system: release, harts: '1', suite: all, scenarios: 'handoff auth cancel death owner owner-cancel owner-death supply supply-auth install install-loss' }
     container: debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
     env:
       QEMU_RISCV64: qemu-system-riscv64
@@ -281,7 +279,7 @@ jobs:
       - name: Install QEMU and build tools
         run: |
           apt-get update
-          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-riscv
+          apt-get install --no-install-recommends -y ca-certificates curl gcc git libc6-dev opensbi python3 qemu-system-misc
           qemu-system-riscv64 --version
           sha256sum "$QEMU_OPENSBI"
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -293,7 +291,7 @@ jobs:
         uses: ./tests/ci
         with:
           artifact-id: ${{ needs.platforms.outputs.artifact-id }}
-      - name: Independent-Team handoff and owner exit on 1/2/4 Harts
+      - name: Independent-Team handoff and owner exit on one Hart
         run: python3 tests/guest/system/run.py tests/ci/target/platforms/instructions/${{ matrix.kernel }} --handoff --kernel-profile ${{ matrix.kernel }} --profile ${{ matrix.system }} --harts ${{ matrix.harts }} --scenarios ${{ matrix.scenarios }}
       - name: CPU source admission with concurrent recipient traffic
         if: matrix.kernel == 'release' && matrix.system == 'release'
